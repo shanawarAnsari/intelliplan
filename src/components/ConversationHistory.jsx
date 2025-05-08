@@ -227,12 +227,13 @@ const ConversationHistory = ({
       </Dialog>
 
       <Divider sx={{ borderColor: theme.palette.divider }} />
-      <Box sx={{ px: 2, py: 1.5 }}>
+      <Box sx={{ px: 2, pt: 1.5 }}>
         <Typography
           variant="overline"
           color="text.secondary"
           fontWeight="medium"
           sx={{
+            fontWeight: "bold",
             fontSize: "0.75rem",
             letterSpacing: "0.5px",
             color: theme.palette.text.secondary,
@@ -240,101 +241,103 @@ const ConversationHistory = ({
         >
           History
         </Typography>
+
       </Box>
+
       <Box sx={{ flexGrow: 1, overflowY: "auto", px: 1 }}>
         <List>
           {history && history.length > 0
             ? history.map((conv, index) => (
-                <Fade
-                  in={true}
-                  key={index}
-                  timeout={300}
-                  style={{ transitionDelay: `${index * 50}ms` }}
-                >
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      onClick={() => onSelectConversation(conv.id)}
-                      sx={{
-                        borderRadius: theme.shape.borderRadius,
-                        mx: 1,
-                        mb: 0.5,
-                        py: 0.75,
+              <Fade
+                in={true}
+                key={index}
+                timeout={300}
+                style={{ transitionDelay: `${index * 50}ms` }}
+              >
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => onSelectConversation(conv.id)}
+                    sx={{
+                      borderRadius: theme.shape.borderRadius,
+                      mx: 1,
+                      mb: 0.5,
+                      py: 0.75,
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                      "&.Mui-selected": {
+                        backgroundColor: theme.palette.action.selected,
                         "&:hover": {
-                          backgroundColor: theme.palette.action.hover,
-                        },
-                        "&.Mui-selected": {
                           backgroundColor: theme.palette.action.selected,
-                          "&:hover": {
-                            backgroundColor: theme.palette.action.selected,
-                          },
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={conv.title}
+                      primaryTypographyProps={{
+                        variant: "body2",
+                        noWrap: true,
+                        fontWeight: 500,
+                        color: theme.palette.text.primary,
+                        sx: {
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "block",
                         },
                       }}
-                    >
-                      <ListItemText
-                        primary={conv.title}
-                        primaryTypographyProps={{
-                          variant: "body2",
-                          noWrap: true,
-                          fontWeight: "medium",
-                          color: theme.palette.text.primary,
-                          sx: {
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "block",
-                          },
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                </Fade>
-              ))
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </Fade>
+            ))
             : [
-                { id: "dummy1", title: "Q3 Sales Analysis" },
-                { id: "dummy2", title: "Product Demand Forecast 2023" },
-                { id: "dummy3", title: "Regional Sales Performance" },
-                { id: "dummy4", title: "Customer Demand Patterns" },
-                { id: "dummy5", title: "Sales Pipeline Review" },
-                { id: "dummy6", title: "Market Demand Trends" },
-                { id: "dummy7", title: "Sales Team Efficiency" },
-                { id: "dummy8", title: "Supply vs Demand Analysis" },
-              ].map((dummyConv, index) => (
-                <Fade
-                  in={true}
-                  key={`dummy-${index}`}
-                  timeout={300}
-                  style={{ transitionDelay: `${index * 50}ms` }}
-                >
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      onClick={() => {}}
-                      sx={{
-                        borderRadius: theme.shape.borderRadius,
-                        mx: 1,
-                        mb: 0.5,
-                        py: 0.75,
-                        "&:hover": {
-                          backgroundColor: theme.palette.action.hover,
+              { id: "dummy1", title: "Q3 Sales Analysis" },
+              { id: "dummy2", title: "Product Demand Forecast 2023" },
+              { id: "dummy3", title: "Regional Sales Performance" },
+              { id: "dummy4", title: "Customer Demand Patterns" },
+              { id: "dummy5", title: "Sales Pipeline Review" },
+              { id: "dummy6", title: "Market Demand Trends" },
+              { id: "dummy7", title: "Sales Team Efficiency" },
+              { id: "dummy8", title: "Supply vs Demand Analysis" },
+            ].map((dummyConv, index) => (
+              <Fade
+                in={true}
+                key={`dummy-${index}`}
+                timeout={300}
+                style={{ transitionDelay: `${index * 50}ms` }}
+              >
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => { }}
+                    sx={{
+                      borderRadius: theme.shape.borderRadius,
+                      mx: 1,
+                      mb: 0.5,
+                      py: 0.75,
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={dummyConv.title}
+                      primaryTypographyProps={{
+                        variant: "body2",
+                        noWrap: true,
+                        fontWeight: "medium",
+                        color: theme.palette.text.secondary,
+                        sx: {
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "block",
                         },
                       }}
-                    >
-                      <ListItemText
-                        primary={dummyConv.title}
-                        primaryTypographyProps={{
-                          variant: "body2",
-                          noWrap: true,
-                          fontWeight: "medium",
-                          color: theme.palette.text.secondary,
-                          sx: {
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "block",
-                          },
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                </Fade>
-              ))}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </Fade>
+            ))}
         </List>
       </Box>
     </Box>
