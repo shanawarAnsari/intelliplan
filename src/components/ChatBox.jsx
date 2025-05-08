@@ -16,7 +16,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import Logo from "../assets/KC_logo_for_dark.png";
+import Logo from "../assets/InteliPlan.jpg";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
@@ -205,7 +205,7 @@ const ChatBox = ({
               </IconButton>
             </Tooltip>
           )}
-          <img src={Logo} alt="Kimberly-Clark Logo" height="24" />{" "}
+          <img src={Logo} alt="Kimberly-Clark Logo" height="80" />{" "}
           {/* Reduced height from 28 */}
         </Box>
         <Box

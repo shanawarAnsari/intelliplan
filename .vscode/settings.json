@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/4f21e93a-5783-4cc0-8415-6b93c54c75c9/resourceGroups/Hackathon-team-5/providers/Microsoft.Web/sites/intelliplan-chatbot",
+    "appService.deploySubpath": "build"
+}
