@@ -17,20 +17,20 @@ const MessageInput = ({ onSendMessage, disabled }) => {
     <Paper
       component="form"
       onSubmit={handleSubmit}
-      elevation={3} // Increased elevation
+      elevation={2} // Reduced elevation from 3
       sx={{
         display: "flex",
         alignItems: "center",
-        p: "12px 16px", // Adjusted padding
-        borderRadius: "12px", // Added border radius
-        backgroundColor: "background.paper", // Ensure it uses theme background
-        boxShadow: "0px 4px 12px rgba(0,0,0,0.1)", // Softer shadow
+        p: "8px 12px", // Reduced padding from 12px 16px
+        borderRadius: "10px", // Reduced border radius from 12px
+        backgroundColor: "background.paper",
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.08)", // Lighter shadow
       }}
     >
       <TextField
         fullWidth
         multiline
-        maxRows={4} // Slightly increased maxRows
+        maxRows={3} // Reduced from 4 to 3
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -40,26 +40,27 @@ const MessageInput = ({ onSendMessage, disabled }) => {
             handleSubmit(e);
           }
         }}
-        variant="outlined" // Changed to outlined
+        variant="outlined"
         disabled={disabled}
         InputProps={{
           sx: {
-            borderRadius: "8px", // Rounded corners for the input field itself
-            fontSize: "0.95rem",
+            borderRadius: "6px", // Reduced from 8px
+            fontSize: "0.9rem", // Smaller font size
           },
         }}
         sx={{
-          mr: 1, // Margin to separate from the button
+          mr: 0.75, // Reduced margin from 1
           "& .MuiOutlinedInput-root": {
             "& fieldset": {
-              borderColor: "rgba(255, 255, 255, 0.23)", // Default border color
+              borderColor: "rgba(255, 255, 255, 0.23)",
             },
             "&:hover fieldset": {
-              borderColor: "primary.main", // Border color on hover
+              borderColor: "primary.main",
             },
             "&.Mui-focused fieldset": {
-              borderColor: "primary.main", // Border color when focused
+              borderColor: "primary.main",
             },
+            padding: "4px 8px", // Added padding reduction for the input itself
           },
         }}
       />
@@ -72,14 +73,17 @@ const MessageInput = ({ onSendMessage, disabled }) => {
             bgcolor: "primary.main",
             color: "primary.contrastText",
             "&:hover": {
-              bgcolor: "primary.dark", // Use primary.dark from theme
+              bgcolor: "primary.dark",
             },
             "&.Mui-disabled": {
               bgcolor: "action.disabledBackground",
             },
+            width: "32px", // Reduced size from default
+            height: "32px", // Reduced size from default
+            padding: "6px", // Reduced padding
           }}
         >
-          <SendIcon />
+          <SendIcon fontSize="small" /> {/* Changed to small icon */}
         </IconButton>
       </Box>
     </Paper>

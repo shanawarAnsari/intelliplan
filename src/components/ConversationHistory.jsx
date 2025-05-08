@@ -22,6 +22,7 @@ import {
 
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
 
 const drawerWidth = 280;
 
@@ -63,7 +64,7 @@ const ConversationHistory = ({
     >
       <Box
         sx={{
-          p: 2,
+          p: 0.7125,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -72,6 +73,7 @@ const ConversationHistory = ({
       >
         <Button
           variant="contained"
+          size="small"
           startIcon={<AddIcon />}
           onClick={handleOpenDialog}
           sx={{
@@ -80,7 +82,8 @@ const ConversationHistory = ({
             fontWeight: "medium",
             py: 1,
             px: 2,
-            backgroundColor: theme.palette.primary.main,
+            mx: 3,
+            backgroundColor: theme.palette.primary.hover,
             color: theme.palette.primary.contrastText,
             "&:hover": {
               backgroundColor: theme.palette.primary.dark,
@@ -110,20 +113,43 @@ const ConversationHistory = ({
         PaperProps={{
           sx: {
             bgcolor: theme.palette.background.paper,
-            borderRadius: theme.shape.borderRadius,
+            borderRadius: 2,
+            width: "450px", // Set fixed width for better layout
+            maxWidth: "90vw", // Responsive constraint
           },
         }}
       >
         <DialogTitle
-          sx={{ fontWeight: "medium", color: theme.palette.text.primary }}
+          sx={{
+            fontWeight: "medium",
+            color: theme.palette.text.primary,
+            p: 2.5, // More generous padding
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: `1px solid ${theme.palette.divider}`,
+          }}
         >
           Create New Conversation
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseDialog}
+            size="small"
+            sx={{
+              color: theme.palette.text.secondary,
+              "&:hover": {
+                backgroundColor: theme.palette.action.hover,
+                color: theme.palette.text.primary,
+              },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ p: 3 }}>
           <TextField
             autoFocus
             margin="dense"
-            label="Conversation Title"
             type="text"
             fullWidth
             variant="outlined"
@@ -137,7 +163,7 @@ const ConversationHistory = ({
               }
             }}
             sx={{
-              mt: 1,
+              mt: 3,
               "& .MuiOutlinedInput-root": {
                 "& fieldset": {
                   borderColor: theme.palette.divider,
@@ -152,13 +178,30 @@ const ConversationHistory = ({
               "& .MuiInputLabel-root": {
                 color: theme.palette.text.secondary,
               },
+              "& .MuiInputBase-input": {
+                py: 1.5, // More vertical space in the input
+              },
             }}
           />
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 2, fontSize: "0.85rem" }}
+          >
+            Give your conversation a descriptive name to easily find it later.
+          </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: "16px 24px" }}>
+        <DialogActions
+          sx={{ p: "16px 24px", borderTop: `1px solid ${theme.palette.divider}` }}
+        >
           <Button
             onClick={handleCloseDialog}
-            sx={{ color: theme.palette.text.secondary }}
+            sx={{
+              color: theme.palette.text.secondary,
+              textTransform: "none",
+              fontWeight: "medium",
+              mr: 1,
+            }}
           >
             Cancel
           </Button>
@@ -170,6 +213,9 @@ const ConversationHistory = ({
             sx={{
               backgroundColor: theme.palette.primary.main,
               color: theme.palette.primary.contrastText,
+              textTransform: "none",
+              fontWeight: "medium",
+              px: 2.5,
               "&:hover": {
                 backgroundColor: theme.palette.primary.dark,
               },
