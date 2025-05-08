@@ -1,0 +1,70 @@
+/* Global CSS styles for the KC Chat Bot application */
+
+/* Modern CSS Reset (optional, but good practice) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Body styles are largely handled by MUI ThemeProvider and CssBaseline,
+   but you can add global overrides or defaults here if needed. */
+body {
+  margin: 0; /* Ensure no default margin */
+  background-color: #2e3440; /* Fallback, Nordic Blue theme default background */
+  color: #eceff4; /* Fallback, Nordic Blue theme primary text */
+  line-height: 1.5;
+}
+
+/* Simple animation for new elements - can be kept if used outside MUI Fade */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px); /* Slightly adjusted for the new theme */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.35s ease-out; /* Slightly adjusted duration */
+}
+
+/* Basic text utility - MUI Typography's noWrap prop is generally preferred */
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Custom scrollbar styling (optional, for a more modern look) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #3b4252; /* Nordic Blue theme paper background */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4c566a; /* A slightly darker, muted blue/grey */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5e81ac; /* Nordic Blue primary main for hover */
+}
+
+/* Ensure focus styles are visible and accessible */
+*:focus-visible {
+  outline: 2px solid #88c0d0; /* A brighter blue from Nord palette for high visibility */
+  outline-offset: 2px;
+}
