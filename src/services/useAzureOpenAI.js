@@ -60,7 +60,7 @@ const useAzureOpenAI = () => {
       try {
         const options = {
           model: "gpt-4o", // replace with your deployed model name
-          name: "IntelliPlan Assistant",
+          name: "TestAssistant",
           instructions:
             customInstructions ||
             "You are a helpful assistant designed to provide insights on sales data, forecasts, and market trends.",
