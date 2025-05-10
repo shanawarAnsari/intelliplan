@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { v4 as uuidv4 } from "uuid";
 import useAzureOpenAI from "../services/useAzureOpenAI";
+import useThreadValidator from "../hooks/useThreadValidator";
 
 // Create context
 const ConversationContext = createContext();
@@ -24,88 +25,157 @@ export const ConversationProvider = ({ children }) => {
     setThreadId,
     isLoading: isAILoading,
     error: aiError,
+    createThread,
   } = useAzureOpenAI();
+
+  const { validateThread, formatThreadId } = useThreadValidator();
 
   // Initialize with sample conversations
   useEffect(() => {
-    const initSampleConversations = () => {
-      const sampleConversations = [
-        {
-          id: uuidv4(),
-          title: "Q3 Sales Analysis",
-          messages: [
-            {
-              role: "user",
-              content: "Can you analyze our Q3 sales performance?",
-              timestamp: new Date(Date.now() - 3600000),
-            },
-            {
-              role: "assistant",
-              content:
-                "Based on the data, Q3 sales increased by 12% compared to Q2, with the strongest growth in the electronics category.",
-              timestamp: new Date(Date.now() - 3590000),
-            },
-          ],
-        },
-        {
-          id: uuidv4(),
-          title: "Product Demand Forecast 2023",
-          messages: [
-            {
-              role: "user",
-              content: "What is the demand forecast for our product line in 2023?",
-              timestamp: new Date(Date.now() - 7200000),
-            },
-            {
-              role: "assistant",
-              content:
-                "The forecast indicates a 15% growth in demand for premium products, while mid-range products may see steady demand with only 3% growth.",
-              timestamp: new Date(Date.now() - 7190000),
-            },
-          ],
-        },
-      ];
+    const initSampleConversations = async () => {
+      try {
+        // Create a valid thread for the first conversation
+        const thread = await createThread();
+        const threadId = thread?.id;
 
-      setConversations(sampleConversations);
-      setActiveConversation(sampleConversations[0]);
+        const sampleConversations = [
+          {
+            id: threadId || uuidv4(),
+            title: "Q3 Sales Analysis",
+            messages: [
+              {
+                role: "user",
+                content: "Can you analyze our Q3 sales performance?",
+                timestamp: new Date(Date.now() - 3600000),
+              },
+              {
+                role: "assistant",
+                content:
+                  "Based on the data, Q3 sales increased by 12% compared to Q2, with the strongest growth in the electronics category.",
+                timestamp: new Date(Date.now() - 3590000),
+              },
+            ],
+          },
+          {
+            id: uuidv4(),
+            title: "Product Demand Forecast 2023",
+            messages: [
+              {
+                role: "user",
+                content: "What is the demand forecast for our product line in 2023?",
+                timestamp: new Date(Date.now() - 7200000),
+              },
+              {
+                role: "assistant",
+                content:
+                  "The forecast indicates a 15% growth in demand for premium products, while mid-range products may see steady demand with only 3% growth.",
+                timestamp: new Date(Date.now() - 7190000),
+              },
+            ],
+          },
+        ];
+
+        setConversations(sampleConversations);
+        if (threadId) {
+          setActiveConversation(sampleConversations[0]);
+          setThreadId(threadId);
+        } else {
+          setActiveConversation(sampleConversations[1]);
+        }
+      } catch (error) {
+        console.error("Error initializing sample conversations:", error);
+      }
     };
 
     initSampleConversations();
-  }, []);
+  }, [createThread, setThreadId]);
 
   /**
    * Select a conversation by ID
    */
   const selectConversation = useCallback(
-    (conversationId) => {
-      const selected = conversations.find((conv) => conv.id === conversationId);
-      if (selected) {
-        setActiveConversation(selected);
-        setThreadId(selected.id); // Set thread ID in Azure OpenAI service
+    async (conversationId) => {
+      try {
+        const selected = conversations.find((conv) => conv.id === conversationId);
+        if (!selected) return;
+
+        // First check if the thread exists/is valid
+        const isValid = await validateThread(selected.id);
+
+        if (isValid) {
+          // Thread is valid, use it
+          setActiveConversation(selected);
+          setThreadId(formatThreadId(selected.id));
+        } else {
+          // Thread doesn't exist, create a new one
+          const thread = await createThread();
+          if (thread) {
+            // Update conversation with new thread ID
+            const updatedConversation = {
+              ...selected,
+              id: thread.id,
+            };
+
+            setActiveConversation(updatedConversation);
+            setThreadId(thread.id);
+
+            // Update in the conversations list
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv.id === conversationId ? updatedConversation : conv
+              )
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error selecting conversation:", error);
       }
     },
-    [conversations, setThreadId]
+    [conversations, setThreadId, validateThread, formatThreadId, createThread]
   );
 
   /**
    * Create a new conversation
    */
   const createNewConversation = useCallback(
-    (title) => {
-      const newConversation = {
-        id: uuidv4(),
-        title: title || `New Conversation`,
-        messages: [],
-        created: new Date(),
-      };
+    async (title) => {
+      try {
+        // Always create a new thread
+        const thread = await createThread();
+        const threadId = thread?.id || uuidv4();
 
-      setConversations((prev) => [newConversation, ...prev]);
-      setActiveConversation(newConversation);
-      setThreadId(newConversation.id); // Set thread ID in Azure OpenAI service
+        const newConversation = {
+          id: threadId,
+          title: title || `New Conversation`,
+          messages: [],
+          created: new Date(),
+        };
 
-      return newConversation;
+        setConversations((prev) => [newConversation, ...prev]);
+        setActiveConversation(newConversation);
+        if (thread) {
+          setThreadId(threadId);
+        }
+
+        return newConversation;
+      } catch (error) {
+        console.error("Error creating new conversation:", error);
+
+        // Fallback to UUID if thread creation fails
+        const fallbackConversation = {
+          id: uuidv4(),
+          title: title || `New Conversation`,
+          messages: [],
+          created: new Date(),
+        };
+
+        setConversations((prev) => [fallbackConversation, ...prev]);
+        setActiveConversation(fallbackConversation);
+
+        return fallbackConversation;
+      }
     },
-    [setThreadId]
+    [createThread, setThreadId]
   );
 
   /**
@@ -142,7 +212,32 @@ export const ConversationProvider = ({ children }) => {
         });
 
         // Send message to Azure OpenAI
-        const response = await conversationHandler(message, activeConversation.id);
+        let response;
+        try {
+          response = await conversationHandler(message, activeConversation.id);
+        } catch (error) {
+          // If API call failed, might need a new thread
+          const thread = await createThread();
+          if (thread) {
+            // Update conversation with new thread ID
+            const reconversation = {
+              ...updatedConversation,
+              id: thread.id,
+            };
+
+            setActiveConversation(reconversation);
+            setConversations((prev) => {
+              return prev.map((conv) =>
+                conv.id === activeConversation.id ? reconversation : conv
+              );
+            });
+
+            // Try again with new thread
+            response = await conversationHandler(message, thread.id);
+          } else {
+            throw error;
+          }
+        }
 
         // Add assistant message to the conversation
         if (response && response.answer) {
@@ -156,6 +251,8 @@ export const ConversationProvider = ({ children }) => {
           const finalConversation = {
             ...activeConversation,
             messages: finalMessages,
+            // Update ID if response contains a new conversationId
+            id: response.conversationId || activeConversation.id,
           };
 
           setActiveConversation(finalConversation);
@@ -174,7 +271,7 @@ export const ConversationProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    [activeConversation, conversationHandler]
+    [activeConversation, conversationHandler, createThread, setThreadId]
   );
 
   const value = {

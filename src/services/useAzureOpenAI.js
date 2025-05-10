@@ -34,6 +34,7 @@ const useAzureOpenAI = () => {
           endpoint: azureOpenAIEndpoint,
           apiVersion: azureOpenAIVersion,
           apiKey: azureOpenAIKey,
+          dangerouslyAllowBrowser: true,
         });
 
         console.log("Azure OpenAI client initialized");
@@ -85,7 +86,6 @@ const useAzureOpenAI = () => {
     },
     [client]
   );
-
   /**
    * Create a new thread
    */
@@ -97,10 +97,17 @@ const useAzureOpenAI = () => {
 
     try {
       const thread = await client.beta.threads.create({});
-      console.log(`Thread created with ID: ${thread.id}`);
-      setThreadId(thread.id);
 
-      return thread;
+      // Ensure thread ID is properly formatted
+      // If the ID doesn't start with 'thread_', add the prefix
+      const formattedThreadId = thread.id.startsWith("thread_")
+        ? thread.id
+        : `thread_${thread.id}`;
+
+      console.log(`Thread created with ID: ${formattedThreadId}`);
+      setThreadId(formattedThreadId);
+
+      return { ...thread, id: formattedThreadId };
     } catch (err) {
       console.error(`Error creating thread: ${err.message}`);
       setError(`Error creating thread: ${err.message}`);
@@ -122,7 +129,12 @@ const useAzureOpenAI = () => {
 
       try {
         // Use provided threadId or the instance threadId
-        const activeThreadId = currentThreadId || threadId;
+        let activeThreadId = currentThreadId || threadId;
+
+        // Format thread ID if needed
+        if (activeThreadId && !activeThreadId.startsWith("thread_")) {
+          activeThreadId = `thread_${activeThreadId}`;
+        }
 
         // Create a thread if none exists
         let useThreadId = activeThreadId;
@@ -132,28 +144,66 @@ const useAzureOpenAI = () => {
           useThreadId = thread.id;
         }
 
-        // Add message to thread
-        const messageResponse = await client.beta.threads.messages.create(
-          useThreadId,
-          {
-            role: "user",
-            content: message,
+        try {
+          // Add message to thread
+          const messageResponse = await client.beta.threads.messages.create(
+            useThreadId,
+            {
+              role: "user",
+              content: message,
+            }
+          );
+
+          // Update messages state
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: messageResponse.id,
+              role: "user",
+              content: message,
+              threadId: useThreadId,
+              timestamp: new Date(),
+            },
+          ]);
+
+          return messageResponse;
+        } catch (threadError) {
+          // If thread not found, create a new one and retry
+          if (
+            threadError.message &&
+            threadError.message.includes("No thread found with id")
+          ) {
+            console.log("Thread not found, creating a new one and retrying...");
+            const newThread = await createThread();
+            if (!newThread) throw new Error("Failed to create new thread");
+
+            // Try again with the new thread
+            const messageResponse = await client.beta.threads.messages.create(
+              newThread.id,
+              {
+                role: "user",
+                content: message,
+              }
+            );
+
+            // Update messages state with new thread id
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: messageResponse.id,
+                role: "user",
+                content: message,
+                threadId: newThread.id,
+                timestamp: new Date(),
+              },
+            ]);
+
+            return messageResponse;
+          } else {
+            // Rethrow if it's not a "thread not found" error
+            throw threadError;
           }
-        );
-
-        // Update messages state
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: messageResponse.id,
-            role: "user",
-            content: message,
-            threadId: useThreadId,
-            timestamp: new Date(),
-          },
-        ]);
-
-        return messageResponse;
+        }
       } catch (err) {
         console.error(`Error sending message: ${err.message}`);
         setError(`Error sending message: ${err.message}`);
@@ -187,70 +237,90 @@ const useAzureOpenAI = () => {
         }
 
         // Use provided threadId or the instance threadId
-        const activeThreadId = currentThreadId || threadId;
+        let activeThreadId = currentThreadId || threadId;
+
+        // Format thread ID if needed
+        if (activeThreadId && !activeThreadId.startsWith("thread_")) {
+          activeThreadId = `thread_${activeThreadId}`;
+        }
+
         if (!activeThreadId) {
           throw new Error("No thread ID provided or available");
         }
 
-        // Run the thread
-        const runResponse = await client.beta.threads.runs.create(activeThreadId, {
-          assistant_id: activeAssistantId,
-        });
+        try {
+          // Run the thread
+          const runResponse = await client.beta.threads.runs.create(activeThreadId, {
+            assistant_id: activeAssistantId,
+          });
 
-        // Poll for completion
-        let runStatus = runResponse.status;
-        while (runStatus === "queued" || runStatus === "in_progress") {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const runStatusResponse = await client.beta.threads.runs.retrieve(
-            activeThreadId,
-            runResponse.id
-          );
-          runStatus = runStatusResponse.status;
-          console.log(`Current run status: ${runStatus}`);
-        }
+          // Poll for completion
+          let runStatus = runResponse.status;
+          while (runStatus === "queued" || runStatus === "in_progress") {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const runStatusResponse = await client.beta.threads.runs.retrieve(
+              activeThreadId,
+              runResponse.id
+            );
+            runStatus = runStatusResponse.status;
+            console.log(`Current run status: ${runStatus}`);
+          }
 
-        // Get messages after completion
-        if (runStatus === "completed") {
-          const messagesResponse = await client.beta.threads.messages.list(
-            activeThreadId
-          );
+          // Get messages after completion
+          if (runStatus === "completed") {
+            const messagesResponse = await client.beta.threads.messages.list(
+              activeThreadId
+            );
 
-          // Find the latest assistant message
-          const assistantMessages = messagesResponse.data.filter(
-            (msg) => msg.role === "assistant"
-          );
-          if (assistantMessages.length > 0) {
-            const latestMessage = assistantMessages[0];
-            const answer = latestMessage.content[0].text.value;
+            // Find the latest assistant message
+            const assistantMessages = messagesResponse.data.filter(
+              (msg) => msg.role === "assistant"
+            );
+            if (assistantMessages.length > 0) {
+              const latestMessage = assistantMessages[0];
+              const answer = latestMessage.content[0].text.value;
 
-            // Update messages state
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: latestMessage.id,
-                role: "assistant",
-                content: answer,
-                threadId: activeThreadId,
-                timestamp: new Date(),
-              },
-            ]);
+              // Update messages state
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: latestMessage.id,
+                  role: "assistant",
+                  content: answer,
+                  threadId: activeThreadId,
+                  timestamp: new Date(),
+                },
+              ]);
 
-            return {
-              answer,
-              conversationId: activeThreadId,
-            };
+              return {
+                answer,
+                conversationId: activeThreadId,
+              };
+            } else {
+              return {
+                answer: "No response from assistant",
+                conversationId: activeThreadId,
+              };
+            }
           } else {
+            console.log(`Run status is ${runStatus}, unable to fetch messages.`);
             return {
-              answer: "No response from assistant",
+              answer: `The assistant encountered an issue. Status: ${runStatus}`,
               conversationId: activeThreadId,
             };
           }
-        } else {
-          console.log(`Run status is ${runStatus}, unable to fetch messages.`);
-          return {
-            answer: `The assistant encountered an issue. Status: ${runStatus}`,
-            conversationId: activeThreadId,
-          };
+        } catch (threadError) {
+          // If thread not found, return an error that the conversation handler can use to create a new thread
+          if (
+            threadError.message &&
+            threadError.message.includes("No thread found with id")
+          ) {
+            console.log(`Thread not found in runAssistant: ${threadError.message}`);
+            throw new Error(`Thread not found: ${activeThreadId}`);
+          } else {
+            // Rethrow other errors
+            throw threadError;
+          }
         }
       } catch (err) {
         console.error(`Error running assistant: ${err.message}`);
@@ -278,7 +348,13 @@ const useAzureOpenAI = () => {
       setError(null);
 
       try {
-        const activeThreadId = currentThreadId || threadId;
+        let activeThreadId = currentThreadId || threadId;
+
+        // Format thread ID if needed
+        if (activeThreadId && !activeThreadId.startsWith("thread_")) {
+          activeThreadId = `thread_${activeThreadId}`;
+        }
+
         if (!activeThreadId) {
           throw new Error("No thread ID provided or available");
         }
@@ -307,12 +383,45 @@ const useAzureOpenAI = () => {
       setError(null);
 
       try {
-        // If conversationId is provided, use it as threadId
-        if (conversationId) {
-          setThreadId(conversationId);
-        } else if (!threadId) {
-          // Create new thread if none exists
-          await createThread();
+        // Format the conversation ID if needed
+        let formattedConversationId = conversationId;
+        if (
+          formattedConversationId &&
+          !formattedConversationId.startsWith("thread_")
+        ) {
+          formattedConversationId = `thread_${formattedConversationId}`;
+        }
+
+        let useThreadId = formattedConversationId || threadId;
+        let createNewThread = false;
+
+        // If no thread ID yet, create one
+        if (!useThreadId) {
+          createNewThread = true;
+        }
+
+        // If conversationId is provided, use it as threadId (after validating it exists)
+        if (formattedConversationId && !createNewThread) {
+          try {
+            // Try to list messages to check if thread exists
+            await client.beta.threads.messages.list(formattedConversationId);
+            // If successful, set as thread ID
+            setThreadId(formattedConversationId);
+            useThreadId = formattedConversationId;
+          } catch (threadError) {
+            console.log(
+              `Thread not found: ${threadError.message}, creating new thread`
+            );
+            createNewThread = true;
+          }
+        }
+
+        // Create a new thread if needed or if previous thread wasn't found
+        if (createNewThread) {
+          const thread = await createThread();
+          if (!thread) throw new Error("Failed to create thread");
+          useThreadId = thread.id;
+          setThreadId(useThreadId);
         }
 
         // Create assistant if not already created
@@ -320,27 +429,39 @@ const useAzureOpenAI = () => {
           await setupAssistant();
         }
 
-        // Send message
-        const messageResult = await sendMessage(message, conversationId || threadId);
+        // Send message to the validated thread
+        const messageResult = await sendMessage(message, useThreadId);
         if (!messageResult) {
           throw new Error("Failed to send message");
         }
 
         // Run the assistant and get response
-        const response = await runAssistant(assistantId, conversationId || threadId);
-        return response;
+        const response = await runAssistant(assistantId, useThreadId);
+        return {
+          ...response,
+          conversationId: useThreadId,
+        };
       } catch (err) {
         console.error("Error in conversation handler:", err);
         setError("Error in conversation handler: " + err.message);
         return {
-          answer: "Sorry, I encountered an error processing your request.",
-          conversationId: conversationId || threadId,
+          answer:
+            "Sorry, I encountered an error processing your request: " + err.message,
+          conversationId: threadId,
         };
       } finally {
         setIsLoading(false);
       }
     },
-    [threadId, assistantId, createThread, setupAssistant, sendMessage, runAssistant]
+    [
+      client,
+      threadId,
+      assistantId,
+      createThread,
+      setupAssistant,
+      sendMessage,
+      runAssistant,
+    ]
   );
 
   return {
