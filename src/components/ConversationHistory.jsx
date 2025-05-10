@@ -20,22 +20,19 @@ import {
   TextField,
 } from "@mui/material";
 
+import { useConversation } from "../contexts/ConversationContext";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 
 const drawerWidth = 280;
 
-const ConversationHistory = ({
-  history,
-  onSelectConversation,
-  onNewConversation,
-  open,
-  onToggleDrawer,
-}) => {
+const ConversationHistory = ({ open, onToggleDrawer }) => {
   const theme = useTheme();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newConversationTitle, setNewConversationTitle] = useState("");
+  const { conversations, selectConversation, createNewConversation } =
+    useConversation();
 
   const handleOpenDialog = () => {
     setDialogOpen(true);
@@ -48,7 +45,7 @@ const ConversationHistory = ({
 
   const handleCreateConversation = () => {
     if (newConversationTitle.trim()) {
-      onNewConversation(newConversationTitle.trim());
+      createNewConversation(newConversationTitle.trim());
       handleCloseDialog();
     }
   };
@@ -241,103 +238,103 @@ const ConversationHistory = ({
         >
           History
         </Typography>
-
       </Box>
 
       <Box sx={{ flexGrow: 1, overflowY: "auto", px: 1 }}>
         <List>
-          {history && history.length > 0
-            ? history.map((conv, index) => (
-              <Fade
-                in={true}
-                key={index}
-                timeout={300}
-                style={{ transitionDelay: `${index * 50}ms` }}
-              >
-                <ListItem disablePadding>
-                  <ListItemButton
-                    onClick={() => onSelectConversation(conv.id)}
-                    sx={{
-                      borderRadius: theme.shape.borderRadius,
-                      mx: 1,
-                      mb: 0.5,
-                      py: 0.75,
-                      "&:hover": {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                      "&.Mui-selected": {
-                        backgroundColor: theme.palette.action.selected,
+          {" "}
+          {conversations && conversations.length > 0
+            ? conversations.map((conv, index) => (
+                <Fade
+                  in={true}
+                  key={index}
+                  timeout={300}
+                  style={{ transitionDelay: `${index * 50}ms` }}
+                >
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      onClick={() => selectConversation(conv.id)}
+                      sx={{
+                        borderRadius: theme.shape.borderRadius,
+                        mx: 1,
+                        mb: 0.5,
+                        py: 0.75,
                         "&:hover": {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                        "&.Mui-selected": {
                           backgroundColor: theme.palette.action.selected,
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primary={conv.title}
-                      primaryTypographyProps={{
-                        variant: "body2",
-                        noWrap: true,
-                        fontWeight: 500,
-                        color: theme.palette.text.primary,
-                        sx: {
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "block",
+                          "&:hover": {
+                            backgroundColor: theme.palette.action.selected,
+                          },
                         },
                       }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              </Fade>
-            ))
+                    >
+                      <ListItemText
+                        primary={conv.title}
+                        primaryTypographyProps={{
+                          variant: "body2",
+                          noWrap: true,
+                          fontWeight: 500,
+                          color: theme.palette.text.primary,
+                          sx: {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "block",
+                          },
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                </Fade>
+              ))
             : [
-              { id: "dummy1", title: "Q3 Sales Analysis" },
-              { id: "dummy2", title: "Product Demand Forecast 2023" },
-              { id: "dummy3", title: "Regional Sales Performance" },
-              { id: "dummy4", title: "Customer Demand Patterns" },
-              { id: "dummy5", title: "Sales Pipeline Review" },
-              { id: "dummy6", title: "Market Demand Trends" },
-              { id: "dummy7", title: "Sales Team Efficiency" },
-              { id: "dummy8", title: "Supply vs Demand Analysis" },
-            ].map((dummyConv, index) => (
-              <Fade
-                in={true}
-                key={`dummy-${index}`}
-                timeout={300}
-                style={{ transitionDelay: `${index * 50}ms` }}
-              >
-                <ListItem disablePadding>
-                  <ListItemButton
-                    onClick={() => { }}
-                    sx={{
-                      borderRadius: theme.shape.borderRadius,
-                      mx: 1,
-                      mb: 0.5,
-                      py: 0.75,
-                      "&:hover": {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primary={dummyConv.title}
-                      primaryTypographyProps={{
-                        variant: "body2",
-                        noWrap: true,
-                        fontWeight: "medium",
-                        color: theme.palette.text.secondary,
-                        sx: {
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "block",
+                { id: "dummy1", title: "Q3 Sales Analysis" },
+                { id: "dummy2", title: "Product Demand Forecast 2023" },
+                { id: "dummy3", title: "Regional Sales Performance" },
+                { id: "dummy4", title: "Customer Demand Patterns" },
+                { id: "dummy5", title: "Sales Pipeline Review" },
+                { id: "dummy6", title: "Market Demand Trends" },
+                { id: "dummy7", title: "Sales Team Efficiency" },
+                { id: "dummy8", title: "Supply vs Demand Analysis" },
+              ].map((dummyConv, index) => (
+                <Fade
+                  in={true}
+                  key={`dummy-${index}`}
+                  timeout={300}
+                  style={{ transitionDelay: `${index * 50}ms` }}
+                >
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      onClick={() => {}}
+                      sx={{
+                        borderRadius: theme.shape.borderRadius,
+                        mx: 1,
+                        mb: 0.5,
+                        py: 0.75,
+                        "&:hover": {
+                          backgroundColor: theme.palette.action.hover,
                         },
                       }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              </Fade>
-            ))}
+                    >
+                      <ListItemText
+                        primary={dummyConv.title}
+                        primaryTypographyProps={{
+                          variant: "body2",
+                          noWrap: true,
+                          fontWeight: "medium",
+                          color: theme.palette.text.secondary,
+                          sx: {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "block",
+                          },
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                </Fade>
+              ))}
         </List>
       </Box>
     </Box>

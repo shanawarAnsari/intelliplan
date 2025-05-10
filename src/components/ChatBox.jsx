@@ -12,6 +12,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
+import { useConversation } from "../contexts/ConversationContext";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
@@ -21,17 +22,16 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
 
-const ChatBox = ({
-  drawerOpen,
-  onToggleDrawer,
-  activeConversation,
-  setActiveConversation,
-}) => {
+const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
-  const [isBotResponding, setIsBotResponding] = useState(false);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
+  const {
+    activeConversation,
+    isLoading: isBotResponding,
+    sendMessage,
+  } = useConversation();
 
   // FAQ data for the help drawer
   const faqItems = [
@@ -83,88 +83,13 @@ const ChatBox = ({
       setMessages([]);
     }
   }, [activeConversation]);
-
   const handleSendMessage = async (text) => {
     const userMessage = { text, isBot: false, timestamp: new Date() };
     const updatedMessagesWithUser = [...messages, userMessage];
     setMessages(updatedMessagesWithUser);
 
-    if (activeConversation) {
-      const historyMessage = {
-        role: "user",
-        content: text,
-      };
-
-      const updatedConversationMessages = [
-        ...(activeConversation.messages || []),
-        historyMessage,
-      ];
-
-      setActiveConversation({
-        ...activeConversation,
-        messages: updatedConversationMessages,
-      });
-    }
-
-    setIsBotResponding(true);
-
-    try {
-      const response = await fetchChatbotResponse(text, activeConversation?.id);
-
-      const botText = response.answer || "Sorry, I couldn't get a response.";
-      const botResponse = {
-        text: botText,
-        isBot: true,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botResponse]);
-
-      if (activeConversation) {
-        const historyBotMessage = {
-          role: "assistant",
-          content: botText,
-        };
-
-        setActiveConversation((prevConv) => ({
-          ...prevConv,
-          messages: [...(prevConv.messages || []), historyBotMessage],
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching from chatbot agent:", error);
-      const errorResponse = {
-        text: "Sorry, I encountered an error trying to reach the agent.",
-        isBot: true,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorResponse]);
-
-      if (activeConversation) {
-        const historyErrorMessage = {
-          role: "assistant",
-          content: "Sorry, I encountered an error trying to reach the agent.",
-        };
-
-        setActiveConversation((prevConv) => ({
-          ...prevConv,
-          messages: [...(prevConv.messages || []), historyErrorMessage],
-        }));
-      }
-    } finally {
-      setIsBotResponding(false);
-    }
-  };
-
-  const fetchChatbotResponse = async (query, conversationId) => {
-    console.log("Sending query to API:", query, "ConversationID:", conversationId);
-
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    return {
-      answer: `This is a mock response to: "${query}".`,
-      conversationId: conversationId || "new-conversation-id",
-    };
+    // Use the sendMessage function from context
+    await sendMessage(text);
   };
 
   useEffect(() => {
