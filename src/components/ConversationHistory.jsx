@@ -13,6 +13,11 @@ import {
   Typography,
   Divider,
   Fade,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 
 import { useConversation } from "../contexts/ConversationContext";
@@ -32,23 +37,55 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     setConversations,
     activeConversation,
   } = useConversation();
+
+  // State for deletion confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [conversationToDelete, setConversationToDelete] = React.useState(null);
+
   // Function to start a new conversation
   const handleNewConversation = () => {
     createNewConversation("");
   };
 
-  // Function to delete a conversation
-  const handleDeleteConversation = (conversationId) => {
-    // Remove from state and localStorage
-    setConversations((prev) => {
-      const updatedConversations = prev.filter((conv) => conv.id !== conversationId);
-      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
-      return updatedConversations;
-    });
+  // Open confirmation dialog before deletion
+  const confirmDeleteConversation = (conversationId, e) => {
+    // Stop the click from bubbling up to the list item
+    if (e) e.stopPropagation();
 
-    // If deleted conversation was active, create a new one
-    if (activeConversation && activeConversation.id === conversationId) {
-      handleNewConversation();
+    const conversation = conversations.find((conv) => conv.id === conversationId);
+    setConversationToDelete(conversation);
+    setDeleteDialogOpen(true);
+  };
+
+  // Execute the delete after confirmation
+  const handleDeleteConversation = () => {
+    try {
+      if (!conversationToDelete) return;
+
+      const conversationId = conversationToDelete.id;
+      console.log("Deleting conversation:", conversationId);
+
+      // Remove from conversations state
+      const updatedConversations = conversations.filter(
+        (conv) => conv.id !== conversationId
+      );
+
+      // Update local state
+      setConversations(updatedConversations);
+
+      // Update localStorage directly
+      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+
+      // If deleted conversation was active, create a new one
+      if (activeConversation && activeConversation.id === conversationId) {
+        handleNewConversation();
+      }
+
+      // Close the dialog
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
     }
   };
 
@@ -183,7 +220,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
                             },
                           }}
                           sx={{ flex: 1 }}
-                        />
+                        />{" "}
                         <IconButton
                           size="small"
                           sx={{
@@ -194,10 +231,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
                               color: theme.palette.error.main,
                             },
                           }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteConversation(conv.id);
-                          }}
+                          onClick={(e) => confirmDeleteConversation(conv.id, e)}
                         >
                           <DeleteOutlineIcon
                             fontSize="small"
@@ -215,35 +249,61 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       )}
     </Box>
   );
-
   return (
-    <Drawer
-      variant="persistent"
-      anchor="left"
-      open={open}
-      sx={{
-        width: open ? drawerWidth : 0,
-        flexShrink: 0,
-        transition: theme.transitions.create("width", {
-          easing: theme.transitions.easing.sharp,
-          duration: theme.transitions.duration.enteringScreen,
-        }),
-        "& .MuiDrawer-paper": {
-          width: drawerWidth,
-          boxSizing: "border-box",
-          borderRight: `1px solid ${theme.palette.divider}`,
-          transition: theme.transitions.create(["width", "margin"], {
+    <>
+      <Drawer
+        variant="persistent"
+        anchor="left"
+        open={open}
+        sx={{
+          width: open ? drawerWidth : 0,
+          flexShrink: 0,
+          transition: theme.transitions.create("width", {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          boxShadow: "none",
-          overflowX: "hidden",
-          bgcolor: theme.palette.background.default,
-        },
-      }}
-    >
-      {drawerContent}
-    </Drawer>
+          "& .MuiDrawer-paper": {
+            width: drawerWidth,
+            boxSizing: "border-box",
+            borderRight: `1px solid ${theme.palette.divider}`,
+            transition: theme.transitions.create(["width", "margin"], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+            boxShadow: "none",
+            overflowX: "hidden",
+            bgcolor: theme.palette.background.default,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Delete Conversation?"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this conversation?
+            <br />
+            {conversationToDelete && <b> "{conversationToDelete.title}"</b>}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConversation} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

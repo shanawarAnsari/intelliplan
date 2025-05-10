@@ -35,9 +35,12 @@ export const ConversationProvider = ({ children }) => {
         // Load any existing conversations from localStorage
         const savedConversations = localStorage.getItem("conversations");
         let parsedConversations = [];
-
         if (savedConversations) {
           parsedConversations = JSON.parse(savedConversations);
+          // Only include conversations that have messages
+          parsedConversations = parsedConversations.filter(
+            (conv) => conv.messages && conv.messages.length > 0
+          );
           setConversations(parsedConversations);
         }
 
@@ -52,13 +55,8 @@ export const ConversationProvider = ({ children }) => {
             created: new Date(),
           };
 
-          // Add the new conversation to the list and update localStorage
-          const updatedConversations = [newConversation, ...parsedConversations];
-          setConversations(updatedConversations);
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
+          // Only set conversations from localStorage, don't add the new empty one to history yet
+          setConversations(parsedConversations);
 
           setActiveConversation(newConversation);
           setThreadId(thread.id);
@@ -123,7 +121,6 @@ export const ConversationProvider = ({ children }) => {
         // Always create a new thread
         const thread = await createThread();
         const threadId = thread?.id || uuidv4();
-
         const newConversation = {
           id: threadId,
           title: title || `New Conversation`,
@@ -131,15 +128,10 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
-        // Update conversations in state
+        // Don't add the new empty conversation to the history list
+        // Only include conversations that have messages in the existing list
         setConversations((prev) => {
-          const updatedConversations = [newConversation, ...prev];
-          // Save to localStorage
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
-          return updatedConversations;
+          return prev.filter((conv) => conv.messages && conv.messages.length > 0);
         });
 
         setActiveConversation(newConversation);
@@ -157,17 +149,10 @@ export const ConversationProvider = ({ children }) => {
           title: title || `New Conversation`,
           messages: [],
           created: new Date(),
-        };
-
-        // Update conversations in state with fallback
+        }; // Update conversations in state with fallback
+        // But don't add the empty conversation to history
         setConversations((prev) => {
-          const updatedConversations = [fallbackConversation, ...prev];
-          // Save to localStorage
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
-          return updatedConversations;
+          return prev.filter((conv) => conv.messages && conv.messages.length > 0);
         });
 
         setActiveConversation(fallbackConversation);
@@ -253,18 +238,23 @@ export const ConversationProvider = ({ children }) => {
             console.error("Error generating title:", titleError);
             // Continue with default title if title generation fails
           }
-        } // Update conversations state
-        setActiveConversation(updatedConversation);
+        } // Update conversations state        setActiveConversation(updatedConversation);
+        // Don't add to conversations list yet - wait for the bot to respond
         setConversations((prev) => {
-          const updatedConversations = prev.map((conv) =>
-            conv.id === activeConversation.id ? updatedConversation : conv
-          );
-          // Save to localStorage immediately after updating title
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
-          return updatedConversations;
+          // If conversation already exists in list, update it
+          if (prev.some((conv) => conv.id === activeConversation.id)) {
+            const updatedConversations = prev.map((conv) =>
+              conv.id === activeConversation.id ? updatedConversation : conv
+            );
+            // Save to localStorage
+            localStorage.setItem(
+              "conversations",
+              JSON.stringify(updatedConversations)
+            );
+            return updatedConversations;
+          }
+          // If it's a new conversation, don't add it yet
+          return prev;
         });
 
         // Send message to Azure OpenAI
@@ -308,12 +298,29 @@ export const ConversationProvider = ({ children }) => {
             // Update ID if response contains a new conversationId
             id: response.conversationId || activeConversation.id,
           };
-
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-            const updatedConversations = prev.map((conv) =>
-              conv.id === activeConversation.id ? finalConversation : conv
+            // Check if this conversation is already in the list
+            const existingConvIndex = prev.findIndex(
+              (conv) => conv.id === activeConversation.id
             );
+
+            let updatedConversations;
+            if (existingConvIndex >= 0) {
+              // Update existing conversation
+              updatedConversations = prev.map((conv) =>
+                conv.id === activeConversation.id ? finalConversation : conv
+              );
+            } else {
+              // This is a new conversation with both a question and answer, add it to history
+              updatedConversations = [finalConversation, ...prev];
+            }
+
+            // Make sure all conversations have messages
+            updatedConversations = updatedConversations.filter(
+              (conv) => conv.messages && conv.messages.length >= 2
+            );
+
             // Save updated conversations to localStorage
             localStorage.setItem(
               "conversations",
@@ -333,7 +340,6 @@ export const ConversationProvider = ({ children }) => {
     },
     [activeConversation, conversationHandler, createThread, setThreadId]
   );
-
   const value = {
     conversations,
     activeConversation,
@@ -342,6 +348,7 @@ export const ConversationProvider = ({ children }) => {
     selectConversation,
     createNewConversation,
     sendMessage,
+    setConversations,
   };
 
   return (
