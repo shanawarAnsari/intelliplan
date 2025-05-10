@@ -28,66 +28,47 @@ export const ConversationProvider = ({ children }) => {
     createThread,
   } = useAzureOpenAI();
 
-  const { validateThread, formatThreadId } = useThreadValidator();
-
-  // Initialize with sample conversations
+  const { validateThread, formatThreadId } = useThreadValidator(); // Initialize by loading saved conversations from localStorage and creating an initial conversation
   useEffect(() => {
-    const initSampleConversations = async () => {
+    const loadSavedConversations = async () => {
       try {
-        // Create a valid thread for the first conversation
+        // Load any existing conversations from localStorage
+        const savedConversations = localStorage.getItem("conversations");
+        let parsedConversations = [];
+
+        if (savedConversations) {
+          parsedConversations = JSON.parse(savedConversations);
+          setConversations(parsedConversations);
+        }
+
+        // Always create a new thread for a new conversation
         const thread = await createThread();
-        const threadId = thread?.id;
+        if (thread) {
+          // This will be the active conversation when the app starts
+          const newConversation = {
+            id: thread.id,
+            title: "New Conversation",
+            messages: [],
+            created: new Date(),
+          };
 
-        const sampleConversations = [
-          {
-            id: threadId || uuidv4(),
-            title: "Q3 Sales Analysis",
-            messages: [
-              {
-                role: "user",
-                content: "Can you analyze our Q3 sales performance?",
-                timestamp: new Date(Date.now() - 3600000),
-              },
-              {
-                role: "assistant",
-                content:
-                  "Based on the data, Q3 sales increased by 12% compared to Q2, with the strongest growth in the electronics category.",
-                timestamp: new Date(Date.now() - 3590000),
-              },
-            ],
-          },
-          {
-            id: uuidv4(),
-            title: "Product Demand Forecast 2023",
-            messages: [
-              {
-                role: "user",
-                content: "What is the demand forecast for our product line in 2023?",
-                timestamp: new Date(Date.now() - 7200000),
-              },
-              {
-                role: "assistant",
-                content:
-                  "The forecast indicates a 15% growth in demand for premium products, while mid-range products may see steady demand with only 3% growth.",
-                timestamp: new Date(Date.now() - 7190000),
-              },
-            ],
-          },
-        ];
+          // Add the new conversation to the list and update localStorage
+          const updatedConversations = [newConversation, ...parsedConversations];
+          setConversations(updatedConversations);
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
 
-        setConversations(sampleConversations);
-        if (threadId) {
-          setActiveConversation(sampleConversations[0]);
-          setThreadId(threadId);
-        } else {
-          setActiveConversation(sampleConversations[1]);
+          setActiveConversation(newConversation);
+          setThreadId(thread.id);
         }
       } catch (error) {
-        console.error("Error initializing sample conversations:", error);
+        console.error("Error initializing conversations:", error);
       }
     };
 
-    initSampleConversations();
+    loadSavedConversations();
   }, [createThread, setThreadId]);
 
   /**
@@ -133,7 +114,6 @@ export const ConversationProvider = ({ children }) => {
     },
     [conversations, setThreadId, validateThread, formatThreadId, createThread]
   );
-
   /**
    * Create a new conversation
    */
@@ -151,7 +131,17 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
-        setConversations((prev) => [newConversation, ...prev]);
+        // Update conversations in state
+        setConversations((prev) => {
+          const updatedConversations = [newConversation, ...prev];
+          // Save to localStorage
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+          return updatedConversations;
+        });
+
         setActiveConversation(newConversation);
         if (thread) {
           setThreadId(threadId);
@@ -169,7 +159,17 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
-        setConversations((prev) => [fallbackConversation, ...prev]);
+        // Update conversations in state with fallback
+        setConversations((prev) => {
+          const updatedConversations = [fallbackConversation, ...prev];
+          // Save to localStorage
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+          return updatedConversations;
+        });
+
         setActiveConversation(fallbackConversation);
 
         return fallbackConversation;
@@ -177,7 +177,6 @@ export const ConversationProvider = ({ children }) => {
     },
     [createThread, setThreadId]
   );
-
   /**
    * Send a message in the active conversation
    */
@@ -198,17 +197,74 @@ export const ConversationProvider = ({ children }) => {
         };
 
         const updatedMessages = [...activeConversation.messages, userMessage];
-        const updatedConversation = {
+        let updatedConversation = {
           ...activeConversation,
           messages: updatedMessages,
-        };
+        }; // Generate or update title based on the conversation progress
+        const shouldGenerateTitle =
+          // First message case
+          (activeConversation.messages.length === 0 &&
+            activeConversation.title === "New Conversation") ||
+          // Every 3rd message case (starting from 1st)
+          (activeConversation.messages.length > 0 &&
+            activeConversation.messages.length % 3 === 0 &&
+            activeConversation.messages.filter((msg) => msg.role === "user").length >
+              0);
 
-        // Update conversations state
+        if (shouldGenerateTitle) {
+          try {
+            console.log("Generating title for conversation...");
+            // Create a new thread to generate a title
+            const titleThread = await createThread();
+            if (titleThread) {
+              // Use all conversation context for better titles after the first message
+              const contextPrompt =
+                activeConversation.messages.length > 0
+                  ? `Here's a conversation so far:\n${activeConversation.messages
+                      .map(
+                        (m) =>
+                          `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`
+                      )
+                      .join(
+                        "\n"
+                      )}\n\nNew message: "${message}"\n\nPlease generate a brief, descriptive title (4-5 words max) that summarizes this conversation.`
+                  : `Please generate a brief, descriptive title (4-5 words max) for a conversation that starts with this message: "${message}"`;
+
+              const titleResponse = await conversationHandler(
+                contextPrompt,
+                titleThread.id
+              );
+
+              if (titleResponse && titleResponse.answer) {
+                // Clean up the answer to ensure it's just the title
+                const generatedTitle = titleResponse.answer
+                  .replace(/^["']|["']$/g, "") // Remove quotes if present
+                  .trim();
+
+                updatedConversation = {
+                  ...updatedConversation,
+                  title: generatedTitle,
+                };
+
+                console.log("Generated new title:", generatedTitle);
+              }
+            }
+          } catch (titleError) {
+            console.error("Error generating title:", titleError);
+            // Continue with default title if title generation fails
+          }
+        } // Update conversations state
         setActiveConversation(updatedConversation);
         setConversations((prev) => {
-          return prev.map((conv) =>
+          const updatedConversations = prev.map((conv) =>
             conv.id === activeConversation.id ? updatedConversation : conv
           );
+          // Save to localStorage immediately after updating title
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+          return updatedConversations;
         });
 
         // Send message to Azure OpenAI
@@ -237,9 +293,7 @@ export const ConversationProvider = ({ children }) => {
           } else {
             throw error;
           }
-        }
-
-        // Add assistant message to the conversation
+        } // Add assistant message to the conversation
         if (response && response.answer) {
           const assistantMessage = {
             role: "assistant",
@@ -249,7 +303,7 @@ export const ConversationProvider = ({ children }) => {
 
           const finalMessages = [...updatedMessages, assistantMessage];
           const finalConversation = {
-            ...activeConversation,
+            ...updatedConversation, // Use updatedConversation to preserve the generated title
             messages: finalMessages,
             // Update ID if response contains a new conversationId
             id: response.conversationId || activeConversation.id,
@@ -257,9 +311,15 @@ export const ConversationProvider = ({ children }) => {
 
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-            return prev.map((conv) =>
+            const updatedConversations = prev.map((conv) =>
               conv.id === activeConversation.id ? finalConversation : conv
             );
+            // Save updated conversations to localStorage
+            localStorage.setItem(
+              "conversations",
+              JSON.stringify(updatedConversations)
+            );
+            return updatedConversations;
           });
         }
 

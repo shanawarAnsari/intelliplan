@@ -11,6 +11,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Fade,
 } from "@mui/material";
 import { useConversation } from "../contexts/ConversationContext";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -83,6 +84,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       setMessages([]);
     }
   }, [activeConversation]);
+
   const handleSendMessage = async (text) => {
     const userMessage = { text, isBot: false, timestamp: new Date() };
     const updatedMessagesWithUser = [...messages, userMessage];
@@ -117,6 +119,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           alignItems: "center",
           justifyContent: "space-between",
           backgroundColor: theme.palette.background.paper,
+          boxShadow: "0px 1px 3px rgba(0,0,0,0.1)", // Subtle shadow
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -124,14 +127,20 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             <Tooltip title="Open Sidebar">
               <IconButton
                 onClick={onToggleDrawer}
-                sx={{ mr: 0.5, color: theme.palette.text.secondary }} // Reduced margin
+                sx={{
+                  mr: 0.5,
+                  color: theme.palette.text.secondary,
+                  transition: "color 0.2s ease",
+                  "&:hover": {
+                    color: theme.palette.text.primary,
+                  },
+                }} // Reduced margin
               >
                 <MenuIcon />
               </IconButton>
             </Tooltip>
           )}
-          <img src={Logo} alt="Kimberly-Clark Logo" height="80" />{" "}
-          {/* Reduced height from 28 */}
+          <img src={Logo} alt="InteliPlan Logo" height="40" className="hover-lift" />
         </Box>
         <Box
           sx={{
@@ -146,6 +155,10 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               sx={{
                 color: theme.palette.text.secondary,
                 mr: 1.5,
+                transition: "color 0.2s ease",
+                "&:hover": {
+                  color: theme.palette.primary.main,
+                },
               }}
             >
               <HelpOutlineIcon fontSize="small" />
@@ -155,7 +168,15 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             {" "}
             {/* Reduced padding */}
             <Avatar
-              sx={{ width: 28, height: 28, bgcolor: theme.palette.primary.main }} // Reduced size
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: theme.palette.primary.main,
+                transition: "transform 0.2s ease",
+                "&:hover": {
+                  transform: "scale(1.05)",
+                },
+              }} // Reduced size
             >
               <AccountCircleIcon fontSize="small" /> {/* Added smaller icon */}
             </Avatar>
@@ -189,7 +210,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       >
         <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="medium">
+            <Typography variant="h6" fontWeight="medium" className="text-reveal">
               Help & Information
             </Typography>
             <IconButton
@@ -206,38 +227,44 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
 
         <Box sx={{ p: 1, overflowY: "auto" }}>
           {faqItems.map((item, index) => (
-            <Accordion
+            <Fade
               key={index}
-              disableGutters
-              elevation={0}
-              sx={{
-                bgcolor: "transparent",
-                "&:before": { display: "none" },
-                borderBottom:
-                  index < faqItems.length - 1
-                    ? `1px solid ${theme.palette.divider}`
-                    : "none",
-              }}
+              in={true}
+              timeout={300}
+              style={{ transitionDelay: `${index * 50}ms` }}
             >
-              <AccordionSummary
-                expandIcon={
-                  <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} />
-                }
+              <Accordion
+                disableGutters
+                elevation={0}
                 sx={{
-                  px: 1.5,
-                  "&:hover": { bgcolor: theme.palette.action.hover },
+                  bgcolor: "transparent",
+                  "&:before": { display: "none" },
+                  borderBottom:
+                    index < faqItems.length - 1
+                      ? `1px solid ${theme.palette.divider}`
+                      : "none",
                 }}
               >
-                <Typography fontSize="0.9rem" fontWeight="medium">
-                  {item.question}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ px: 1.5, pb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {item.answer}
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
+                <AccordionSummary
+                  expandIcon={
+                    <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} />
+                  }
+                  sx={{
+                    px: 1.5,
+                    "&:hover": { bgcolor: theme.palette.action.hover },
+                  }}
+                >
+                  <Typography fontSize="0.9rem" fontWeight="medium">
+                    {item.question}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ px: 1.5, pb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.answer}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            </Fade>
           ))}
         </Box>
 
@@ -247,7 +274,19 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           <Typography variant="body2" color="text.secondary" mb={1}>
             Need more help?
           </Typography>
-          <Typography variant="body2" color="primary">
+          <Typography
+            variant="body2"
+            color="primary"
+            className="hover-lift"
+            sx={{
+              display: "inline-block",
+              cursor: "pointer",
+              transition: "color 0.2s ease",
+              "&:hover": {
+                color: theme.palette.primary.light,
+              },
+            }}
+          >
             Email support@intelliplan.example.com
           </Typography>
         </Box>
@@ -257,7 +296,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       <Box
         sx={{
           width: "100%",
-          maxWidth: "800px", // Kept this the same for readability
+          maxWidth: "900px", // Kept this the same for readability
           mx: "auto",
           flexGrow: 1,
           display: "flex",
@@ -276,33 +315,43 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           }}
         >
           {isChatEmpty && !isBotResponding ? (
-            <Box sx={{ textAlign: "center", my: "auto" }}>
-              <Typography
-                variant="h5" // Changed from h4 to h5 for smaller heading
-                sx={{
-                  mb: 1, // Reduced margin from 2
-                  color: theme.palette.text.primary,
-                  fontWeight: "medium",
-                }}
-              >
-                How can I assist you today?
-              </Typography>
-              <Typography
-                variant="body2" // Changed from body1 to body2
-                sx={{ mb: 3, color: theme.palette.text.secondary }} // Reduced margin from 4
-              >
-                Start a new conversation or select one from your history.
-              </Typography>
+            <Fade in={true} timeout={800}>
+              <Box sx={{ textAlign: "center", my: "auto" }}>
+                <Typography
+                  variant="h5" // Changed from h4 to h5 for smaller heading
+                  sx={{
+                    mb: 1, // Reduced margin from 2
+                    color: theme.palette.text.primary,
+                    fontWeight: "medium",
+                  }}
+                  className="text-reveal"
+                >
+                  How can I assist you today?
+                </Typography>
+                <Typography
+                  variant="body2" // Changed from body1 to body2
+                  sx={{ mb: 3, color: theme.palette.text.secondary }} // Reduced margin from 4
+                  className="text-reveal"
+                >
+                  Start a new conversation or select one from your history.
+                </Typography>
 
-              {messages.length === 0 && (
-                <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
-                  <MessageInput
-                    onSendMessage={handleSendMessage}
-                    disabled={isBotResponding}
-                  />
-                </Box>
-              )}
-            </Box>
+                {messages.length === 0 && (
+                  <Fade
+                    in={true}
+                    timeout={1000}
+                    style={{ transitionDelay: "300ms" }}
+                  >
+                    <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
+                      <MessageInput
+                        onSendMessage={handleSendMessage}
+                        disabled={isBotResponding}
+                      />
+                    </Box>
+                  </Fade>
+                )}
+              </Box>
+            </Fade>
           ) : (
             messages.map((message, index) => (
               <ChatMessage
@@ -310,6 +359,24 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 message={message.text}
                 isBot={message.isBot}
                 timestamp={message.timestamp}
+                onRegenerateResponse={
+                  message.isBot
+                    ? () => {
+                        // Find the last user message before this bot message
+                        const lastUserMessageIndex = messages
+                          .slice(0, index)
+                          .map((m, i) => ({ ...m, index: i }))
+                          .filter((m) => !m.isBot)
+                          .pop();
+
+                        if (lastUserMessageIndex) {
+                          handleSendMessage(
+                            messages[lastUserMessageIndex.index].text
+                          );
+                        }
+                      }
+                    : undefined
+                }
               />
             ))
           )}
@@ -322,6 +389,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 p: 1, // Reduced padding from 2
                 mt: 0.5, // Reduced margin from 1
               }}
+              className="message-in-left"
             >
               <CircularProgress
                 size={16} // Reduced size from 20

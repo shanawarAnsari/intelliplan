@@ -26,6 +26,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         backgroundColor: "background.paper",
         boxShadow: "0px 2px 8px rgba(0,0,0,0.08)", // Lighter shadow
       }}
+      className="slide-up"
     >
       <TextField
         fullWidth
@@ -82,6 +83,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
             height: "32px", // Reduced size from default
             padding: "6px", // Reduced padding
           }}
+          className={message.trim() && !disabled ? "button-pulse" : ""}
         >
           <SendIcon fontSize="small" /> {/* Changed to small icon */}
         </IconButton>

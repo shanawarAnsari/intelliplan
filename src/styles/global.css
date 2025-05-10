@@ -16,8 +16,8 @@ html {
    but you can add global overrides or defaults here if needed. */
 body {
   margin: 0; /* Ensure no default margin */
-  background-color: #2e3440; /* Fallback, Nordic Blue theme default background */
-  color: #eceff4; /* Fallback, Nordic Blue theme primary text */
+  background-color: #111827; /* Fallback, Midnight Sapphire theme default background */
+  color: #f9fafb; /* Fallback, Midnight Sapphire theme primary text */
   line-height: 1.5;
 }
 
@@ -37,6 +37,117 @@ body {
   animation: fadeIn 0.35s ease-out; /* Slightly adjusted duration */
 }
 
+/* Message bubble animations */
+@keyframes messageInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes messageInRight {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.message-in-left {
+  animation: messageInLeft 0.3s cubic-bezier(0, 0, 0.2, 1);
+  transform-origin: left center;
+}
+
+.message-in-right {
+  animation: messageInRight 0.3s cubic-bezier(0, 0, 0.2, 1);
+  transform-origin: right center;
+}
+
+/* Button and hover animations */
+@keyframes buttonPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(96, 165, 250, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+  }
+}
+
+.button-pulse {
+  animation: buttonPulse 2s infinite;
+}
+
+/* Chat input box reveal */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Text reveal effect for welcome message */
+@keyframes textReveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.text-reveal {
+  animation: textReveal 0.8s cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Shimmer effect for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Subtle hover effects for interactive elements */
+.hover-lift {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 /* Basic text utility - MUI Typography's noWrap prop is generally preferred */
 .text-ellipsis {
   white-space: nowrap;
@@ -51,20 +162,20 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #3b4252; /* Nordic Blue theme paper background */
+  background: #1f2937; /* Midnight Sapphire theme paper background */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4c566a; /* A slightly darker, muted blue/grey */
+  background: #4b5563; /* A slightly darker, muted blue/grey */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #5e81ac; /* Nordic Blue primary main for hover */
+  background: #60a5fa; /* Midnight Sapphire primary main for hover */
 }
 
 /* Ensure focus styles are visible and accessible */
 *:focus-visible {
-  outline: 2px solid #88c0d0; /* A brighter blue from Nord palette for high visibility */
+  outline: 2px solid #60a5fa; /* Primary blue for high visibility */
   outline-offset: 2px;
 }
