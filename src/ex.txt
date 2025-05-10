@@ -101,6 +101,5 @@ const runAssistant = async () => {
 };
 
 runAssistant();
-
-REACT_APP_AZURE_OPENAI_KEY=B6s1sREgT0bxEjJeuQF5zxm9i2Ro8QKAukp3tehdYeQZOOZyGPJzJQQJ99BEACYeBjFXJ3w3AAABACOGSUIH
-REACT_APP_AZURE_OPENAI_ENDPOINT=https://intelliplanopenai.openai.azure.com/
+B6s1sREgT0bxEjJeuQF5zxm9i2Ro8QKAukp3tehdYeQZOOZyGPJzJQQJ99BEACYeBjFXJ3w3AAABACOGSUIH
+https://intelliplanopenai.openai.azure.com/
