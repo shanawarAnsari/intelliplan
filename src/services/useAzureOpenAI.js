@@ -34,6 +34,7 @@ const useAzureOpenAI = () => {
           endpoint: azureOpenAIEndpoint,
           apiVersion: azureOpenAIVersion,
           apiKey: azureOpenAIKey,
+          dangerouslyAllowBrowser: true
         });
 
         console.log("Azure OpenAI client initialized");
