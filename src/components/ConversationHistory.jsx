@@ -38,54 +38,44 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     activeConversation,
   } = useConversation();
 
-  // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [conversationToDelete, setConversationToDelete] = React.useState(null);
 
-  // Function to start a new conversation
   const handleNewConversation = () => {
-    createNewConversation("");
+    createNewConversation();
+    if (window.innerWidth < theme.breakpoints.values.sm && onToggleDrawer) {
+      onToggleDrawer();
+    }
   };
 
-  // Open confirmation dialog before deletion
   const confirmDeleteConversation = (conversationId, e) => {
-    // Stop the click from bubbling up to the list item
     if (e) e.stopPropagation();
-
     const conversation = conversations.find((conv) => conv.id === conversationId);
     setConversationToDelete(conversation);
     setDeleteDialogOpen(true);
   };
 
-  // Execute the delete after confirmation
   const handleDeleteConversation = () => {
-    try {
-      if (!conversationToDelete) return;
+    if (!conversationToDelete) return;
+    const conversationId = conversationToDelete.id;
 
-      const conversationId = conversationToDelete.id;
-      console.log("Deleting conversation:", conversationId);
+    const updatedConversations = conversations.filter(
+      (conv) => conv.id !== conversationId
+    );
+    setConversations(updatedConversations);
+    localStorage.setItem("conversations", JSON.stringify(updatedConversations));
 
-      // Remove from conversations state
-      const updatedConversations = conversations.filter(
-        (conv) => conv.id !== conversationId
-      );
+    if (activeConversation && activeConversation.id === conversationId) {
+      createNewConversation();
+    }
+    setDeleteDialogOpen(false);
+    setConversationToDelete(null);
+  };
 
-      // Update local state
-      setConversations(updatedConversations);
-
-      // Update localStorage directly
-      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
-
-      // If deleted conversation was active, create a new one
-      if (activeConversation && activeConversation.id === conversationId) {
-        handleNewConversation();
-      }
-
-      // Close the dialog
-      setDeleteDialogOpen(false);
-      setConversationToDelete(null);
-    } catch (error) {
-      console.error("Error deleting conversation:", error);
+  const handleSelectConversation = (id) => {
+    selectConversation(id);
+    if (window.innerWidth < theme.breakpoints.values.sm && onToggleDrawer) {
+      onToggleDrawer();
     }
   };
 
@@ -100,7 +90,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     >
       <Box
         sx={{
-          p: 0.975,
+          p: 1.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -109,33 +99,22 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       >
         <Button
           variant="contained"
-          size="small"
+          color="primary"
+          size="medium"
           startIcon={<AddIcon />}
           onClick={handleNewConversation}
           sx={{
-            textTransform: "none",
-            borderRadius: theme.shape.borderRadius,
-            fontWeight: "medium",
-            py: 1,
-            px: 2,
-            mx: 3,
-            backgroundColor: "#333",
-            color: theme.palette.primary.contrastText,
-            "&:hover": {
-              backgroundColor: "#444",
-            },
+            flexGrow: 1,
+            mr: 1,
           }}
         >
-          New Conversation
+          New Chat
         </Button>
         <Tooltip title="Hide Sidebar">
           <IconButton
             onClick={onToggleDrawer}
             sx={{
               color: theme.palette.text.secondary,
-              "&:hover": {
-                backgroundColor: theme.palette.action.hover,
-              },
             }}
           >
             <ChevronLeftIcon />
@@ -145,100 +124,69 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
 
       {conversations && conversations.length > 0 && (
         <>
-          <Divider sx={{ borderColor: theme.palette.divider }} />
-          <Box sx={{ px: 2, pt: 1.5 }}>
-            <Typography
-              variant="overline"
-              color="text.secondary"
-              fontWeight="medium"
-              sx={{
-                fontWeight: "bold",
-                fontSize: "0.75rem",
-                letterSpacing: "0.5px",
-                color: theme.palette.text.secondary,
-              }}
-            >
-              History
-            </Typography>
+          <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+            <Typography variant="overline">Chat History</Typography>
           </Box>
 
-          <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-            <List>
+          <Box sx={{ flexGrow: 1, overflowY: "auto", px: 1 }}>
+            <List disablePadding>
               {conversations.map((conv, index) => (
                 <Fade
                   in={true}
-                  key={index}
+                  key={conv.id || index}
                   timeout={300}
                   style={{ transitionDelay: `${index * 50}ms` }}
                 >
-                  <ListItem disablePadding>
+                  <ListItem disablePadding sx={{ mb: 0.5 }}>
                     <ListItemButton
-                      onClick={() => selectConversation(conv.id)}
+                      selected={activeConversation?.id === conv.id}
+                      onClick={() => handleSelectConversation(conv.id)}
                       sx={{
-                        borderRadius: theme.shape.borderRadius,
-                        mx: 0.25,
-                        mb: 0.5,
-                        py: 0.75,
-                        "&:hover": {
-                          backgroundColor: theme.palette.action.hover,
-                        },
-                        "&.Mui-selected": {
-                          backgroundColor: theme.palette.action.selected,
-                          "&:hover": {
-                            backgroundColor: theme.palette.action.selected,
-                          },
-                        },
+                        py: 1,
                       }}
                     >
-                      {" "}
-                      <Box
+                      <ChatIcon
+                        fontSize="small"
                         sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          width: "100%",
+                          mr: 1.5,
+                          color:
+                            activeConversation?.id === conv.id
+                              ? theme.palette.primary.main
+                              : theme.palette.text.secondary,
                         }}
-                      >
-                        <ChatIcon
-                          fontSize="small"
-                          sx={{
-                            mr: 1.5,
-                            fontSize: "1rem",
-                            color: theme.palette.text.secondary,
-                          }}
-                        />
-                        <ListItemText
-                          primary={conv.title}
-                          primaryTypographyProps={{
-                            variant: "body2",
-                            noWrap: true,
-                            fontWeight: 500,
-                            color: theme.palette.text.primary,
-                            sx: {
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              display: "block",
-                            },
-                          }}
-                          sx={{ flex: 1 }}
-                        />{" "}
+                      />
+                      <ListItemText
+                        primary={conv.title || "Untitled Chat"}
+                        primaryTypographyProps={{
+                          variant: "body2",
+                          noWrap: true,
+                          fontWeight:
+                            activeConversation?.id === conv.id
+                              ? "medium"
+                              : "regular",
+                          color:
+                            activeConversation?.id === conv.id
+                              ? theme.palette.primary.main
+                              : theme.palette.text.primary,
+                        }}
+                      />
+                      <Tooltip title="Delete Chat">
                         <IconButton
                           size="small"
+                          onClick={(e) => confirmDeleteConversation(conv.id, e)}
                           sx={{
-                            opacity: 0.6,
-                            ml: 0.5,
+                            ml: 1,
+                            color: theme.palette.text.secondary,
+                            opacity: 0.7,
                             "&:hover": {
-                              opacity: 1,
                               color: theme.palette.error.main,
+                              opacity: 1,
                             },
                           }}
-                          onClick={(e) => confirmDeleteConversation(conv.id, e)}
                         >
-                          <DeleteOutlineIcon
-                            fontSize="small"
-                            sx={{ fontSize: "1rem" }}
-                          />
+                          <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
-                      </Box>
+                      </Tooltip>
                     </ListItemButton>
                   </ListItem>
                 </Fade>
@@ -247,8 +195,25 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           </Box>
         </>
       )}
+      {(!conversations || conversations.length === 0) && (
+        <Box
+          sx={{
+            textAlign: "center",
+            p: 3,
+            mt: 2,
+            color: theme.palette.text.secondary,
+          }}
+        >
+          <ChatIcon sx={{ fontSize: 48, mb: 1 }} />
+          <Typography variant="body1">No chat history yet.</Typography>
+          <Typography variant="caption">
+            Start a new conversation to see it here.
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
+
   return (
     <>
       <Drawer
@@ -258,47 +223,46 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         sx={{
           width: open ? drawerWidth : 0,
           flexShrink: 0,
-          transition: theme.transitions.create("width", {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            borderRight: `1px solid ${theme.palette.divider}`,
-            transition: theme.transitions.create(["width", "margin"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-            boxShadow: "none",
             overflowX: "hidden",
-            bgcolor: theme.palette.background.default,
           },
         }}
       >
         {drawerContent}
       </Drawer>
 
-      {/* Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+        PaperProps={{ sx: { borderRadius: "8px" } }}
       >
-        <DialogTitle id="alert-dialog-title">{"Delete Conversation?"}</DialogTitle>
+        <DialogTitle id="delete-dialog-title" sx={{ fontWeight: "medium" }}>
+          Delete Conversation?
+        </DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this conversation?
-            <br />
-            {conversationToDelete && <b> "{conversationToDelete.title}"</b>}
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this chat?
+            {conversationToDelete && (
+              <Typography component="div" sx={{ mt: 1 }}>
+                <b>"{conversationToDelete.title || "Untitled Chat"}"</b>
+              </Typography>
+            )}
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleDeleteConversation} color="error" autoFocus>
+          <Button
+            onClick={handleDeleteConversation}
+            color="error"
+            variant="contained"
+            autoFocus
+          >
             Delete
           </Button>
         </DialogActions>
