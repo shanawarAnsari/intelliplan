@@ -25,6 +25,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import kimberlyClarkLogo from "../assets/KC_logo_for_light.png";
 
 const drawerWidth = 280;
 
@@ -118,8 +119,8 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
             fontWeight: "medium",
             py: 1,
             px: 2,
-            mx: 3,
-            backgroundColor: "#333",
+            ml: 1,
+            backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText,
             "&:hover": {
               backgroundColor: "#444",
@@ -247,6 +248,21 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           </Box>
         </>
       )}
+      {/* Kimberly Clark Logo */}
+      <Box
+        sx={{
+          pt: 2,
+          mt: "auto", // Push to the bottom
+          textAlign: "center",
+          borderTop: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <img
+          src={kimberlyClarkLogo}
+          alt="Kimberly Clark Logo"
+          style={{ maxWidth: "80%", height: "auto" }}
+        />
+      </Box>
     </Box>
   );
   return (

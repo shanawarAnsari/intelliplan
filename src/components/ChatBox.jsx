@@ -317,6 +317,16 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           {isChatEmpty && !isBotResponding ? (
             <Fade in={true} timeout={800}>
               <Box sx={{ textAlign: "center", my: "auto" }}>
+                <img
+                  src={Logo}
+                  alt="InteliPlan Logo"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    marginBottom: theme.spacing(2),
+                    borderRadius: "50%",
+                  }}
+                />
                 <Typography
                   variant="h5" // Changed from h4 to h5 for smaller heading
                   sx={{
@@ -329,11 +339,12 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   How can I assist you today?
                 </Typography>
                 <Typography
-                  variant="body2" // Changed from body1 to body2
-                  sx={{ mb: 3, color: theme.palette.text.secondary }} // Reduced margin from 4
+                  variant="body1"
+                  sx={{ mb: 3, color: "#a5a5a5" }}
                   className="text-reveal"
                 >
-                  Start a new conversation or select one from your history.
+                  Ask a question, analyze data, or select a conversation from
+                  history.
                 </Typography>
 
                 {messages.length === 0 && (
@@ -380,7 +391,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               />
             ))
           )}
-          {isBotResponding && (
+          {isBotResponding && messages?.length > 0 && (
             <Box
               sx={{
                 display: "flex",
