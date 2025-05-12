@@ -25,7 +25,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
+import kimberlyClarkLogo from "../assets/KC_logo_for_dark.png";
 const drawerWidth = 280;
 
 const ConversationHistory = ({ open, onToggleDrawer }) => {
@@ -38,44 +38,54 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     activeConversation,
   } = useConversation();
 
+  // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [conversationToDelete, setConversationToDelete] = React.useState(null);
 
+  // Function to start a new conversation
   const handleNewConversation = () => {
-    createNewConversation();
-    if (window.innerWidth < theme.breakpoints.values.sm && onToggleDrawer) {
-      onToggleDrawer();
-    }
+    createNewConversation("");
   };
 
+  // Open confirmation dialog before deletion
   const confirmDeleteConversation = (conversationId, e) => {
+    // Stop the click from bubbling up to the list item
     if (e) e.stopPropagation();
+
     const conversation = conversations.find((conv) => conv.id === conversationId);
     setConversationToDelete(conversation);
     setDeleteDialogOpen(true);
   };
 
+  // Execute the delete after confirmation
   const handleDeleteConversation = () => {
-    if (!conversationToDelete) return;
-    const conversationId = conversationToDelete.id;
+    try {
+      if (!conversationToDelete) return;
 
-    const updatedConversations = conversations.filter(
-      (conv) => conv.id !== conversationId
-    );
-    setConversations(updatedConversations);
-    localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+      const conversationId = conversationToDelete.id;
+      console.log("Deleting conversation:", conversationId);
 
-    if (activeConversation && activeConversation.id === conversationId) {
-      createNewConversation();
-    }
-    setDeleteDialogOpen(false);
-    setConversationToDelete(null);
-  };
+      // Remove from conversations state
+      const updatedConversations = conversations.filter(
+        (conv) => conv.id !== conversationId
+      );
 
-  const handleSelectConversation = (id) => {
-    selectConversation(id);
-    if (window.innerWidth < theme.breakpoints.values.sm && onToggleDrawer) {
-      onToggleDrawer();
+      // Update local state
+      setConversations(updatedConversations);
+
+      // Update localStorage directly
+      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+
+      // If deleted conversation was active, create a new one
+      if (activeConversation && activeConversation.id === conversationId) {
+        handleNewConversation();
+      }
+
+      // Close the dialog
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
     }
   };
 
@@ -90,7 +100,8 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     >
       <Box
         sx={{
-          p: 1.5,
+          py: 0.75,
+          ml: -1,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -99,22 +110,33 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       >
         <Button
           variant="contained"
-          color="primary"
-          size="medium"
+          size="small"
           startIcon={<AddIcon />}
           onClick={handleNewConversation}
           sx={{
-            flexGrow: 1,
-            mr: 1,
+            textTransform: "none",
+            borderRadius: theme.shape.borderRadius,
+            fontWeight: "medium",
+            py: 1,
+            px: 2,
+            ml: 1,
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            "&:hover": {
+              backgroundColor: "#0087f9",
+            },
           }}
         >
-          New Chat
+          New Conversation
         </Button>
         <Tooltip title="Hide Sidebar">
           <IconButton
             onClick={onToggleDrawer}
             sx={{
               color: theme.palette.text.secondary,
+              "&:hover": {
+                backgroundColor: theme.palette.action.hover,
+              },
             }}
           >
             <ChevronLeftIcon />
@@ -124,69 +146,100 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
 
       {conversations && conversations.length > 0 && (
         <>
-          <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-            <Typography variant="overline">Chat History</Typography>
+          <Divider sx={{ borderColor: theme.palette.divider }} />
+          <Box sx={{ px: 2, pt: 1.5 }}>
+            <Typography
+              variant="overline"
+              color="text.secondary"
+              fontWeight="medium"
+              sx={{
+                fontWeight: "bold",
+                fontSize: "0.75rem",
+                letterSpacing: "0.5px",
+                color: theme.palette.text.secondary,
+              }}
+            >
+              History
+            </Typography>
           </Box>
 
-          <Box sx={{ flexGrow: 1, overflowY: "auto", px: 1 }}>
-            <List disablePadding>
+          <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+            <List>
               {conversations.map((conv, index) => (
                 <Fade
                   in={true}
-                  key={conv.id || index}
+                  key={index}
                   timeout={300}
                   style={{ transitionDelay: `${index * 50}ms` }}
                 >
-                  <ListItem disablePadding sx={{ mb: 0.5 }}>
+                  <ListItem disablePadding>
                     <ListItemButton
-                      selected={activeConversation?.id === conv.id}
-                      onClick={() => handleSelectConversation(conv.id)}
+                      onClick={() => selectConversation(conv.id)}
                       sx={{
-                        py: 1,
+                        borderRadius: theme.shape.borderRadius,
+                        mx: 0.25,
+                        mb: 0.5,
+                        py: 0.75,
+                        "&:hover": {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                        "&.Mui-selected": {
+                          backgroundColor: theme.palette.action.selected,
+                          "&:hover": {
+                            backgroundColor: theme.palette.action.selected,
+                          },
+                        },
                       }}
                     >
-                      <ChatIcon
-                        fontSize="small"
+                      {" "}
+                      <Box
                         sx={{
-                          mr: 1.5,
-                          color:
-                            activeConversation?.id === conv.id
-                              ? theme.palette.primary.main
-                              : theme.palette.text.secondary,
+                          display: "flex",
+                          alignItems: "center",
+                          width: "100%",
                         }}
-                      />
-                      <ListItemText
-                        primary={conv.title || "Untitled Chat"}
-                        primaryTypographyProps={{
-                          variant: "body2",
-                          noWrap: true,
-                          fontWeight:
-                            activeConversation?.id === conv.id
-                              ? "medium"
-                              : "regular",
-                          color:
-                            activeConversation?.id === conv.id
-                              ? theme.palette.primary.main
-                              : theme.palette.text.primary,
-                        }}
-                      />
-                      <Tooltip title="Delete Chat">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => confirmDeleteConversation(conv.id, e)}
+                      >
+                        <ChatIcon
+                          fontSize="small"
                           sx={{
-                            ml: 1,
+                            mr: 1.5,
+                            fontSize: "1rem",
                             color: theme.palette.text.secondary,
-                            opacity: 0.7,
-                            "&:hover": {
-                              color: theme.palette.error.main,
-                              opacity: 1,
+                          }}
+                        />
+                        <ListItemText
+                          primary={conv.title}
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            noWrap: true,
+                            fontWeight: 500,
+                            color: theme.palette.text.primary,
+                            sx: {
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "block",
                             },
                           }}
+                          sx={{ flex: 1 }}
+                        />{" "}
+                        <IconButton
+                          size="small"
+                          sx={{
+                            opacity: 0.6,
+                            ml: 0.5,
+                            "&:hover": {
+                              opacity: 1,
+                              color: theme.palette.error.main,
+                            },
+                          }}
+                          onClick={(e) => confirmDeleteConversation(conv.id, e)}
                         >
-                          <DeleteOutlineIcon fontSize="small" />
+                          <DeleteOutlineIcon
+                            fontSize="small"
+                            sx={{ fontSize: "1rem" }}
+                          />
                         </IconButton>
-                      </Tooltip>
+                      </Box>
                     </ListItemButton>
                   </ListItem>
                 </Fade>
@@ -195,25 +248,23 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           </Box>
         </>
       )}
-      {(!conversations || conversations.length === 0) && (
-        <Box
-          sx={{
-            textAlign: "center",
-            p: 3,
-            mt: 2,
-            color: theme.palette.text.secondary,
-          }}
-        >
-          <ChatIcon sx={{ fontSize: 48, mb: 1 }} />
-          <Typography variant="body1">No chat history yet.</Typography>
-          <Typography variant="caption">
-            Start a new conversation to see it here.
-          </Typography>
-        </Box>
-      )}
+      {/* Kimberly Clark Logo */}
+      <Box
+        sx={{
+          pt: 2,
+          mt: "auto", // Push to the bottom
+          textAlign: "center",
+          borderTop: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <img
+          src={kimberlyClarkLogo}
+          alt="Kimberly Clark Logo"
+          style={{ maxWidth: "80%", height: "auto" }}
+        />
+      </Box>
     </Box>
   );
-
   return (
     <>
       <Drawer
@@ -223,46 +274,47 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         sx={{
           width: open ? drawerWidth : 0,
           flexShrink: 0,
+          transition: theme.transitions.create("width", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
+            borderRight: `1px solid ${theme.palette.divider}`,
+            transition: theme.transitions.create(["width", "margin"], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+            boxShadow: "none",
             overflowX: "hidden",
+            bgcolor: theme.palette.background.default,
           },
         }}
       >
         {drawerContent}
       </Drawer>
 
+      {/* Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-        PaperProps={{ sx: { borderRadius: "8px" } }}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="delete-dialog-title" sx={{ fontWeight: "medium" }}>
-          Delete Conversation?
-        </DialogTitle>
+        <DialogTitle id="alert-dialog-title">{"Delete Conversation?"}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete this chat?
-            {conversationToDelete && (
-              <Typography component="div" sx={{ mt: 1 }}>
-                <b>"{conversationToDelete.title || "Untitled Chat"}"</b>
-              </Typography>
-            )}
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this conversation?
+            <br />
+            {conversationToDelete && <b> "{conversationToDelete.title}"</b>}
           </DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
             Cancel
           </Button>
-          <Button
-            onClick={handleDeleteConversation}
-            color="error"
-            variant="contained"
-            autoFocus
-          >
+          <Button onClick={handleDeleteConversation} color="error" autoFocus>
             Delete
           </Button>
         </DialogActions>

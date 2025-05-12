@@ -8,7 +8,9 @@ import { AzureOpenAI } from "openai";
  */
 const useAzureOpenAI = () => {
   const [client, setClient] = useState(null);
-  const [assistantId, setAssistantId] = useState(null);
+  const [assistantId, setAssistantId] = useState(
+    process.env.REACT_APP_AI_ASSISTANT_ID
+  );
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -47,45 +49,7 @@ const useAzureOpenAI = () => {
 
     initializeClient();
   }, []);
-
-  /**
-   * Set up a new assistant
-   */
-  const setupAssistant = useCallback(
-    async (customInstructions = "") => {
-      if (!client) return null;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const options = {
-          model: "gpt-4o", // replace with your deployed model name
-          name: "TestAssistant",
-          instructions:
-            customInstructions ||
-            "You are a helpful assistant designed to provide insights on sales data, forecasts, and market trends.",
-          tools: [],
-          tool_resources: {},
-          temperature: 0.7,
-          top_p: 0.95,
-        };
-
-        const assistantResponse = await client.beta.assistants.create(options);
-        console.log(`Assistant created with ID: ${assistantResponse.id}`);
-        setAssistantId(assistantResponse.id);
-
-        return assistantResponse;
-      } catch (err) {
-        console.error(`Error creating assistant: ${err.message}`);
-        setError(`Error creating assistant: ${err.message}`);
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [client]
-  );
+  // Using fixed assistant ID: asst_fJohmubFJ1rLarIbgKXXVV5c
   /**
    * Create a new thread
    */
@@ -229,13 +193,6 @@ const useAzureOpenAI = () => {
         // Use provided assistantId or the instance assistantId
         let activeAssistantId = currentAssistantId || assistantId;
 
-        // Create assistant if none exists
-        if (!activeAssistantId) {
-          const assistant = await setupAssistant();
-          if (!assistant) throw new Error("Failed to create assistant");
-          activeAssistantId = assistant.id;
-        }
-
         // Use provided threadId or the instance threadId
         let activeThreadId = currentThreadId || threadId;
 
@@ -334,7 +291,7 @@ const useAzureOpenAI = () => {
         setIsLoading(false);
       }
     },
-    [client, assistantId, threadId, setupAssistant]
+    [client, assistantId, threadId]
   );
 
   /**
@@ -422,11 +379,12 @@ const useAzureOpenAI = () => {
           if (!thread) throw new Error("Failed to create thread");
           useThreadId = thread.id;
           setThreadId(useThreadId);
-        }
-
-        // Create assistant if not already created
-        if (!assistantId) {
-          await setupAssistant();
+        } // Create a new thread if needed or if previous thread wasn't found
+        if (createNewThread) {
+          const thread = await createThread();
+          if (!thread) throw new Error("Failed to create thread");
+          useThreadId = thread.id;
+          setThreadId(useThreadId);
         }
 
         // Send message to the validated thread
@@ -453,17 +411,8 @@ const useAzureOpenAI = () => {
         setIsLoading(false);
       }
     },
-    [
-      client,
-      threadId,
-      assistantId,
-      createThread,
-      setupAssistant,
-      sendMessage,
-      runAssistant,
-    ]
+    [client, threadId, assistantId, createThread, sendMessage, runAssistant]
   );
-
   return {
     client,
     assistantId,
@@ -471,7 +420,6 @@ const useAzureOpenAI = () => {
     messages,
     isLoading,
     error,
-    setupAssistant,
     createThread,
     sendMessage,
     runAssistant,

@@ -350,28 +350,27 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 </Typography>
                 <Typography
                   variant="body1"
-                  sx={{ mb: 3, color: theme.palette.text.secondary }}
+                  sx={{ mb: 3, color: "#a5a5a5" }}
                   className="text-reveal"
                 >
-                  Ask a question, analyze data, or start a{" "}
-                  <Typography
-                    component="span"
-                    onClick={() =>
-                      createNewConversation("New Conversation from Empty Chat")
-                    }
-                    sx={{
-                      color: theme.palette.primary.main,
-                      cursor: "pointer",
-                      fontWeight: "medium",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
-                    new conversation
-                  </Typography>
-                  .
+                  Ask a question, analyze data, or select a conversation from
+                  history.
                 </Typography>
+
+                {messages.length === 0 && (
+                  <Fade
+                    in={true}
+                    timeout={1000}
+                    style={{ transitionDelay: "300ms" }}
+                  >
+                    <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
+                      <MessageInput
+                        onSendMessage={handleSendMessage}
+                        disabled={isBotResponding}
+                      />
+                    </Box>
+                  </Fade>
+                )}
               </Box>
             </Fade>
           ) : (
@@ -398,7 +397,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               />
             ))
           )}
-          {isBotResponding && (
+          {isBotResponding && messages?.length > 0 && (
             <Box
               sx={{
                 display: "flex",
