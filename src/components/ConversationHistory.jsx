@@ -123,7 +123,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
             backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText,
             "&:hover": {
-              backgroundColor: theme.palette.primary.hover,
+              backgroundColor: '#0087f9',
             },
           }}
         >
@@ -246,21 +246,22 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
               ))}
             </List>
           </Box>
-          <Box
-            sx={{
-              pt: 1.5,
-              mt: "auto", // Push to the bottom             
-              borderTop: `1px solid ${theme.palette.divider}`,
-            }}
-          ><Box sx={{ ml: 2 }}><img
-            src={kimberlyClarkLogo}
-            alt="Kimberly Clark Logo"
-            style={{ maxWidth: "60%", height: "auto" }}
-          /></Box>
-
-          </Box>
         </>
       )}
+      <Box
+        sx={{
+          pt: 1.5,
+          mt: "auto", // Push to the bottom             
+          borderTop: `1px solid ${theme.palette.divider}`,
+        }}
+      ><Box sx={{ ml: 2 }}><img
+        src={kimberlyClarkLogo}
+        alt="Kimberly Clark Logo"
+        style={{ maxWidth: "60%", height: "auto" }}
+      /></Box>
+
+      </Box>
+
     </Box>
   );
   return (
