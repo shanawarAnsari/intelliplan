@@ -7,7 +7,7 @@ class AzureOpenAIService {
     this.azureOpenAIKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
     this.azureOpenAIEndpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
     this.azureOpenAIVersion = "2024-05-01-preview";
-    this.assistantId = null;
+    this.assistantId = process.env.REACT_APP_AI_ASSISTANT_ID; // Use the existing assistant ID
     this.threadId = null;
     this.client = null;
 
@@ -35,33 +35,7 @@ class AzureOpenAIService {
       console.error("Error initializing Azure OpenAI client:", error);
     }
   }
-
-  async setupAssistant() {
-    try {
-      if (!this.client) {
-        throw new Error("Azure OpenAI client is not initialized");
-      }
-
-      const options = {
-        model: "gpt-4o", // replace with your deployed model name
-        name: "TestAssistant",
-        instructions:
-          "You are a helpful assistant designed to provide insights on sales data, forecasts, and market trends.",
-        tools: [],
-        tool_resources: {},
-        temperature: 0.7,
-        top_p: 0.95,
-      };
-
-      const assistantResponse = await this.client.beta.assistants.create(options);
-      this.assistantId = assistantResponse.id;
-      console.log(`Assistant created with ID: ${this.assistantId}`);
-      return assistantResponse;
-    } catch (error) {
-      console.error(`Error creating assistant: ${error.message}`);
-      throw error;
-    }
-  }
+  // Assistant is pre-configured with ID: asst_fJohmubFJ1rLarIbgKXXVV5c
 
   async createThread() {
     try {
@@ -109,7 +83,6 @@ class AzureOpenAIService {
       throw error;
     }
   }
-
   async runAssistant(assistantId = null) {
     try {
       if (!this.client) {
@@ -118,12 +91,6 @@ class AzureOpenAIService {
 
       // Use provided assistantId or the instance assistantId
       const currentAssistantId = assistantId || this.assistantId;
-
-      // Create assistant if none exists
-      if (!currentAssistantId) {
-        const assistant = await this.setupAssistant();
-        this.assistantId = assistant.id;
-      }
 
       // Run the thread
       const runResponse = await this.client.beta.threads.runs.create(this.threadId, {
@@ -208,12 +175,7 @@ class AzureOpenAIService {
         if (!this.threadId) {
           await this.createThread();
         }
-      }
-
-      // Create assistant if not already created
-      if (!this.assistantId) {
-        await this.setupAssistant();
-      }
+      } // Assistant is already configured with ID: asst_fJohmubFJ1rLarIbgKXXVV5c
 
       // Send message
       await this.sendMessage(message);
