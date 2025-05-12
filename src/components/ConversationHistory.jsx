@@ -25,8 +25,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import kimberlyClarkLogo from "../assets/KC_logo_for_light.png";
-
+import kimberlyClarkLogo from "../assets/KC_logo_for_dark.png";
 const drawerWidth = 280;
 
 const ConversationHistory = ({ open, onToggleDrawer }) => {
@@ -101,7 +100,8 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     >
       <Box
         sx={{
-          p: 0.975,
+          py: 0.75,
+          ml: -1,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -123,7 +123,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
             backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText,
             "&:hover": {
-              backgroundColor: "#444",
+              backgroundColor: "#0087f9",
             },
           }}
         >

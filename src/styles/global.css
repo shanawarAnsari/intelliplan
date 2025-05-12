@@ -12,12 +12,10 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Body styles are largely handled by MUI ThemeProvider and CssBaseline,
-   but you can add global overrides or defaults here if needed. */
+/* Body styles are now largely handled by MUI ThemeProvider and CssBaseline
+   in theme.js. Fallbacks removed. */
 body {
   margin: 0; /* Ensure no default margin */
-  background-color: #111827; /* Fallback, Midnight Sapphire theme default background */
-  color: #f9fafb; /* Fallback, Midnight Sapphire theme primary text */
   line-height: 1.5;
 }
 
@@ -145,7 +143,7 @@ body {
 
 .hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* Basic text utility - MUI Typography's noWrap prop is generally preferred */
@@ -153,29 +151,4 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Custom scrollbar styling (optional, for a more modern look) */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1f2937; /* Midnight Sapphire theme paper background */
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4b5563; /* A slightly darker, muted blue/grey */
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #60a5fa; /* Midnight Sapphire primary main for hover */
-}
-
-/* Ensure focus styles are visible and accessible */
-*:focus-visible {
-  outline: 2px solid #60a5fa; /* Primary blue for high visibility */
-  outline-offset: 2px;
 }
