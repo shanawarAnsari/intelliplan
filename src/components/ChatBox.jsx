@@ -185,7 +185,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               color: theme.palette.text.primary,
             }}
           >
-            Ansari, Shanawar Ahmad
+
           </Typography>
         </Box>
       </Box>
@@ -297,7 +297,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               },
             }}
           >
-            support@intelliplan.example.com
+            Email support@intelliplan.kcc.com
           </Typography>
         </Box>
       </Drawer>
@@ -326,17 +326,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         >
           {isChatEmpty && !isBotResponding ? (
             <Fade in={true} timeout={800}>
-              <Box sx={{ textAlign: "center", my: "auto", p: 2 }}>
-                <img
-                  src={Logo}
-                  alt="InteliPlan Logo"
-                  style={{
-                    width: 80,
-                    height: 80,
-                    marginBottom: theme.spacing(2),
-                    borderRadius: "50%",
-                  }}
-                />
+              <Box sx={{ textAlign: "center", my: "auto" }}>
+                <img src={Logo} alt="InteliPlan Logo" height="80" className="hover-lift" />
                 <Typography
                   variant="h4"
                   sx={{
@@ -353,8 +344,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   sx={{ mb: 3, color: "#a5a5a5" }}
                   className="text-reveal"
                 >
-                  Ask a question, analyze data, or select a conversation from
-                  history.
+                  Ask a question, analyze data or select one from your history.
                 </Typography>
 
                 {messages.length === 0 && (
@@ -383,15 +373,19 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 onRegenerateResponse={
                   message.isBot && index === messages.length - 1
                     ? () => {
-                        const lastUserMessage = messages
-                          .slice(0, index)
-                          .filter((m) => !m.isBot)
-                          .pop();
+                      // Find the last user message before this bot message
+                      const lastUserMessageIndex = messages
+                        .slice(0, index)
+                        .map((m, i) => ({ ...m, index: i }))
+                        .filter((m) => !m.isBot)
+                        .pop();
 
-                        if (lastUserMessage) {
-                          handleSendMessage(lastUserMessage.text);
-                        }
+                      if (lastUserMessageIndex) {
+                        handleSendMessage(
+                          messages[lastUserMessageIndex.index].text
+                        );
                       }
+                    }
                     : undefined
                 }
               />
@@ -416,7 +410,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 variant="body2"
                 sx={{ color: theme.palette.text.secondary }}
               >
-                Agent is thinking...
+                {messages?.length > 0 && 'Agent is thinking...'}
               </Typography>
             </Box>
           )}
