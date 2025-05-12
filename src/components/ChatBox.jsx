@@ -22,7 +22,6 @@ import Logo from "../assets/InteliPlan.jpg";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
-import { alpha } from "@mui/material/styles";
 
 const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [messages, setMessages] = useState([]);
@@ -33,7 +32,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     activeConversation,
     isLoading: isBotResponding,
     sendMessage,
-    createNewConversation,
   } = useConversation();
 
   // FAQ data for the help drawer
@@ -79,7 +77,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       const formattedMessages = activeConversation.messages.map((msg) => ({
         text: msg.content,
         isBot: msg.role === "assistant",
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        timestamp: new Date(),
       }));
       setMessages(formattedMessages);
     } else {
@@ -89,8 +87,10 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
 
   const handleSendMessage = async (text) => {
     const userMessage = { text, isBot: false, timestamp: new Date() };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    const updatedMessagesWithUser = [...messages, userMessage];
+    setMessages(updatedMessagesWithUser);
 
+    // Use the sendMessage function from context
     await sendMessage(text);
   };
 
@@ -110,16 +110,16 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         backgroundColor: theme.palette.background.default,
       }}
     >
-      {/* Header Bar */}
+      {/* Header Bar - Reduced padding */}
       <Box
         sx={{
-          p: "8px 16px",
+          p: "8px 12px", // Reduced padding from 12px 16px
           borderBottom: `1px solid ${theme.palette.divider}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           backgroundColor: theme.palette.background.paper,
-          boxShadow: theme.shadows[1],
+          boxShadow: "0px 1px 3px rgba(0,0,0,0.1)", // Subtle shadow
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -128,65 +128,71 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               <IconButton
                 onClick={onToggleDrawer}
                 sx={{
-                  mr: 1,
+                  mr: 0.5,
                   color: theme.palette.text.secondary,
+                  transition: "color 0.2s ease",
                   "&:hover": {
                     color: theme.palette.text.primary,
                   },
-                }}
+                }} // Reduced margin
               >
                 <MenuIcon />
               </IconButton>
             </Tooltip>
           )}
-          <img
-            src={Logo}
-            alt="InteliPlan Logo"
-            height="36"
-            className="hover-lift"
-            style={{ borderRadius: "4px" }}
-          />
+          <img src={Logo} alt="InteliPlan Logo" height="35" className="hover-lift" />
+          <Typography variant="h6" sx={{ ml: 1 }}>
+            IntelliPlan
+          </Typography>
         </Box>
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            color: theme.palette.text.secondary,
+          }}
+        >
           <Tooltip title="Help & FAQ">
             <IconButton
               onClick={toggleHelpDrawer}
               sx={{
                 color: theme.palette.text.secondary,
                 mr: 1.5,
+                transition: "color 0.2s ease",
                 "&:hover": {
                   color: theme.palette.primary.main,
                 },
               }}
             >
-              <HelpOutlineIcon fontSize="medium" />
+              <HelpOutlineIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <IconButton sx={{ p: 0.5 }}>
+          <IconButton sx={{ color: theme.palette.text.secondary, p: 0.5 }}>
+            {" "}
+            {/* Reduced padding */}
             <Avatar
               sx={{
-                width: 32,
-                height: 32,
+                width: 28,
+                height: 28,
                 bgcolor: theme.palette.primary.main,
                 transition: "transform 0.2s ease",
                 "&:hover": {
                   transform: "scale(1.05)",
                 },
-              }}
+              }} // Reduced size
             >
-              <AccountCircleIcon fontSize="small" />
+              <AccountCircleIcon fontSize="small" /> {/* Added smaller icon */}
             </Avatar>
-          </IconButton>
+          </IconButton>{" "}
           <Typography
             variant="body2"
             sx={{
-              ml: 1,
+              ml: 0.5,
               fontWeight: "medium",
               color: theme.palette.text.primary,
-            }}
-          >
-
-          </Typography>
+              fontSize: "0.85rem",
+            }} // Smaller margin and text
+          ></Typography>
         </Box>
       </Box>
 
@@ -197,41 +203,30 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         onClose={() => setHelpDrawerOpen(false)}
         PaperProps={{
           sx: {
-            width: { xs: "100%", sm: 360 },
+            width: 320,
             bgcolor: theme.palette.background.paper,
             borderLeft: `1px solid ${theme.palette.divider}`,
-            boxShadow: theme.shadows[3],
           },
         }}
       >
-        <Box
-          sx={{
-            p: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h6" fontWeight="medium">
-            Help & Information
+        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" fontWeight="medium" className="text-reveal">
+              Help & Information
+            </Typography>
+            <IconButton
+              onClick={() => setHelpDrawerOpen(false)}
+              sx={{ color: theme.palette.text.secondary }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+          <Typography variant="body2" color="text.secondary" mt={1} mb={1}>
+            Frequently asked questions about this assistant
           </Typography>
-          <IconButton
-            onClick={() => setHelpDrawerOpen(false)}
-            sx={{ color: theme.palette.text.secondary }}
-          >
-            <CloseIcon />
-          </IconButton>
         </Box>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ p: 2, pt: 1, pb: 0 }}
-        >
-          Frequently asked questions about this assistant.
-        </Typography>
 
-        <Box sx={{ p: 1, overflowY: "auto", flexGrow: 1 }}>
+        <Box sx={{ p: 1, overflowY: "auto" }}>
           {faqItems.map((item, index) => (
             <Fade
               key={index}
@@ -240,28 +235,31 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               style={{ transitionDelay: `${index * 50}ms` }}
             >
               <Accordion
-                defaultExpanded={index === 0}
+                disableGutters
+                elevation={0}
                 sx={{
+                  bgcolor: "transparent",
+                  "&:before": { display: "none" },
                   borderBottom:
                     index < faqItems.length - 1
                       ? `1px solid ${theme.palette.divider}`
                       : "none",
-                  "&:last-of-type": {
-                    borderBottomLeftRadius: theme.shape.borderRadius,
-                    borderBottomRightRadius: theme.shape.borderRadius,
-                  },
                 }}
               >
                 <AccordionSummary
                   expandIcon={
                     <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} />
                   }
+                  sx={{
+                    px: 1.5,
+                    "&:hover": { bgcolor: theme.palette.action.hover },
+                  }}
                 >
-                  <Typography variant="subtitle1" fontWeight="medium">
+                  <Typography fontSize="0.9rem" fontWeight="medium">
                     {item.question}
                   </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
+                <AccordionDetails sx={{ px: 1.5, pb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
                     {item.answer}
                   </Typography>
@@ -272,28 +270,21 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         </Box>
 
         <Box
-          sx={{
-            p: 2,
-            mt: "auto",
-            borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: theme.palette.background.secondary,
-          }}
+          sx={{ p: 2, mt: "auto", borderTop: `1px solid ${theme.palette.divider}` }}
         >
           <Typography variant="body2" color="text.secondary" mb={1}>
             Need more help?
           </Typography>
           <Typography
             variant="body2"
-            component="a"
-            href="mailto:support@intelliplan.example.com"
             color="primary"
             className="hover-lift"
             sx={{
-              textDecoration: "none",
-              fontWeight: "medium",
+              display: "inline-block",
+              cursor: "pointer",
+              transition: "color 0.2s ease",
               "&:hover": {
-                textDecoration: "underline",
-                color: theme.palette.primary.dark,
+                color: theme.palette.primary.light,
               },
             }}
           >
@@ -306,7 +297,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       <Box
         sx={{
           width: "100%",
-          maxWidth: "900px",
+          maxWidth: "900px", // Kept this the same for readability
           mx: "auto",
           flexGrow: 1,
           display: "flex",
@@ -314,12 +305,12 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           overflow: "hidden",
         }}
       >
-        {/* Messages area or empty state */}
+        {/* Messages area or empty state - Reduced padding */}
         <Box
           sx={{
             flexGrow: 1,
             overflowY: "auto",
-            p: { xs: 1.5, sm: 2.5 },
+            p: 2, // Reduced padding from 3
             display: "flex",
             flexDirection: "column",
           }}
@@ -327,11 +318,20 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           {isChatEmpty && !isBotResponding ? (
             <Fade in={true} timeout={800}>
               <Box sx={{ textAlign: "center", my: "auto" }}>
-                <img src={Logo} alt="InteliPlan Logo" height="80" className="hover-lift" />
+                <img
+                  src={Logo}
+                  alt="InteliPlan Logo"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    marginBottom: theme.spacing(2),
+                    borderRadius: "50%",
+                  }}
+                />
                 <Typography
-                  variant="h4"
+                  variant="h5" // Changed from h4 to h5 for smaller heading
                   sx={{
-                    mb: 1,
+                    mb: 1, // Reduced margin from 2
                     color: theme.palette.text.primary,
                     fontWeight: "medium",
                   }}
@@ -344,7 +344,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   sx={{ mb: 3, color: "#a5a5a5" }}
                   className="text-reveal"
                 >
-                  Ask a question, analyze data or select one from your history.
+                  Ask a question, analyze data, or select a conversation from
+                  history.
                 </Typography>
 
                 {messages.length === 0 && (
@@ -366,26 +367,26 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           ) : (
             messages.map((message, index) => (
               <ChatMessage
-                key={`msg-${activeConversation?.id}-${index}`}
+                key={`msg-${index}`}
                 message={message.text}
                 isBot={message.isBot}
                 timestamp={message.timestamp}
                 onRegenerateResponse={
-                  message.isBot && index === messages.length - 1
+                  message.isBot
                     ? () => {
-                      // Find the last user message before this bot message
-                      const lastUserMessageIndex = messages
-                        .slice(0, index)
-                        .map((m, i) => ({ ...m, index: i }))
-                        .filter((m) => !m.isBot)
-                        .pop();
+                        // Find the last user message before this bot message
+                        const lastUserMessageIndex = messages
+                          .slice(0, index)
+                          .map((m, i) => ({ ...m, index: i }))
+                          .filter((m) => !m.isBot)
+                          .pop();
 
-                      if (lastUserMessageIndex) {
-                        handleSendMessage(
-                          messages[lastUserMessageIndex.index].text
-                        );
+                        if (lastUserMessageIndex) {
+                          handleSendMessage(
+                            messages[lastUserMessageIndex.index].text
+                          );
+                        }
                       }
-                    }
                     : undefined
                 }
               />
@@ -397,40 +398,37 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 display: "flex",
                 justifyContent: "flex-start",
                 alignItems: "center",
-                p: 1.5,
-                mt: 1,
+                p: 1, // Reduced padding from 2
+                mt: 0.5, // Reduced margin from 1
               }}
               className="message-in-left"
             >
               <CircularProgress
-                size={20}
-                sx={{ mr: 1.5, color: theme.palette.primary.main }}
+                size={16} // Reduced size from 20
+                sx={{ mr: 1, color: theme.palette.primary.main }} // Reduced margin
               />
               <Typography
                 variant="body2"
-                sx={{ color: theme.palette.text.secondary }}
+                sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }} // Smaller text
               >
-                {messages?.length > 0 && 'Agent is thinking...'}
+                {messages?.length > 0 && "Agent is thinking..."}
               </Typography>
             </Box>
           )}
           <div ref={messagesEndRef} />
         </Box>
 
-        {/* Input at bottom - always visible */}
-        <Box
-          sx={{
-            p: { xs: 1, sm: 1.5 },
-            // borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: "transparent",
-            boxShadow: `0 -2px 5px ${alpha(theme.palette.common.black, 0.05)}`,
-          }}
-        >
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            disabled={isBotResponding}
-          />
-        </Box>
+        {/* Input at bottom when chat has messages - Reduced padding */}
+        {(!isChatEmpty || messages.length > 0) && (
+          <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
+            {" "}
+            {/* Reduced padding from 2 */}
+            <MessageInput
+              onSendMessage={handleSendMessage}
+              disabled={isBotResponding}
+            />
+          </Box>
+        )}
       </Box>
     </Box>
   );
