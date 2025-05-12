@@ -15,9 +15,12 @@ html {
 /* Body styles are largely handled by MUI ThemeProvider and CssBaseline,
    but you can add global overrides or defaults here if needed. */
 body {
-  margin: 0; /* Ensure no default margin */
-  background-color: #111827; /* Fallback, Midnight Sapphire theme default background */
-  color: #f9fafb; /* Fallback, Midnight Sapphire theme primary text */
+  margin: 0;
+  /* Ensure no default margin */
+  background-color: #111827;
+  /* Fallback, Midnight Sapphire theme default background */
+  color: #f9fafb;
+  /* Fallback, Midnight Sapphire theme primary text */
   line-height: 1.5;
 }
 
@@ -25,8 +28,10 @@ body {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px); /* Slightly adjusted for the new theme */
+    transform: translateY(8px);
+    /* Slightly adjusted for the new theme */
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -34,7 +39,8 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.35s ease-out; /* Slightly adjusted duration */
+  animation: fadeIn 0.35s ease-out;
+  /* Slightly adjusted duration */
 }
 
 /* Message bubble animations */
@@ -43,6 +49,7 @@ body {
     opacity: 0;
     transform: translateX(-12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -54,6 +61,7 @@ body {
     opacity: 0;
     transform: translateX(12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -75,9 +83,11 @@ body {
   0% {
     box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7);
   }
+
   70% {
     box-shadow: 0 0 0 8px rgba(96, 165, 250, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
   }
@@ -93,6 +103,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -108,6 +119,7 @@ body {
   from {
     clip-path: inset(0 100% 0 0);
   }
+
   to {
     clip-path: inset(0 0 0 0);
   }
@@ -122,30 +134,31 @@ body {
   0% {
     background-position: -200px 0;
   }
+
   100% {
     background-position: 200px 0;
   }
 }
 
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0) 100%);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
 
 /* Subtle hover effects for interactive elements */
 .hover-lift {
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  transition: transform 0.1s ease-out, box-shadow 0.2s ease-out;
+  border-radius: 10px;
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }
 
 /* Basic text utility - MUI Typography's noWrap prop is generally preferred */
@@ -162,20 +175,24 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937; /* Midnight Sapphire theme paper background */
+  background: #1f2937;
+  /* Midnight Sapphire theme paper background */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563; /* A slightly darker, muted blue/grey */
+  background: #4b5563;
+  /* A slightly darker, muted blue/grey */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #60a5fa; /* Midnight Sapphire primary main for hover */
+  background: #60a5fa;
+  /* Midnight Sapphire primary main for hover */
 }
 
 /* Ensure focus styles are visible and accessible */
 *:focus-visible {
-  outline: 2px solid #60a5fa; /* Primary blue for high visibility */
+  outline: 2px solid #60a5fa;
+  /* Primary blue for high visibility */
   outline-offset: 2px;
 }

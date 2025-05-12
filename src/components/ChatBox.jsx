@@ -190,7 +190,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               fontSize: "0.85rem",
             }} // Smaller margin and text
           >
-            Ansari, Shanawar Ahmad
+
           </Typography>
         </Box>
       </Box>
@@ -287,7 +287,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               },
             }}
           >
-            Email support@intelliplan.example.com
+            Email support@intelliplan.kcc.com
           </Typography>
         </Box>
       </Drawer>
@@ -317,6 +317,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           {isChatEmpty && !isBotResponding ? (
             <Fade in={true} timeout={800}>
               <Box sx={{ textAlign: "center", my: "auto" }}>
+                <img src={Logo} alt="InteliPlan Logo" height="80" className="hover-lift" />
                 <Typography
                   variant="h5" // Changed from h4 to h5 for smaller heading
                   sx={{
@@ -333,7 +334,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   sx={{ mb: 3, color: theme.palette.text.secondary }} // Reduced margin from 4
                   className="text-reveal"
                 >
-                  Start a new conversation or select one from your history.
+                  Ask a question, analyze data or select one from your history.
                 </Typography>
 
                 {messages.length === 0 && (
@@ -362,19 +363,19 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 onRegenerateResponse={
                   message.isBot
                     ? () => {
-                        // Find the last user message before this bot message
-                        const lastUserMessageIndex = messages
-                          .slice(0, index)
-                          .map((m, i) => ({ ...m, index: i }))
-                          .filter((m) => !m.isBot)
-                          .pop();
+                      // Find the last user message before this bot message
+                      const lastUserMessageIndex = messages
+                        .slice(0, index)
+                        .map((m, i) => ({ ...m, index: i }))
+                        .filter((m) => !m.isBot)
+                        .pop();
 
-                        if (lastUserMessageIndex) {
-                          handleSendMessage(
-                            messages[lastUserMessageIndex.index].text
-                          );
-                        }
+                      if (lastUserMessageIndex) {
+                        handleSendMessage(
+                          messages[lastUserMessageIndex.index].text
+                        );
                       }
+                    }
                     : undefined
                 }
               />
