@@ -140,7 +140,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               </IconButton>
             </Tooltip>
           )}
-          <img src={Logo} alt="InteliPlan Logo" height="40" className="hover-lift" />
+          <img src={Logo} alt="InteliPlan Logo" height="35" className="hover-lift" />
+          <Typography variant="h6" sx={{ ml: 1 }}>IntelliPlan</Typography>
         </Box>
         <Box
           sx={{
@@ -400,7 +401,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 variant="body2"
                 sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }} // Smaller text
               >
-                Agent is thinking...
+                {messages?.length > 0 && 'Agent is thinking...'}
               </Typography>
             </Box>
           )}
