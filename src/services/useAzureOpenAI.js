@@ -156,7 +156,6 @@ const useAzureOpenAI = () => {
     },
     [client, threadId, createThread]
   );
-
   const processMessageContent = useCallback(async (content) => {
     if (!content || !Array.isArray(content)) return content;
 
@@ -167,7 +166,9 @@ const useAzureOpenAI = () => {
 
       if (item.type === "image_file" && item.image_file && item.image_file.file_id) {
         try {
+          console.log("Processing image file:", item.image_file.file_id);
           const imageUrl = await fetchImageFromOpenAI(item.image_file.file_id);
+          console.log("Image URL obtained:", imageUrl);
           processedContent[i] = {
             ...item,
             image_file: {

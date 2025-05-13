@@ -242,12 +242,15 @@ export const ConversationProvider = ({ children }) => {
             throw error;
           }
         }
-
-        if (response && response.answer) {
+        if (response) {
+          console.log("Response from AI:", response);
           const assistantMessage = {
             role: "assistant",
-            content: response.answer,
+            content: response.answer || "",
             timestamp: new Date(),
+            isImage: response.isImage || false,
+            imageUrl: response.imageUrl || null,
+            imageFileId: response.imageFileId || null,
           };
 
           const finalMessages = [...updatedMessages, assistantMessage];

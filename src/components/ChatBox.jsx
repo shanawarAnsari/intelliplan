@@ -69,17 +69,21 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
   };
-
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
-      const formattedMessages = activeConversation.messages.map((msg) => ({
-        text: msg.content,
-        isBot: msg.role === "assistant",
-        timestamp: new Date(),
-        isImage: msg.isImage || false,
-        imageUrl: msg.imageUrl || null,
-        imageFileId: msg.imageFileId || null,
-      }));
+      console.log("Active conversation messages:", activeConversation.messages);
+      const formattedMessages = activeConversation.messages.map((msg) => {
+        console.log("Processing message:", msg);
+        return {
+          text: msg.content,
+          isBot: msg.role === "assistant",
+          timestamp: new Date(),
+          isImage: msg.isImage || false,
+          imageUrl: msg.imageUrl || null,
+          imageFileId: msg.imageFileId || null,
+        };
+      });
+      console.log("Formatted messages for UI:", formattedMessages);
       setMessages(formattedMessages);
     } else {
       setMessages([]);
@@ -113,17 +117,17 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         onRegenerateResponse={
           message.isBot
             ? () => {
-              // Find the last user message before this bot message
-              const lastUserMessageIndex = messages
-                .slice(0, index)
-                .map((m, i) => ({ ...m, index: i }))
-                .filter((m) => !m.isBot)
-                .pop();
+                // Find the last user message before this bot message
+                const lastUserMessageIndex = messages
+                  .slice(0, index)
+                  .map((m, i) => ({ ...m, index: i }))
+                  .filter((m) => !m.isBot)
+                  .pop();
 
-              if (lastUserMessageIndex) {
-                handleSendMessage(messages[lastUserMessageIndex.index].text);
+                if (lastUserMessageIndex) {
+                  handleSendMessage(messages[lastUserMessageIndex.index].text);
+                }
               }
-            }
             : undefined
         }
       />

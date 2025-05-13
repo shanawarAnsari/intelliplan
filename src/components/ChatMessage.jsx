@@ -51,15 +51,16 @@ const ChatMessage = ({
   };
   useEffect(() => {
     if (isImage) {
+      setImageLoading(true);
       if (initialImageUrl) {
         setImageUrl(initialImageUrl);
-        setImageLoading(true);
       } else if (imageFileId) {
         const loadImage = async () => {
           try {
-            setImageLoading(true);
             const url = await fetchImageFromOpenAI(imageFileId);
+            console.log("Image URL fetched:", url);
             setImageUrl(url);
+            setImageError(false);
           } catch (error) {
             console.error("Failed to load image:", error);
             setImageError(true);
