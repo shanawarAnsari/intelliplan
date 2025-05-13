@@ -113,17 +113,17 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         onRegenerateResponse={
           message.isBot
             ? () => {
-                // Find the last user message before this bot message
-                const lastUserMessageIndex = messages
-                  .slice(0, index)
-                  .map((m, i) => ({ ...m, index: i }))
-                  .filter((m) => !m.isBot)
-                  .pop();
+              // Find the last user message before this bot message
+              const lastUserMessageIndex = messages
+                .slice(0, index)
+                .map((m, i) => ({ ...m, index: i }))
+                .filter((m) => !m.isBot)
+                .pop();
 
-                if (lastUserMessageIndex) {
-                  handleSendMessage(messages[lastUserMessageIndex.index].text);
-                }
+              if (lastUserMessageIndex) {
+                handleSendMessage(messages[lastUserMessageIndex.index].text);
               }
+            }
             : undefined
         }
       />
@@ -412,7 +412,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 variant="body2"
                 sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }} // Smaller text
               >
-                {messages?.length > 0 && "Agent is thinking..."}
+                {messages?.length > 0 && "Generating response..."}
               </Typography>
             </Box>
           )}
