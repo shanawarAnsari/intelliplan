@@ -56,7 +56,6 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     setConversationToDelete(conversation);
     setDeleteDialogOpen(true);
   };
-
   // Execute the delete after confirmation
   const handleDeleteConversation = () => {
     try {
@@ -88,6 +87,11 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       console.error("Error deleting conversation:", error);
     }
   };
+
+  // Only display conversations that have messages
+  const validConversations = conversations.filter(
+    (conv) => conv.messages && conv.messages.length > 0
+  );
 
   const drawerContent = (
     <Box
@@ -144,7 +148,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         </Tooltip>
       </Box>
 
-      {conversations && conversations.length > 0 && (
+      {validConversations && validConversations.length > 0 && (
         <>
           <Divider sx={{ borderColor: theme.palette.divider }} />
           <Box sx={{ px: 2, pt: 1.5 }}>
@@ -165,7 +169,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
 
           <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
             <List>
-              {conversations.map((conv, index) => (
+              {validConversations.map((conv, index) => (
                 <Fade
                   in={true}
                   key={index}
@@ -253,14 +257,14 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         sx={{
           pt: 2,
           mt: "auto", // Push to the bottom
-          textAlign: "center",
-          borderTop: `1px solid ${theme.palette.divider}`,
+          ml: 1,
+          textAlign: "start",
         }}
       >
         <img
           src={kimberlyClarkLogo}
           alt="Kimberly Clark Logo"
-          style={{ maxWidth: "80%", height: "auto" }}
+          style={{ maxWidth: "60%", height: "auto" }}
         />
       </Box>
     </Box>

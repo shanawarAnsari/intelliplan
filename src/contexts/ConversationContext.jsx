@@ -114,8 +114,7 @@ export const ConversationProvider = ({ children }) => {
   );
   /**
    * Create a new conversation
-   */
-  const createNewConversation = useCallback(
+   */ const createNewConversation = useCallback(
     async (title) => {
       try {
         // Always create a new thread
@@ -128,8 +127,8 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
-        // Don't add the new empty conversation to the history list
-        // Only include conversations that have messages in the existing list
+        // Filter out any empty conversations from the conversations list
+        // but don't save to localStorage yet - wait until there's content
         setConversations((prev) => {
           return prev.filter((conv) => conv.messages && conv.messages.length > 0);
         });
@@ -185,7 +184,9 @@ export const ConversationProvider = ({ children }) => {
         let updatedConversation = {
           ...activeConversation,
           messages: updatedMessages,
-        }; // Generate or update title based on the conversation progress
+        };
+
+        // Generate or update title based on the conversation progress
         const shouldGenerateTitle =
           // First message case
           (activeConversation.messages.length === 0 &&
@@ -238,7 +239,10 @@ export const ConversationProvider = ({ children }) => {
             console.error("Error generating title:", titleError);
             // Continue with default title if title generation fails
           }
-        } // Update conversations state        setActiveConversation(updatedConversation);
+        }
+
+        // Update conversations state
+        setActiveConversation(updatedConversation);
         // Don't add to conversations list yet - wait for the bot to respond
         setConversations((prev) => {
           // If conversation already exists in list, update it
@@ -283,7 +287,9 @@ export const ConversationProvider = ({ children }) => {
           } else {
             throw error;
           }
-        } // Add assistant message to the conversation
+        }
+
+        // Add assistant message to the conversation
         if (response && response.answer) {
           const assistantMessage = {
             role: "assistant",
@@ -316,7 +322,7 @@ export const ConversationProvider = ({ children }) => {
               updatedConversations = [finalConversation, ...prev];
             }
 
-            // Make sure all conversations have messages
+            // Make sure all conversations have messages before saving to localStorage
             updatedConversations = updatedConversations.filter(
               (conv) => conv.messages && conv.messages.length >= 2
             );

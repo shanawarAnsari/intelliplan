@@ -148,8 +148,8 @@ const ChatMessage = ({
                 </Box>
               )}
               {imageError ? (
-                <Typography color="error" sx={{ py: 2 }}>
-                  Failed to load image
+                <Typography color="error" sx={{ py: 2, fontSize: "0.9rem" }}>
+                  Image Unavailable!!
                 </Typography>
               ) : (
                 <img
