@@ -1,17 +1,4 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.REACT_APP_AZURE_OPENAI_KEY,
-  baseURL: `${process.env.REACT_APP_AZURE_OPENAI_ENDPOINT.replace(
-    /\/$/,
-    ""
-  )}/openai`, // Ensure /openai segment is present
-  defaultQuery: {
-    "api-version": "2024-05-01-preview", // Ensure this API version is supported
-  },
-  defaultHeaders: { "api-key": process.env.REACT_APP_AZURE_OPENAI_KEY }, // Added for Azure
-  dangerouslyAllowBrowser: true, // Required for client-side usage
-});
+import { openAIClient as client } from "../utils/openAIClient";
 
 // Assistant IDs from .env
 const COORDINATOR_ID = process.env.REACT_APP_COORDINATOR_ASSISTANT_ID;

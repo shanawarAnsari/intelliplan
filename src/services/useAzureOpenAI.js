@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { AzureOpenAI } from "openai";
+import { openAIClient } from "../utils/openAIClient";
 import {
   COORDINATOR_ASSISTANT_ID,
   SALES_ASSISTANT_ID,
@@ -7,41 +7,13 @@ import {
 } from "../utils/assistantConstants";
 
 const useAzureOpenAI = () => {
-  const [client, setClient] = useState(null);
+  const [client, setClient] = useState(openAIClient);
   const [assistantId, setAssistantId] = useState(COORDINATOR_ASSISTANT_ID);
   const [currentAssistantName, setCurrentAssistantName] = useState("Coordinator");
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [messages, setMessages] = useState([]);
-
-  useEffect(() => {
-    const initializeClient = () => {
-      try {
-        const azureOpenAIKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
-        const azureOpenAIEndpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
-        const azureOpenAIVersion = "2024-05-01-preview";
-
-        if (!azureOpenAIKey || !azureOpenAIEndpoint) {
-          console.error("Azure OpenAI credentials are missing");
-          return;
-        }
-
-        const openAIClient = new AzureOpenAI({
-          endpoint: azureOpenAIEndpoint,
-          apiVersion: azureOpenAIVersion,
-          apiKey: azureOpenAIKey,
-          dangerouslyAllowBrowser: true,
-        });
-
-        setClient(openAIClient);
-      } catch (err) {
-        console.error("Error initializing Azure OpenAI client:", err);
-      }
-    };
-
-    initializeClient();
-  }, []);
 
   const createThread = useCallback(async () => {
     if (!client) return null;
