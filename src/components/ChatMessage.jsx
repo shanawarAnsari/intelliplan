@@ -26,6 +26,7 @@ const ChatMessage = ({
   imageFileId,
   assistantName,
   routedFrom,
+  isRoutingMessage,
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -112,8 +113,7 @@ const ChatMessage = ({
           >
             <SmartToyIcon sx={{ fontSize: 16 }} />
           </Avatar>
-        )}
-
+        )}{" "}
         <Paper
           elevation={1}
           sx={{
@@ -121,7 +121,9 @@ const ChatMessage = ({
             px: 2,
             maxWidth: { xs: "85%", sm: "75%" },
             bgcolor: isBot
-              ? theme.palette.background.secondary
+              ? isRoutingMessage
+                ? "rgba(25, 118, 210, 0.08)" // Light blue background for routing messages
+                : theme.palette.background.secondary
               : theme.palette.primary.main,
             color: isBot
               ? theme.palette.text.primary
@@ -130,6 +132,9 @@ const ChatMessage = ({
             boxShadow: isBot
               ? "0px 1px 3px rgba(0,0,0,0.12)"
               : "0px 1px 3px rgba(0,0,0,0.2)",
+            borderLeft: isRoutingMessage
+              ? `3px solid ${theme.palette.primary.main}`
+              : "none",
           }}
         >
           {isImage ? (
@@ -176,7 +181,6 @@ const ChatMessage = ({
             </Typography>
           )}
         </Paper>
-
         {!isBot && (
           <Avatar
             sx={{
@@ -234,7 +238,7 @@ const ChatMessage = ({
             >
               <AutorenewIcon fontSize="small" />
             </IconButton>
-          </Tooltip>
+          </Tooltip>{" "}
           {assistantName && (
             <Typography
               variant="caption"
@@ -247,9 +251,32 @@ const ChatMessage = ({
                 border: `1px solid ${theme.palette.primary.main}`,
                 borderRadius: "4px",
                 px: 0.5,
+                backgroundColor:
+                  assistantName === "Sales"
+                    ? "rgba(25, 118, 210, 0.08)"
+                    : assistantName === "Forecast"
+                    ? "rgba(46, 125, 50, 0.08)"
+                    : "transparent",
               }}
             >
               {assistantName}
+            </Typography>
+          )}
+          {routedFrom && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "inline-block",
+                ml: 1,
+                color: theme.palette.text.secondary,
+                fontSize: "0.65rem",
+                fontStyle: "italic",
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+                borderRadius: "2px",
+                px: 0.5,
+              }}
+            >
+              via {routedFrom}
             </Typography>
           )}
           {timestamp && (
