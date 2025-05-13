@@ -18,7 +18,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import Logo from "../assets/InteliPlan.jpg";
+import Logo from "../assets/Intelliplan-logo.png";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
@@ -173,9 +173,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             </Tooltip>
           )}
           <img src={Logo} alt="InteliPlan Logo" height="35" className="hover-lift" />
-          <Typography variant="h6" sx={{ ml: 1 }}>
-            IntelliPlan
-          </Typography>
         </Box>
         <Box
           sx={{
@@ -354,10 +351,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   src={Logo}
                   alt="InteliPlan Logo"
                   style={{
-                    width: 80,
-                    height: 80,
+                    width: "20%",
+                    height: 40,
                     marginBottom: theme.spacing(2),
-                    borderRadius: "50%",
                   }}
                 />
                 <Typography
