@@ -1,522 +1,221 @@
-require("dotenv/config");
-const { AzureOpenAI } = require("openai");
-const {
-  COORDINATOR_ASSISTANT_ID,
-  FORECAST_ASSISTANT_ID,
-  SALES_ASSISTANT_ID,
-} = require("../utils/assistantConstants");
+import OpenAI from "openai";
 
-class AzureOpenAIService {
-  constructor() {
-    this.azureOpenAIKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
-    this.azureOpenAIEndpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
-    this.azureOpenAIVersion = "2024-05-01-preview";
+const client = new OpenAI({
+  apiKey: process.env.REACT_APP_AZURE_OPENAI_KEY,
+  baseURL: `${process.env.REACT_APP_AZURE_OPENAI_ENDPOINT.replace(
+    /\/$/,
+    ""
+  )}/openai`, // Ensure /openai segment is present
+  defaultQuery: {
+    "api-version": "2024-05-01-preview", // Ensure this API version is supported
+  },
+  defaultHeaders: { "api-key": process.env.REACT_APP_AZURE_OPENAI_KEY }, // Added for Azure
+  dangerouslyAllowBrowser: true, // Required for client-side usage
+});
 
-    // Assistant IDs from constants
-    this.coordinatorAssistantId = COORDINATOR_ASSISTANT_ID; // Test_CoordinatorAssistant_Ahmad
-    this.forecastAssistantId = FORECAST_ASSISTANT_ID; // ForecastAssistant
-    this.salesAssistantId = SALES_ASSISTANT_ID; // SalesAssistant
+// Assistant IDs from .env
+const COORDINATOR_ID = process.env.REACT_APP_COORDINATOR_ASSISTANT_ID;
+const SALES_ID = process.env.REACT_APP_SALES_ASSISTANT_ID;
+const FORECAST_ID = process.env.REACT_APP_FORECAST_ASSISTANT_ID;
 
-    // Default to coordinator
-    this.assistantId = this.coordinatorAssistantId;
-
-    this.threadId = null;
-    this.client = null;
-
-    this.initialize();
+async function waitOnRun(threadId, runId) {
+  console.log(`[DEBUG] Polling run ${runId} in thread ${threadId}...`);
+  let run = await client.beta.threads.runs.retrieve(threadId, runId);
+  while (["queued", "in_progress"].includes(run.status)) {
+    console.log(`  [DEBUG] status=${run.status}, waiting...`);
+    await new Promise((r) => setTimeout(r, 1000)); // Increased timeout for potentially longer operations
+    run = await client.beta.threads.runs.retrieve(threadId, runId);
   }
-
-  initialize() {
-    // Check env variables
-    if (!this.azureOpenAIKey || !this.azureOpenAIEndpoint) {
-      console.error(
-        "Azure OpenAI credentials are not set in environment variables."
-      );
-      return;
-    }
-
-    // Initialize Azure SDK client
-    try {
-      this.client = new AzureOpenAI({
-        endpoint: this.azureOpenAIEndpoint,
-        apiVersion: this.azureOpenAIVersion,
-        apiKey: this.azureOpenAIKey,
-      });
-      console.log("Azure OpenAI client initialized");
-    } catch (error) {
-      console.error("Error initializing Azure OpenAI client:", error);
-    }
-  }
-  async createThread() {
-    try {
-      if (!this.client) {
-        throw new Error("Azure OpenAI client is not initialized");
-      }
-
-      const thread = await this.client.beta.threads.create({});
-      this.threadId = thread.id;
-      console.log(`Thread created with ID: ${thread.id}`);
-      return thread;
-    } catch (error) {
-      console.error(`Error creating thread: ${error.message}`);
-      throw error;
-    }
-  }
-
-  async sendMessage(message, threadId = null) {
-    try {
-      if (!this.client) {
-        throw new Error("Azure OpenAI client is not initialized");
-      }
-
-      // Use provided threadId or the instance threadId
-      const currentThreadId = threadId || this.threadId;
-
-      // Create a thread if none exists
-      if (!currentThreadId) {
-        const thread = await this.createThread();
-        this.threadId = thread.id;
-      }
-
-      // Add message to thread
-      const messageResponse = await this.client.beta.threads.messages.create(
-        this.threadId,
-        {
-          role: "user",
-          content: message,
-        }
-      );
-
-      return messageResponse;
-    } catch (error) {
-      console.error(`Error sending message: ${error.message}`);
-      throw error;
-    }
-  }
-  async runAssistant(assistantId = null, threadId = null) {
-    try {
-      if (!this.client) {
-        throw new Error("Azure OpenAI client is not initialized");
-      }
-
-      // Use provided assistantId or the instance assistantId
-      const currentAssistantId = assistantId || this.assistantId;
-
-      // Run the thread
-      const runResponse = await this.client.beta.threads.runs.create(
-        threadId || this.threadId,
-        {
-          assistant_id: currentAssistantId,
-        }
-      );
-
-      // Poll for completion
-      let runStatus = runResponse.status;
-      while (runStatus === "queued" || runStatus === "in_progress") {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const runStatusResponse = await this.client.beta.threads.runs.retrieve(
-          threadId || this.threadId,
-          runResponse.id
-        );
-        runStatus = runStatusResponse.status;
-        console.log(`Current run status: ${runStatus}`);
-      }
-
-      // Get messages after completion
-      if (runStatus === "completed") {
-        const messagesResponse = await this.client.beta.threads.messages.list(
-          threadId || this.threadId
-        );
-
-        // Return the latest assistant message
-        const assistantMessages = messagesResponse.data.filter(
-          (msg) => msg.role === "assistant"
-        );
-        if (assistantMessages.length > 0) {
-          return {
-            answer: assistantMessages[0].content[0].text.value,
-            conversationId: threadId || this.threadId,
-          };
-        } else {
-          return {
-            answer: "No response from assistant",
-            conversationId: threadId || this.threadId,
-          };
-        }
-      } else {
-        console.log(`Run status is ${runStatus}, unable to fetch messages.`);
-        return {
-          answer: `The assistant encountered an issue. Status: ${runStatus}`,
-          conversationId: threadId || this.threadId,
-        };
-      }
-    } catch (error) {
-      console.error(`Error running assistant: ${error.message}`);
-      throw error;
-    }
-  }
-
-  async getThreadMessages(threadId = null) {
-    try {
-      if (!this.client) {
-        throw new Error("Azure OpenAI client is not initialized");
-      }
-
-      const currentThreadId = threadId || this.threadId;
-      if (!currentThreadId) {
-        throw new Error("No thread ID provided or available");
-      }
-
-      const messagesResponse = await this.client.beta.threads.messages.list(
-        currentThreadId
-      );
-      return messagesResponse.data;
-    } catch (error) {
-      console.error(`Error getting thread messages: ${error.message}`);
-      throw error;
-    }
-  }
-  // Extract text content from a message
-  extractTextContent(content) {
-    if (!content) return "";
-
-    if (typeof content === "string") {
-      return content;
-    }
-
-    if (Array.isArray(content)) {
-      return content
-        .filter((block) => block.type === "text")
-        .map((block) => block.text?.value || "")
-        .join("\n");
-    }
-
-    if (content.type === "text") {
-      return content.text?.value || "";
-    }
-
-    return JSON.stringify(content);
-  }
-
-  // Handle tool calls from the coordinator assistant
-  async handleToolCalls(threadId, runId) {
-    try {
-      console.log(`Checking for tool calls on run ${runId} in thread ${threadId}`);
-
-      // Retrieve the current run
-      let run = await this.client.beta.threads.runs.retrieve(threadId, runId);
-
-      // If there are no required actions, return null
-      if (
-        !run.required_action ||
-        run.required_action.type !== "submit_tool_outputs"
-      ) {
-        return null;
-      }
-
-      console.log("Tool outputs required from coordinator assistant");
-      const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
-      const toolResults = [];
-
-      for (const call of toolCalls) {
-        const functionName = call.function.name;
-        const args = JSON.parse(call.function.arguments);
-        console.log(`Handling tool call: ${functionName} with args:`, args);
-
-        let assistantId, assistantName;
-
-        // Determine which assistant to use based on function name
-        if (functionName === "route_to_sales") {
-          assistantId = this.salesAssistantId;
-          assistantName = "Sales";
-        } else if (functionName === "route_to_forecast") {
-          assistantId = this.forecastAssistantId;
-          assistantName = "Forecast";
-        } else {
-          console.warn(`Unknown function: ${functionName}`);
-          continue;
-        }
-
-        console.log(`Routing to ${assistantName} Assistant`);
-
-        // Create a new thread for the specialized assistant
-        const subThread = await this.client.beta.threads.create();
-        console.log(`Created sub-thread: ${subThread.id}`);
-
-        // Send the prompt to the specialized assistant
-        await this.client.beta.threads.messages.create(subThread.id, {
-          role: "user",
-          content: args.prompt || args.query || "",
-        });
-
-        // Run the specialized assistant
-        let subRun = await this.client.beta.threads.runs.create(subThread.id, {
-          assistant_id: assistantId,
-        });
-
-        // Wait for the specialized assistant to complete
-        let subRunStatus = subRun.status;
-        while (["queued", "in_progress"].includes(subRunStatus)) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const subRunResponse = await this.client.beta.threads.runs.retrieve(
-            subThread.id,
-            subRun.id
-          );
-          subRunStatus = subRunResponse.status;
-          console.log(`Specialized assistant status: ${subRunStatus}`);
-        }
-
-        // Get the response from the specialized assistant
-        if (subRunStatus === "completed") {
-          const messagesResponse = await this.client.beta.threads.messages.list(
-            subThread.id,
-            { order: "asc" }
-          );
-          const lastMessage = messagesResponse.data.find(
-            (msg) => msg.role === "assistant"
-          );
-
-          if (lastMessage) {
-            const output = this.extractTextContent(lastMessage.content);
-            console.log(`${assistantName} Assistant response:`, output);
-
-            // Add metadata to identify source assistant
-            const outputWithMetadata = {
-              content: output,
-              assistantName: assistantName,
-              source: "specialized_assistant",
-            };
-
-            toolResults.push({
-              tool_call_id: call.id,
-              output: JSON.stringify(outputWithMetadata),
-            });
-          }
-        } else {
-          console.error(`Specialized assistant failed with status: ${subRunStatus}`);
-          toolResults.push({
-            tool_call_id: call.id,
-            output: `Error: ${subRunStatus}`,
-          });
-        }
-      }
-
-      // Submit tool outputs back to the coordinator
-      if (toolResults.length > 0) {
-        console.log(
-          `Submitting ${toolResults.length} tool outputs back to coordinator`
-        );
-        const submitResponse = await this.client.beta.threads.runs.submitToolOutputs(
-          threadId,
-          runId,
-          { tool_outputs: toolResults }
-        );
-        return submitResponse;
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Error handling tool calls:", error);
-      return null;
-    }
-  }
-
-  // Wait for a run to complete
-  async waitForRunCompletion(threadId, runId) {
-    try {
-      let run = await this.client.beta.threads.runs.retrieve(threadId, runId);
-
-      while (true) {
-        console.log(`Run status: ${run.status}`);
-
-        if (run.status === "completed") {
-          return run;
-        } else if (run.status === "requires_action") {
-          // Handle tool calls and get a new run ID if available
-          const newRunResponse = await this.handleToolCalls(threadId, runId);
-
-          if (newRunResponse) {
-            // Continue polling for completion
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            run = await this.client.beta.threads.runs.retrieve(threadId, runId);
-          } else {
-            throw new Error("Failed to handle tool calls properly");
-          }
-        } else if (["failed", "cancelled", "expired"].includes(run.status)) {
-          console.error(`Run ended with status: ${run.status}`);
-          throw new Error(`Assistant run failed with status: ${run.status}`);
-        } else {
-          // Wait before polling again
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          run = await this.client.beta.threads.runs.retrieve(threadId, runId);
-        }
-      }
-    } catch (error) {
-      console.error("Error while waiting for run completion:", error);
-      throw error;
-    }
-  }
-
-  // Method to handle complete conversation flow
-  async conversationHandler(message, conversationId = null, assistantId = null) {
-    try {
-      // Always use coordinator assistant initially
-      const coordinatorId = this.coordinatorAssistantId;
-
-      // Send message to the thread
-      await this.sendMessage(message, conversationId);
-
-      // Create a run with the coordinator assistant
-      const run = await this.client.beta.threads.runs.create(
-        conversationId || this.threadId,
-        { assistant_id: coordinatorId }
-      );
-
-      console.log(`Run created with ID: ${run.id}`);
-
-      // Wait for the run to complete, handling any tool calls
-      await this.waitForRunCompletion(conversationId || this.threadId, run.id);
-
-      // Get all messages from the thread
-      const messagesResponse = await this.client.beta.threads.messages.list(
-        conversationId || this.threadId
-      );
-
-      // Find the last assistant message
-      const assistantMessages = messagesResponse.data.filter(
-        (msg) => msg.role === "assistant"
-      );
-      if (assistantMessages.length === 0) {
-        throw new Error("No response from assistant");
-      }
-      const lastMessage = assistantMessages[0];
-      const rawAnswerText = this.extractTextContent(lastMessage.content);
-      let answerText = rawAnswerText;
-      let assistantName = "Coordinator";
-      let routedFrom = null;
-
-      console.log("Raw final answer:", rawAnswerText);
-
-      // Check for text-based routing instructions
-      if (
-        rawAnswerText.includes("Forecast Assistant will process") ||
-        rawAnswerText.includes("routing to Forecast")
-      ) {
-        console.log("Detected text-based routing to Forecast Assistant");
-
-        // Create a new message on the same thread, with the original query
-        await this.client.beta.threads.messages.create(
-          conversationId || this.threadId,
-          {
-            role: "user",
-            content:
-              "Please process this request as the Forecast Assistant: " + message,
-          }
-        );
-
-        // Run the forecast assistant on the same thread
-        const forecastRun = await this.client.beta.threads.runs.create(
-          conversationId || this.threadId,
-          { assistant_id: this.forecastAssistantId }
-        );
-
-        // Wait for forecast assistant to complete
-        await this.waitForRunCompletion(
-          conversationId || this.threadId,
-          forecastRun.id
-        );
-
-        // Get updated messages
-        const updatedMessagesResponse = await this.client.beta.threads.messages.list(
-          conversationId || this.threadId
-        );
-        const updatedAssistantMessages = updatedMessagesResponse.data.filter(
-          (msg) => msg.role === "assistant"
-        );
-
-        // The newest message should be from Forecast Assistant
-        if (updatedAssistantMessages.length > 0) {
-          const forecastMessage = updatedAssistantMessages[0];
-          answerText = this.extractTextContent(forecastMessage.content);
-          assistantName = "Forecast";
-          routedFrom = "Coordinator";
-        }
-      } else if (
-        rawAnswerText.includes("Sales Assistant will process") ||
-        rawAnswerText.includes("routing to Sales")
-      ) {
-        console.log("Detected text-based routing to Sales Assistant");
-
-        // Create a new message on the same thread, with the original query
-        await this.client.beta.threads.messages.create(
-          conversationId || this.threadId,
-          {
-            role: "user",
-            content:
-              "Please process this request as the Sales Assistant: " + message,
-          }
-        );
-
-        // Run the sales assistant on the same thread
-        const salesRun = await this.client.beta.threads.runs.create(
-          conversationId || this.threadId,
-          { assistant_id: this.salesAssistantId }
-        );
-
-        // Wait for sales assistant to complete
-        await this.waitForRunCompletion(
-          conversationId || this.threadId,
-          salesRun.id
-        );
-
-        // Get updated messages
-        const updatedMessagesResponse = await this.client.beta.threads.messages.list(
-          conversationId || this.threadId
-        );
-        const updatedAssistantMessages = updatedMessagesResponse.data.filter(
-          (msg) => msg.role === "assistant"
-        );
-
-        // The newest message should be from Sales Assistant
-        if (updatedAssistantMessages.length > 0) {
-          const salesMessage = updatedAssistantMessages[0];
-          answerText = this.extractTextContent(salesMessage.content);
-          assistantName = "Sales";
-          routedFrom = "Coordinator";
-        }
-      }
-
-      // Try to parse if this is a JSON response with metadata
-      try {
-        const possibleJson = JSON.parse(rawAnswerText);
-        if (possibleJson && possibleJson.content && possibleJson.assistantName) {
-          answerText = possibleJson.content;
-          assistantName = possibleJson.assistantName;
-          routedFrom = "Coordinator";
-          console.log(`Response is from ${assistantName}, routed from Coordinator`);
-        }
-      } catch (e) {
-        // Not JSON, just use the raw text from the coordinator
-        console.log("Response is directly from Coordinator");
-      }
-
-      return {
-        answer: answerText,
-        conversationId: conversationId || this.threadId,
-        assistantName: assistantName,
-        routedFrom: routedFrom,
-      };
-    } catch (error) {
-      console.error("Error in conversation handler:", error);
-      return {
-        answer:
-          "Sorry, I encountered an error processing your request: " + error.message,
-        conversationId: this.threadId,
-      };
-    }
-  }
+  console.log(`  [DEBUG] completed with status=${run.status}`);
+  return run;
 }
 
-// Export singleton instance
-const azureOpenAIService = new AzureOpenAIService();
-export default azureOpenAIService;
+function extractTextFromMessage(message) {
+  let full = "";
+  for (const block of message.content) {
+    if (block.text) {
+      if (typeof block.text === "object") {
+        full += block.text.value ?? "";
+      } else {
+        full += block.text.value;
+      }
+    } else if (block.code) {
+      full += block.code.value;
+    }
+  }
+  return full;
+}
+
+export async function orchestrate(userPrompt, onProgressUpdate) {
+  const progress = (text) => {
+    if (onProgressUpdate) {
+      onProgressUpdate({ type: "status", text });
+    }
+    console.log(`[UI_PROGRESS] ${text}`); // Also log to console for debugging
+  };
+
+  progress("Orchestration started.");
+  console.log(
+    `[DEBUG] Starting orchestration for prompt: ${JSON.stringify(userPrompt)}`
+  );
+
+  // 1) Start a Coordinator thread
+  const thread = await client.beta.threads.create();
+  progress(`Coordinator thread created: ${thread.id}`);
+  console.log(`[DEBUG] Created coordinator thread: ${thread.id}`);
+
+  await client.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content: userPrompt,
+  });
+  progress("Sent user prompt to coordinator.");
+  console.log("[DEBUG] Sent user prompt to coordinator");
+
+  // 2) Run the Coordinator assistant
+  progress("Running coordinator assistant...");
+  let run = await client.beta.threads.runs.create(thread.id, {
+    assistant_id: COORDINATOR_ID,
+  });
+  progress(`Coordinator run launched: ${run.id}. Waiting for completion...`);
+  console.log(`[DEBUG] Launched coordinator run: ${run.id}`);
+  run = await waitOnRun(thread.id, run.id);
+  progress("Coordinator run completed.");
+
+  // 3) If it requested tools, handle each call
+  if (run.status === "requires_action" && run.required_action) {
+    progress(`Coordinator requires action: ${run.required_action.type}`);
+    console.log(`[DEBUG] Coordinator requires action: ${run.required_action.type}`);
+    const toolResults = [];
+    const calls = run.required_action.submit_tool_outputs.tool_calls;
+    console.log(`  [DEBUG] number of tool calls: ${calls.length}`);
+
+    for (const call of calls) {
+      const fnName = call.function.name;
+      const args = JSON.parse(call.function.arguments);
+      progress(`Handling tool call: ${fnName} with args: ${JSON.stringify(args)}`);
+      console.log(
+        `[DEBUG] Handling tool_call_id=${
+          call.id
+        }, function=${fnName}, args=${JSON.stringify(args)}`
+      );
+
+      // Determine the subPrompt: use args.prompt if available and non-empty, otherwise fallback to the initial userPrompt.
+      let finalSubPrompt =
+        args && typeof args.prompt === "string" && args.prompt.trim() !== ""
+          ? args.prompt
+          : userPrompt;
+
+      const aid =
+        fnName === "route_to_forecast"
+          ? SALES_ID
+          : fnName === "route_to_sales"
+          ? SALES_ID
+          : FORECAST_ID; // Adjusted routing logic
+
+      progress(`Routing to assistant ID: ${aid} with prompt: "${finalSubPrompt}"`);
+      console.log(
+        `[DEBUG] Dispatching to assistant ${aid} with prompt: ${JSON.stringify(
+          finalSubPrompt
+        )}`
+      );
+
+      progress("Creating sub-thread...");
+      const subThread = await client.beta.threads.create();
+      progress(`Sub-thread created: ${subThread.id}`);
+      console.log(`  [DEBUG] Created sub-thread: ${subThread.id}`);
+
+      await client.beta.threads.messages.create(subThread.id, {
+        role: "user",
+        content: finalSubPrompt, // finalSubPrompt is now guaranteed to be a string
+      });
+
+      progress(`Running sub-assistant (${aid})...`);
+      let subRun = await client.beta.threads.runs.create(subThread.id, {
+        assistant_id: aid,
+      });
+      progress(
+        `Sub-assistant run launched: ${subRun.id}. Waiting for completion...`
+      );
+      console.log(`  [DEBUG] Launched sub-run: ${subRun.id}`);
+      subRun = await waitOnRun(subThread.id, subRun.id);
+      progress(`Sub-assistant run (${aid}) completed.`);
+
+      if (subRun.status === "completed") {
+        const msgs = await client.beta.threads.messages.list(subThread.id, {
+          order: "desc", // Get the latest messages first
+          limit: 1, // We only need the last message from the sub-assistant
+        });
+        const lastMsg = msgs.data[0];
+        const result = extractTextFromMessage(lastMsg);
+        progress(
+          `Sub-assistant (${aid}) output received: "${result.substring(0, 50)}..."`
+        );
+        console.log(`  [DEBUG] Sub-agent output: ${JSON.stringify(result)}`);
+        toolResults.push({ tool_call_id: call.id, output: result });
+      } else {
+        console.error(
+          `[ERROR] Sub-run ${subRun.id} did not complete successfully. Status: ${subRun.status}`
+        );
+        // Handle cases where the sub-run fails or requires action itself (though the latter is less common for sub-agents)
+        toolResults.push({
+          tool_call_id: call.id,
+          output: `Error: Sub-agent ${fnName} failed.`,
+        });
+      }
+    }
+
+    // 4) Return those outputs to the Coordinator run
+    if (toolResults.length > 0) {
+      progress(
+        `Submitting ${toolResults.length} tool outputs back to coordinator...`
+      );
+      console.log(
+        `[DEBUG] Submitting ${toolResults.length} tool outputs back to coordinator`
+      );
+      run = await client.beta.threads.runs.submitToolOutputs(thread.id, run.id, {
+        tool_outputs: toolResults,
+      });
+      progress("Tool outputs submitted. Waiting for coordinator to process...");
+      console.log(`[DEBUG] Submitted outputs, new run id: ${run.id}`);
+      run = await waitOnRun(thread.id, run.id);
+      progress("Coordinator processing of tool outputs completed.");
+    } else {
+      console.log("[DEBUG] No tool results to submit.");
+    }
+  } else {
+    progress(
+      "No tool actions required by coordinator, or run status was not 'requires_action'."
+    );
+    console.log(
+      "[DEBUG] No tools requested by coordinator or run status is not 'requires_action'."
+    );
+  }
+
+  // 5) Fetch and return the Coordinator’s answer
+  if (run.status === "completed") {
+    const messages = await client.beta.threads.messages.list(thread.id, {
+      order: "desc", // Get the latest messages first
+      limit: 1, // We only need the last message from the coordinator
+    });
+    const finalMsg = messages.data[0]; // The last message should be the assistant's response
+    const response = extractTextFromMessage(finalMsg);
+    progress("Final response received from coordinator.");
+    console.log(`[DEBUG] Final coordinator response: ${JSON.stringify(response)}`);
+    return response;
+  } else {
+    progress(
+      `Error: Coordinator run ${run.id} did not complete successfully. Status: ${run.status}`
+    );
+    console.error(
+      `[ERROR] Coordinator run ${run.id} did not complete successfully. Status: ${run.status}`
+    );
+    // Check for run.last_error to provide more details if available
+    if (run.last_error) {
+      progress(`Run failed with error: ${run.last_error.message}`);
+      console.error(
+        `[ERROR] Run failed with error: ${run.last_error.message} (Code: ${run.last_error.code})`
+      );
+    }
+    return "Error: Could not get a response from the assistant.";
+  }
+}

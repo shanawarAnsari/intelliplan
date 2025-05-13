@@ -8,10 +8,8 @@ import {
   CircularProgress,
   useTheme,
   Fade,
-  Button,
 } from "@mui/material";
 import { useConversation } from "../contexts/ConversationContext";
-import useAzureOpenAI from "../services/useAzureOpenAI";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
@@ -19,51 +17,26 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Logo from "../assets/Intelliplan-logo.png";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import HelpFAQ from "./HelpFAQ";
+import { orchestrate } from "../services/AzureOpenAIService";
 
 const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
-  const {
-    activeConversation,
-    isLoading: isBotResponding,
-    sendMessage,
-    addAssistantMessageToConversation,
-  } = useConversation();
-  const { handleSpecializedAssistantRouting } = useAzureOpenAI();
+  const { activeConversation } = useConversation();
 
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
   };
-
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
-      console.log("Active conversation messages:", activeConversation.messages);
-      const formattedMessages = activeConversation.messages.map((msg) => {
-        console.log("Processing message:", msg);
-        // Enhanced debugging for specialized assistant responses
-        if (msg.assistantName === "Forecast" || msg.assistantName === "Sales") {
-          console.log("⭐ Found specialized assistant message:", {
-            content: msg.content,
-            assistant: msg.assistantName,
-            routedFrom: msg.routedFrom,
-          });
-        }
-
-        return {
-          text: msg.content,
-          isBot: msg.role === "assistant",
-          timestamp: new Date(msg.timestamp) || new Date(),
-          isImage: msg.isImage || false,
-          imageUrl: msg.imageUrl || null,
-          imageFileId: msg.imageFileId || null,
-          assistantName:
-            msg.assistantName || (msg.role === "assistant" ? "Assistant" : null),
-          routedFrom: msg.routedFrom || null,
-        };
-      });
-      console.log("Formatted messages for UI:", formattedMessages);
+      const formattedMessages = activeConversation.messages.map((msg) => ({
+        text: msg.content,
+        isBot: msg.role === "assistant",
+        timestamp: new Date(msg.timestamp) || new Date(),
+      }));
       setMessages(formattedMessages);
     } else {
       setMessages([]);
@@ -71,146 +44,22 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   }, [activeConversation]);
 
   const handleSendMessage = async (text) => {
+    if (!text.trim()) return;
+
     const userMessage = { text, isBot: false, timestamp: new Date() };
-    const updatedMessagesWithUser = [...messages, userMessage];
-    setMessages(updatedMessagesWithUser);
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setIsLoading(true);
 
     try {
-      // Use the sendMessage function from context
-      const response = await sendMessage(text);
-      console.log("Response received:", response);
-
-      if (response) {
-        // Check if this is already a specialized assistant response
-        if (
-          response.routedFrom ||
-          response.assistantName === "Forecast" ||
-          response.assistantName === "Sales"
-        ) {
-          // This is already a specialized response from the conversationHandler
-          const specializedMessage = {
-            text: response.answer,
-            isBot: true,
-            timestamp: new Date(),
-            assistantName: response.assistantName,
-            routedFrom: response.routedFrom,
-          };
-
-          console.log(
-            "Showing specialized assistant response from conversation handler:",
-            specializedMessage
-          );
-          setMessages((prevMessages) => [...prevMessages, specializedMessage]);
-          return;
-        }
-
-        const botMessage = {
-          text: response.answer,
-          isBot: true,
-          timestamp: new Date(),
-          assistantName: response.assistantName || "Assistant",
-          routedFrom: response.routedFrom || null,
-        };
-
-        // If this is a routing message and there's no specialized assistant response yet,
-        // automatically route to the specialized assistant
-        if (
-          (response.answer.includes("will process your query") ||
-            response.answer.includes("routing to Forecast") ||
-            response.answer.includes("routing to Sales") ||
-            response.answer.includes("The Forecast Assistant") ||
-            response.answer.includes("The Sales Assistant")) &&
-          !response.routedFrom
-        ) {
-          // Show temporary routing message
-          const routingMessage = {
-            ...botMessage,
-            isRoutingMessage: true,
-          };
-
-          setMessages((prevMessages) => [...prevMessages, routingMessage]);
-
-          // Add a small delay to simulate waiting for the specialized assistant
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
-          // Detect which specialized assistant to use
-          const assistantType =
-            response.answer.includes("Forecast") ||
-            response.answer.includes("forecast")
-              ? "Forecast"
-              : response.answer.includes("Sales") ||
-                response.answer.includes("sales")
-              ? "Sales"
-              : null;
-
-          console.log(`Detected routing instruction to ${assistantType} assistant`);
-
-          if (assistantType) {
-            try {
-              console.log(
-                `Trying to get ${assistantType} assistant response directly...`
-              );
-              // Use the handleSpecializedAssistantRouting function from the hook
-              const specializedResponse = await handleSpecializedAssistantRouting(
-                response.conversationId,
-                text,
-                assistantType
-              );
-
-              // Log the specialized response so we can see its structure
-              console.log(`Received specialized response:`, specializedResponse);
-
-              // Check if we have a valid response (with or without the success flag)
-              if (
-                specializedResponse &&
-                (specializedResponse.success || specializedResponse.answer)
-              ) {
-                // Show the specialized assistant response
-                const specializedMessage = {
-                  text: specializedResponse.answer,
-                  isBot: true,
-                  timestamp: new Date(),
-                  assistantName: assistantType,
-                  routedFrom: "Coordinator",
-                };
-
-                console.log(
-                  `Creating specialized message for UI:`,
-                  specializedMessage
-                );
-
-                // Replace the routing message with the actual specialized response
-                setMessages((prevMessages) => {
-                  // Get all messages except the last one (which is the routing message)
-                  const messagesWithoutRouting = prevMessages.slice(0, -1);
-                  return [...messagesWithoutRouting, specializedMessage];
-                });
-                // Add the specialized response to the conversation history
-                if (activeConversation) {
-                  // Use the addAssistantMessageToConversation function to update the conversation
-                  addAssistantMessageToConversation(
-                    specializedResponse.answer,
-                    assistantType,
-                    "Coordinator"
-                  );
-
-                  console.log("Added specialized response to conversation history");
-                }
-
-                return; // Exit early since we've already shown the message
-              }
-            } catch (err) {
-              console.error("Error getting specialized assistant response:", err);
-            }
-          }
-        }
-
-        // Standard flow - just add the response message
-        setMessages((prevMessages) => [...prevMessages, botMessage]);
-      }
+      const assistantResponse = await orchestrate(text);
+      const assistantMessage = {
+        text: assistantResponse,
+        isBot: true,
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, assistantMessage]);
     } catch (error) {
-      console.error("Error sending message:", error);
-      // Show error message to user
+      console.error("Error communicating with the assistant:", error);
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -220,86 +69,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           isError: true,
         },
       ]);
-    }
-  };
-
-  // Debug function to directly route to a specialized assistant
-  const handleDirectRouting = async (assistantType, message) => {
-    try {
-      const userMessage = messages.filter((msg) => !msg.isBot).pop();
-      if (!userMessage) return;
-
-      const text = userMessage.text;
-      console.log(`Directly routing to ${assistantType} with message: ${text}`);
-
-      // Show loading indicator
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          text: `Routing directly to ${assistantType} Assistant...`,
-          isBot: true,
-          timestamp: new Date(),
-          isRoutingMessage: true,
-        },
-      ]);
-
-      // Get the thread ID from the active conversation
-      const threadId = activeConversation?.id;
-      if (!threadId) {
-        console.error("No thread ID available for direct routing");
-        return;
-      }
-
-      // Direct routing to specialized assistant
-      const specializedResponse = await handleSpecializedAssistantRouting(
-        threadId,
-        text,
-        assistantType
-      );
-
-      console.log(`Specialized direct response:`, specializedResponse);
-
-      if (
-        specializedResponse &&
-        (specializedResponse.success || specializedResponse.answer)
-      ) {
-        // Replace loading message with actual response
-        setMessages((prevMessages) => {
-          const messagesWithoutLoading = prevMessages.slice(0, -1);
-
-          return [
-            ...messagesWithoutLoading,
-            {
-              text: specializedResponse.answer,
-              isBot: true,
-              timestamp: new Date(),
-              assistantName: assistantType,
-              routedFrom: "Direct",
-            },
-          ];
-        });
-
-        // Also add to conversation history
-        if (activeConversation) {
-          addAssistantMessageToConversation(
-            specializedResponse.answer,
-            assistantType,
-            "Direct"
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error in direct routing:", error);
-      // Show error message
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          text: `Error getting ${assistantType} response: ${error.message}`,
-          isBot: true,
-          timestamp: new Date(),
-          isError: true,
-        },
-      ]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -309,56 +80,35 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
 
   const isChatEmpty = messages.length === 0;
   const renderMessages = () => {
-    return messages
-      .map((message, index) => {
-        // Check if this is a routing instruction from coordinator
-        const isRoutingInstruction =
-          message.isBot &&
-          (message.text.includes("Forecast Assistant will process") ||
-            message.text.includes("Sales Assistant will process") ||
-            message.text.includes("routing to Forecast") ||
-            message.text.includes("routing to Sales") ||
-            message.text.includes("The Forecast Assistant will") ||
-            message.text.includes("The Sales Assistant will"));
+    return messages.map((message, index) => (
+      <ChatMessage
+        key={`msg-${index}`}
+        message={message.text}
+        isBot={message.isBot}
+        timestamp={message.timestamp}
+        isImage={message.isImage}
+        imageUrl={message.imageUrl}
+        imageFileId={message.imageFileId}
+        assistantName={message.assistantName}
+        routedFrom={message.routedFrom}
+        onRegenerateResponse={
+          message.isBot
+            ? () => {
+                // Find the last user message before this bot message
+                const lastUserMessageIndex = messages
+                  .slice(0, index)
+                  .map((m, i) => ({ ...m, index: i }))
+                  .filter((m) => !m.isBot)
+                  .pop();
 
-        // Skip showing intermediate routing messages to avoid confusion
-        if (isRoutingInstruction && index < messages.length - 1) {
-          // If the next message is from a specialized assistant, don't show this routing message
-          return null;
+                if (lastUserMessageIndex) {
+                  handleSendMessage(messages[lastUserMessageIndex.index].text);
+                }
+              }
+            : undefined
         }
-
-        return (
-          <ChatMessage
-            key={`msg-${index}`}
-            message={message.text}
-            isBot={message.isBot}
-            timestamp={message.timestamp}
-            isImage={message.isImage}
-            imageUrl={message.imageUrl}
-            imageFileId={message.imageFileId}
-            assistantName={message.assistantName}
-            routedFrom={message.routedFrom}
-            isRoutingMessage={isRoutingInstruction}
-            onRegenerateResponse={
-              message.isBot
-                ? () => {
-                    // Find the last user message before this bot message
-                    const lastUserMessageIndex = messages
-                      .slice(0, index)
-                      .map((m, i) => ({ ...m, index: i }))
-                      .filter((m) => !m.isBot)
-                      .pop();
-
-                    if (lastUserMessageIndex) {
-                      handleSendMessage(messages[lastUserMessageIndex.index].text);
-                    }
-                  }
-                : undefined
-            }
-          />
-        );
-      })
-      .filter(Boolean); // Remove any null messages
+      />
+    ));
   };
 
   return (
@@ -426,8 +176,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             </IconButton>
           </Tooltip>
           <IconButton sx={{ color: theme.palette.text.secondary, p: 0.5 }}>
-            {" "}
-            {/* Reduced padding */}
             <Avatar
               sx={{
                 width: 28,
@@ -441,7 +189,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             >
               <AccountCircleIcon fontSize="small" /> {/* Added smaller icon */}
             </Avatar>
-          </IconButton>{" "}
+          </IconButton>
           <Typography
             variant="body2"
             sx={{
@@ -452,7 +200,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             }} // Smaller margin and text
           ></Typography>
         </Box>
-      </Box>{" "}
+      </Box>
       {/* Help Drawer */}
       <HelpFAQ open={helpDrawerOpen} onClose={() => setHelpDrawerOpen(false)} />
       {/* Chat Content Area */}
@@ -477,7 +225,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             flexDirection: "column",
           }}
         >
-          {isChatEmpty && !isBotResponding ? (
+          {isChatEmpty && !isLoading ? (
             <Fade in={true} timeout={800}>
               <Box sx={{ textAlign: "center", my: "auto" }}>
                 <img
@@ -518,7 +266,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                     <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
                       <MessageInput
                         onSendMessage={handleSendMessage}
-                        disabled={isBotResponding}
+                        disabled={isLoading}
                       />
                     </Box>
                   </Fade>
@@ -527,8 +275,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             </Fade>
           ) : (
             renderMessages()
-          )}{" "}
-          {isBotResponding && messages?.length > 0 && (
+          )}
+          {isLoading && messages?.length > 0 && (
             <Box
               sx={{
                 display: "flex",
@@ -557,12 +305,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         {/* Input at bottom when chat has messages - Reduced padding */}
         {(!isChatEmpty || messages.length > 0) && (
           <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-            {" "}
-            {/* Reduced padding from 2 */}
-            <MessageInput
-              onSendMessage={handleSendMessage}
-              disabled={isBotResponding}
-            />
+            <MessageInput onSendMessage={handleSendMessage} disabled={isLoading} />
           </Box>
         )}
       </Box>
