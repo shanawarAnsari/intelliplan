@@ -6,7 +6,15 @@ class AzureOpenAIService {
     this.azureOpenAIKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
     this.azureOpenAIEndpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
     this.azureOpenAIVersion = "2024-05-01-preview";
-    this.assistantId = process.env.REACT_APP_AI_ASSISTANT_ID;
+
+    // Assistant IDs
+    this.coordinatorAssistantId = "asst_6VsHLyDwxFQhoxZakELHag4x"; // Test_CoordinatorAssistant_Ahmad
+    this.forecastAssistantId = "asst_fJohmubFJ1rLarIbgKXXVV5c"; // ForecastAssistant
+    this.salesAssistantId = "asst_gTygyP8mTRID3LvmwWnZcGdj"; // SalesAssistant
+
+    // Default to coordinator
+    this.assistantId = this.coordinatorAssistantId;
+
     this.threadId = null;
     this.client = null;
 
@@ -80,7 +88,7 @@ class AzureOpenAIService {
       throw error;
     }
   }
-  async runAssistant(assistantId = null) {
+  async runAssistant(assistantId = null, threadId = null) {
     try {
       if (!this.client) {
         throw new Error("Azure OpenAI client is not initialized");
@@ -90,16 +98,19 @@ class AzureOpenAIService {
       const currentAssistantId = assistantId || this.assistantId;
 
       // Run the thread
-      const runResponse = await this.client.beta.threads.runs.create(this.threadId, {
-        assistant_id: this.assistantId,
-      });
+      const runResponse = await this.client.beta.threads.runs.create(
+        threadId || this.threadId,
+        {
+          assistant_id: currentAssistantId,
+        }
+      );
 
       // Poll for completion
       let runStatus = runResponse.status;
       while (runStatus === "queued" || runStatus === "in_progress") {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         const runStatusResponse = await this.client.beta.threads.runs.retrieve(
-          this.threadId,
+          threadId || this.threadId,
           runResponse.id
         );
         runStatus = runStatusResponse.status;
@@ -109,7 +120,7 @@ class AzureOpenAIService {
       // Get messages after completion
       if (runStatus === "completed") {
         const messagesResponse = await this.client.beta.threads.messages.list(
-          this.threadId
+          threadId || this.threadId
         );
 
         // Return the latest assistant message
@@ -119,19 +130,19 @@ class AzureOpenAIService {
         if (assistantMessages.length > 0) {
           return {
             answer: assistantMessages[0].content[0].text.value,
-            conversationId: this.threadId,
+            conversationId: threadId || this.threadId,
           };
         } else {
           return {
             answer: "No response from assistant",
-            conversationId: this.threadId,
+            conversationId: threadId || this.threadId,
           };
         }
       } else {
         console.log(`Run status is ${runStatus}, unable to fetch messages.`);
         return {
           answer: `The assistant encountered an issue. Status: ${runStatus}`,
-          conversationId: this.threadId,
+          conversationId: threadId || this.threadId,
         };
       }
     } catch (error) {
@@ -162,25 +173,54 @@ class AzureOpenAIService {
   }
 
   // Method to handle complete conversation flow
-  async conversationHandler(message, conversationId = null) {
+  async conversationHandler(message, conversationId = null, assistantId = null) {
     try {
-      // If conversationId is provided, use it as threadId
-      if (conversationId) {
-        this.threadId = conversationId;
-      } else {
-        // Create new thread if none exists
-        if (!this.threadId) {
-          await this.createThread();
-        }
-      } // Assistant is already configured with ID: asst_fJohmubFJ1rLarIbgKXXVV5c
+      // If no assistantId is provided, default to Test_CoordinatorAssistant_Ahmad
+      const currentAssistantId = assistantId || this.coordinatorAssistantId;
 
-      // Send message
-      await this.sendMessage(message);
+      // Send message to the specified assistant
+      await this.sendMessage(message, conversationId);
 
-      // Run the assistant and get response
-      const response = await this.runAssistant();
+      // Run the assistant and get the response
+      const response = await this.runAssistant(currentAssistantId, conversationId);
 
-      return response;
+      // Check if the response contains routing instructions
+      if (response.answer === "route_to_forecast") {
+        console.log("Routing to ForecastAssistant...");
+        const forecastResponse = await this.runAssistant(
+          this.forecastAssistantId,
+          conversationId
+        );
+        return {
+          ...forecastResponse,
+          routedFrom: "coordinator",
+          assistantName: "Forecast",
+        };
+      } else if (response.answer === "route_to_sales") {
+        console.log("Routing to SalesAssistant...");
+        const salesResponse = await this.runAssistant(
+          this.salesAssistantId,
+          conversationId
+        );
+        return {
+          ...salesResponse,
+          routedFrom: "coordinator",
+          assistantName: "Sales",
+        };
+      }
+
+      // No routing required
+      return {
+        ...response,
+        assistantName:
+          currentAssistantId === this.coordinatorAssistantId
+            ? "Coordinator"
+            : currentAssistantId === this.forecastAssistantId
+            ? "Forecast"
+            : currentAssistantId === this.salesAssistantId
+            ? "Sales"
+            : "Assistant",
+      };
     } catch (error) {
       console.error("Error in conversation handler:", error);
       return {

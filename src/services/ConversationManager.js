@@ -51,13 +51,14 @@ class ConversationManager {
     return conversation;
   }
 
-  async sendMessageAndGetResponse(conversationId, message) {
+  async sendMessageAndGetResponse(conversationId, message, assistantId = null) {
     try {
       this.addMessageToConversation(conversationId, message, "user");
 
       const response = await azureOpenAIService.conversationHandler(
         message,
-        conversationId
+        conversationId,
+        assistantId || "asst_6VsHLyDwxFQhoxZakELHag4x"
       );
 
       if (response.answer) {

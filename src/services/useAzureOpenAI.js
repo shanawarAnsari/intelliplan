@@ -5,8 +5,9 @@ import { fetchImageFromOpenAI } from "./ImageService";
 const useAzureOpenAI = () => {
   const [client, setClient] = useState(null);
   const [assistantId, setAssistantId] = useState(
-    process.env.REACT_APP_AI_ASSISTANT_ID
+    process.env.REACT_APP_AI_ASSISTANT_ID || "asst_6VsHLyDwxFQhoxZakELHag4x"
   );
+  const [currentAssistantName, setCurrentAssistantName] = useState("Coordinator");
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -367,7 +368,7 @@ const useAzureOpenAI = () => {
   );
 
   const conversationHandler = useCallback(
-    async (message, conversationId = null) => {
+    async (message, conversationId = null, assistantId = null) => {
       setIsLoading(true);
       setError(null);
 
@@ -407,15 +408,61 @@ const useAzureOpenAI = () => {
           setThreadId(useThreadId);
         }
 
+        // Initially use the coordinator assistant if none specified
+        const initialAssistantId = assistantId || "asst_6VsHLyDwxFQhoxZakELHag4x";
+        let assistantName = "Coordinator";
+
+        // Send message to the initial assistant
         const messageResult = await sendMessage(message, useThreadId);
         if (!messageResult) {
           throw new Error("Failed to send message");
         }
 
-        const response = await runAssistant(assistantId, useThreadId);
+        // Run the initial assistant
+        const coordinatorResponse = await runAssistant(
+          initialAssistantId,
+          useThreadId
+        );
+
+        // Check if we need to route to another assistant
+        if (coordinatorResponse.answer === "route_to_forecast") {
+          console.log("Routing to ForecastAssistant...");
+          assistantName = "Forecast";
+          // No need to send the message again, just run the new assistant on the same thread
+          const forecastResponse = await runAssistant(
+            "asst_fJohmubFJ1rLarIbgKXXVV5c",
+            useThreadId
+          );
+          setCurrentAssistantName("Forecast");
+          return {
+            ...forecastResponse,
+            conversationId: useThreadId,
+            routedFrom: "coordinator",
+            assistantName: "Forecast",
+          };
+        } else if (coordinatorResponse.answer === "route_to_sales") {
+          console.log("Routing to SalesAssistant...");
+          assistantName = "Sales";
+          // No need to send the message again, just run the new assistant on the same thread
+          const salesResponse = await runAssistant(
+            "asst_gTygyP8mTRID3LvmwWnZcGdj",
+            useThreadId
+          );
+          setCurrentAssistantName("Sales");
+          return {
+            ...salesResponse,
+            conversationId: useThreadId,
+            routedFrom: "coordinator",
+            assistantName: "Sales",
+          };
+        }
+
+        // If no routing needed, return the coordinator response
+        setCurrentAssistantName("Coordinator");
         return {
-          ...response,
+          ...coordinatorResponse,
           conversationId: useThreadId,
+          assistantName: "Coordinator",
         };
       } catch (err) {
         console.error("Error in conversation handler:", err);
@@ -435,6 +482,7 @@ const useAzureOpenAI = () => {
   return {
     client,
     assistantId,
+    currentAssistantName,
     threadId,
     messages,
     isLoading,

@@ -156,133 +156,54 @@ export const ConversationProvider = ({ children }) => {
           messages: updatedMessages,
         };
 
-        const shouldGenerateTitle =
-          (activeConversation.messages.length === 0 &&
-            activeConversation.title === "New Conversation") ||
-          (activeConversation.messages.length > 0 &&
-            activeConversation.messages.length % 3 === 0 &&
-            activeConversation.messages.filter((msg) => msg.role === "user").length >
-              0);
-
-        if (shouldGenerateTitle) {
-          try {
-            console.log("Generating title for conversation...");
-            const titleThread = await createThread();
-            if (titleThread) {
-              const contextPrompt =
-                activeConversation.messages.length > 0
-                  ? `Here's a conversation so far:\n${activeConversation.messages
-                      .map(
-                        (m) =>
-                          `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`
-                      )
-                      .join(
-                        "\n"
-                      )}\n\nNew message: "${message}"\n\nPlease generate a brief, descriptive title (4-5 words max) that summarizes this conversation.`
-                  : `Please generate a brief, descriptive title (4-5 words max) for a conversation that starts with this message: "${message}"`;
-
-              const titleResponse = await conversationHandler(
-                contextPrompt,
-                titleThread.id
-              );
-
-              if (titleResponse && titleResponse.answer) {
-                const generatedTitle = titleResponse.answer
-                  .replace(/^["']|["']$/g, "")
-                  .trim();
-
-                updatedConversation = {
-                  ...updatedConversation,
-                  title: generatedTitle,
-                };
-
-                console.log("Generated new title:", generatedTitle);
-              }
-            }
-          } catch (titleError) {
-            console.error("Error generating title:", titleError);
-          }
-        }
-
         setActiveConversation(updatedConversation);
         setConversations((prev) => {
           if (prev.some((conv) => conv.id === activeConversation.id)) {
-            const updatedConversations = prev.map((conv) =>
+            return prev.map((conv) =>
               conv.id === activeConversation.id ? updatedConversation : conv
             );
-            localStorage.setItem(
-              "conversations",
-              JSON.stringify(updatedConversations)
-            );
-            return updatedConversations;
           }
           return prev;
         });
 
-        let response;
-        try {
-          response = await conversationHandler(message, activeConversation.id);
-        } catch (error) {
-          const thread = await createThread();
-          if (thread) {
-            const reconversation = {
-              ...updatedConversation,
-              id: thread.id,
-            };
+        // Send message to Test_CoordinatorAssistant_Ahmad
+        const response = await conversationHandler(
+          message,
+          activeConversation.id,
+          "asst_6VsHLyDwxFQhoxZakELHag4x"
+        );
 
-            setActiveConversation(reconversation);
-            setConversations((prev) => {
-              return prev.map((conv) =>
-                conv.id === activeConversation.id ? reconversation : conv
-              );
-            });
-
-            response = await conversationHandler(message, thread.id);
-          } else {
-            throw error;
-          }
-        }
         if (response) {
-          console.log("Response from AI:", response);
           const assistantMessage = {
             role: "assistant",
             content: response.answer || "",
             timestamp: new Date(),
-            isImage: response.isImage || false,
-            imageUrl: response.imageUrl || null,
-            imageFileId: response.imageFileId || null,
+            assistantName: response.assistantName || "Assistant",
+            routedFrom: response.routedFrom || null,
           };
 
           const finalMessages = [...updatedMessages, assistantMessage];
+
+          // Update conversation title based on first message if it's untitled
           const finalConversation = {
             ...updatedConversation,
             messages: finalMessages,
-            id: response.conversationId || activeConversation.id,
+            title:
+              updatedConversation.title === "New Conversation" &&
+              finalMessages.length <= 2
+                ? message.substring(0, 30) + (message.length > 30 ? "..." : "")
+                : updatedConversation.title,
           };
+
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-            const existingConvIndex = prev.findIndex(
-              (conv) => conv.id === activeConversation.id
+            const updated = prev.map((conv) =>
+              conv.id === activeConversation.id ? finalConversation : conv
             );
 
-            let updatedConversations;
-            if (existingConvIndex >= 0) {
-              updatedConversations = prev.map((conv) =>
-                conv.id === activeConversation.id ? finalConversation : conv
-              );
-            } else {
-              updatedConversations = [finalConversation, ...prev];
-            }
-
-            updatedConversations = updatedConversations.filter(
-              (conv) => conv.messages && conv.messages.length >= 2
-            );
-
-            localStorage.setItem(
-              "conversations",
-              JSON.stringify(updatedConversations)
-            );
-            return updatedConversations;
+            // Update localStorage
+            localStorage.setItem("conversations", JSON.stringify(updated));
+            return updated;
           });
         }
 
@@ -294,7 +215,7 @@ export const ConversationProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    [activeConversation, conversationHandler, createThread, setThreadId]
+    [activeConversation, conversationHandler]
   );
   const value = {
     conversations,

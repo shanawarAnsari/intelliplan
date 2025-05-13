@@ -24,6 +24,8 @@ const ChatMessage = ({
   imageUrl: initialImageUrl,
   isImage,
   imageFileId,
+  assistantName,
+  routedFrom,
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -188,7 +190,7 @@ const ChatMessage = ({
             <AccountCircleIcon sx={{ fontSize: 16 }} />
           </Avatar>
         )}
-      </Box>
+      </Box>{" "}
       {isBot && (
         <Box
           sx={{
@@ -233,6 +235,23 @@ const ChatMessage = ({
               <AutorenewIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          {assistantName && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "inline-block",
+                ml: 1,
+                color: theme.palette.primary.main,
+                fontWeight: "bold",
+                fontSize: "0.7rem",
+                border: `1px solid ${theme.palette.primary.main}`,
+                borderRadius: "4px",
+                px: 0.5,
+              }}
+            >
+              {assistantName}
+            </Typography>
+          )}
           {timestamp && (
             <Typography
               variant="caption"

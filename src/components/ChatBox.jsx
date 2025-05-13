@@ -77,10 +77,13 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         return {
           text: msg.content,
           isBot: msg.role === "assistant",
-          timestamp: new Date(),
+          timestamp: new Date(msg.timestamp) || new Date(),
           isImage: msg.isImage || false,
           imageUrl: msg.imageUrl || null,
           imageFileId: msg.imageFileId || null,
+          assistantName:
+            msg.assistantName || (msg.role === "assistant" ? "Assistant" : null),
+          routedFrom: msg.routedFrom || null,
         };
       });
       console.log("Formatted messages for UI:", formattedMessages);
@@ -96,7 +99,16 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     setMessages(updatedMessagesWithUser);
 
     // Use the sendMessage function from context
-    await sendMessage(text);
+    const response = await sendMessage(text);
+
+    if (response) {
+      const botMessage = {
+        text: response.answer,
+        isBot: true,
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, botMessage]);
+    }
   };
 
   useEffect(() => {
@@ -114,6 +126,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         isImage={message.isImage}
         imageUrl={message.imageUrl}
         imageFileId={message.imageFileId}
+        assistantName={message.assistantName}
+        routedFrom={message.routedFrom}
         onRegenerateResponse={
           message.isBot
             ? () => {
