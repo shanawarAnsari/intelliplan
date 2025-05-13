@@ -37,26 +37,20 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     setConversations,
     activeConversation,
   } = useConversation();
-
-  // State for deletion confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [conversationToDelete, setConversationToDelete] = React.useState(null);
 
-  // Function to start a new conversation
   const handleNewConversation = () => {
     createNewConversation("");
   };
 
-  // Open confirmation dialog before deletion
   const confirmDeleteConversation = (conversationId, e) => {
-    // Stop the click from bubbling up to the list item
     if (e) e.stopPropagation();
 
     const conversation = conversations.find((conv) => conv.id === conversationId);
     setConversationToDelete(conversation);
     setDeleteDialogOpen(true);
   };
-  // Execute the delete after confirmation
   const handleDeleteConversation = () => {
     try {
       if (!conversationToDelete) return;
@@ -87,8 +81,6 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       console.error("Error deleting conversation:", error);
     }
   };
-
-  // Only display conversations that have messages
   const validConversations = conversations.filter(
     (conv) => conv.messages && conv.messages.length > 0
   );
@@ -147,7 +139,6 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           </IconButton>
         </Tooltip>
       </Box>
-
       {validConversations && validConversations.length > 0 && (
         <>
           <Divider sx={{ borderColor: theme.palette.divider }} />
@@ -251,12 +242,11 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
             </List>
           </Box>
         </>
-      )}
-      {/* Kimberly Clark Logo */}
+      )}{" "}
       <Box
         sx={{
           pt: 2,
-          mt: "auto", // Push to the bottom
+          mt: "auto",
           ml: 1,
           textAlign: "start",
         }}
@@ -297,9 +287,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         }}
       >
         {drawerContent}
-      </Drawer>
-
-      {/* Confirmation Dialog */}
+      </Drawer>{" "}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}

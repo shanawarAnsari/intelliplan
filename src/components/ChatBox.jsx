@@ -33,8 +33,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     isLoading: isBotResponding,
     sendMessage,
   } = useConversation();
-
-  // FAQ data for the help drawer
   const faqItems = [
     {
       question: "What can this chatbot do?",

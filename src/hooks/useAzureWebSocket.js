@@ -1,10 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-/**
- * Custom hook for WebSocket connection to Azure services
- * @param {string} url - The WebSocket URL
- * @returns {Object} WebSocket controls and state
- */
 const useAzureWebSocket = (url) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
@@ -13,13 +8,8 @@ const useAzureWebSocket = (url) => {
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000;
-
-  // Message handlers storage
   const messageHandlersRef = useRef(new Map());
 
-  /**
-   * Connect to WebSocket
-   */
   const connect = useCallback(() => {
     try {
       if (
@@ -58,10 +48,6 @@ const useAzureWebSocket = (url) => {
       setError(`Error creating WebSocket connection: ${err.message}`);
     }
   }, [url]);
-
-  /**
-   * Handle incoming WebSocket messages
-   */
   const handleMessage = useCallback((event) => {
     try {
       const data = JSON.parse(event.data);
@@ -77,10 +63,6 @@ const useAzureWebSocket = (url) => {
       console.error("Error handling WebSocket message:", err);
     }
   }, []);
-
-  /**
-   * Register a message handler
-   */
   const on = useCallback((messageType, handler) => {
     if (!messageHandlersRef.current.has(messageType)) {
       messageHandlersRef.current.set(messageType, []);
@@ -97,10 +79,6 @@ const useAzureWebSocket = (url) => {
       }
     };
   }, []);
-
-  /**
-   * Attempt to reconnect to WebSocket
-   */
   const attemptReconnect = useCallback(() => {
     if (reconnectAttemptsRef.current < maxReconnectAttempts) {
       reconnectAttemptsRef.current++;
@@ -115,10 +93,6 @@ const useAzureWebSocket = (url) => {
       setError("Maximum reconnection attempts reached");
     }
   }, [connect]);
-
-  /**
-   * Send a message through the WebSocket
-   */
   const send = useCallback((message) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
@@ -136,10 +110,6 @@ const useAzureWebSocket = (url) => {
       return false;
     }
   }, []);
-
-  /**
-   * Disconnect from WebSocket
-   */
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.close();

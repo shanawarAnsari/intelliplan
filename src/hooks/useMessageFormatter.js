@@ -1,22 +1,12 @@
 import { useCallback } from "react";
 
-/**
- * Custom hook for formatting messages
- */
 const useMessageFormatter = () => {
-  /**
-   * Format message from the UI for sending to Azure OpenAI
-   */
   const formatForAzure = useCallback((content, role = "user") => {
     return {
       role: role,
       content: content,
     };
   }, []);
-
-  /**
-   * Format message from Azure OpenAI for the UI
-   */
   const formatForUI = useCallback((message) => {
     // Handle different message content formats
     let content = "";
@@ -73,10 +63,6 @@ const useMessageFormatter = () => {
       imageFileId,
     };
   }, []);
-
-  /**
-   * Format a list of messages from Azure OpenAI for the UI
-   */
   const formatMessagesForUI = useCallback(
     (messages) => {
       if (!Array.isArray(messages)) {
@@ -87,10 +73,6 @@ const useMessageFormatter = () => {
     },
     [formatForUI]
   );
-
-  /**
-   * Extract text content from complex message formats
-   */
   const extractTextContent = useCallback((content) => {
     if (!content) return "";
 

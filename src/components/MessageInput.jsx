@@ -17,21 +17,21 @@ const MessageInput = ({ onSendMessage, disabled }) => {
     <Paper
       component="form"
       onSubmit={handleSubmit}
-      elevation={2} // Reduced elevation from 3
+      elevation={2}
       sx={{
         display: "flex",
         alignItems: "center",
-        p: "8px 12px", // Reduced padding from 12px 16px
-        borderRadius: "10px", // Reduced border radius from 12px
+        p: "8px 12px",
+        borderRadius: "10px",
         backgroundColor: "background.paper",
-        boxShadow: "0px 2px 8px rgba(0,0,0,0.08)", // Lighter shadow
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
       }}
       className="slide-up"
     >
       <TextField
         fullWidth
         multiline
-        maxRows={3} // Reduced from 4 to 3
+        maxRows={3}
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -45,12 +45,12 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         disabled={disabled}
         InputProps={{
           sx: {
-            borderRadius: "6px", // Reduced from 8px
-            fontSize: "0.9rem", // Smaller font size
+            borderRadius: "6px",
+            fontSize: "0.9rem",
           },
         }}
         sx={{
-          mr: 0.75, // Reduced margin from 1
+          mr: 0.75,
           "& .MuiOutlinedInput-root": {
             "& fieldset": {
               borderColor: "rgba(255, 255, 255, 0.23)",
@@ -61,7 +61,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
             "&.Mui-focused fieldset": {
               borderColor: "primary.main",
             },
-            padding: "4px 8px", // Added padding reduction for the input itself
+            padding: "4px 8px",
           },
         }}
       />
@@ -79,13 +79,14 @@ const MessageInput = ({ onSendMessage, disabled }) => {
             "&.Mui-disabled": {
               bgcolor: "action.disabledBackground",
             },
-            width: "32px", // Reduced size from default
-            height: "32px", // Reduced size from default
-            padding: "6px", // Reduced padding
+            width: "32px",
+            height: "32px",
+            padding: "6px",
           }}
           className={message.trim() && !disabled ? "button-pulse" : ""}
         >
-          <SendIcon fontSize="small" /> {/* Changed to small icon */}
+          {" "}
+          <SendIcon fontSize="small" />
         </IconButton>
       </Box>
     </Paper>

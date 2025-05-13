@@ -1,4 +1,3 @@
-// Azure OpenAI Assistant Service
 require("dotenv/config");
 const { AzureOpenAI } = require("openai");
 
@@ -7,7 +6,7 @@ class AzureOpenAIService {
     this.azureOpenAIKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
     this.azureOpenAIEndpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
     this.azureOpenAIVersion = "2024-05-01-preview";
-    this.assistantId = process.env.REACT_APP_AI_ASSISTANT_ID; // Use the existing assistant ID
+    this.assistantId = process.env.REACT_APP_AI_ASSISTANT_ID;
     this.threadId = null;
     this.client = null;
 
@@ -35,8 +34,6 @@ class AzureOpenAIService {
       console.error("Error initializing Azure OpenAI client:", error);
     }
   }
-  // Assistant is pre-configured with ID: asst_fJohmubFJ1rLarIbgKXXVV5c
-
   async createThread() {
     try {
       if (!this.client) {

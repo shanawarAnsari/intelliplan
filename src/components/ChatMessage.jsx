@@ -49,16 +49,12 @@ const ChatMessage = ({
     setImageLoading(false);
     setImageError(true);
   };
-
-  // Load image with authentication if needed
   useEffect(() => {
     if (isImage) {
       if (initialImageUrl) {
-        // Image URL was provided directly
         setImageUrl(initialImageUrl);
         setImageLoading(true);
       } else if (imageFileId) {
-        // Need to fetch the image using the file ID
         const loadImage = async () => {
           try {
             setImageLoading(true);

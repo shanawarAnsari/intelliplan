@@ -3,7 +3,6 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { appTheme } from "../styles/theme";
 
-// Simple context that no longer needs to toggle themes
 export const ThemeContext = createContext({
   mode: "dark",
 });

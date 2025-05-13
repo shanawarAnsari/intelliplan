@@ -1,17 +1,8 @@
 import { useCallback } from "react";
 import useAzureOpenAI from "../services/useAzureOpenAI";
 
-/**
- * Custom hook to validate thread IDs and handle thread recreation
- */
 const useThreadValidator = () => {
   const { client } = useAzureOpenAI();
-
-  /**
-   * Validate that a thread exists and is accessible
-   * @param {string} threadId - The thread ID to validate
-   * @returns {Promise<boolean>} - True if valid, false if not
-   */
   const validateThread = useCallback(
     async (threadId) => {
       if (!client || !threadId) return false;
@@ -32,12 +23,6 @@ const useThreadValidator = () => {
     },
     [client]
   );
-
-  /**
-   * Safely format a thread ID with 'thread_' prefix
-   * @param {string} id - The ID to format
-   * @returns {string} - The formatted ID
-   */
   const formatThreadId = useCallback((id) => {
     if (!id) return null;
     return id.startsWith("thread_") ? id : `thread_${id}`;
