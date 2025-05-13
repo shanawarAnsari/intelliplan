@@ -351,7 +351,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   src={Logo}
                   alt="InteliPlan Logo"
                   style={{
-                    width: "20%",
+                    width: 180,
                     height: 40,
                     marginBottom: theme.spacing(2),
                   }}
