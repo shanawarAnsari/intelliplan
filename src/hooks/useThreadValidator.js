@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import useAzureOpenAI from "../services/useAzureOpenAI";
+import useAzureOpenAI from "../hooks/useAzureOpenAI";
 
 const useThreadValidator = () => {
   const { client } = useAzureOpenAI();

@@ -18,6 +18,7 @@ import Logo from "../assets/Intelliplan-logo.png";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import HelpFAQ from "./HelpFAQ";
 import { orchestrate } from "../services/AzureOpenAIService";
+import DomainCards from "./DomainCards"; // Import the new component
 
 const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [messages, setMessages] = useState([]);
@@ -226,9 +227,23 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             flexDirection: "column",
           }}
         >
+          {/* Render DomainCards instead of the MessageInput here when chat is empty */}
+          <Box sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2, mb: 3 }}>
+            <DomainCards />
+          </Box>
           {isChatEmpty && !isLoading ? (
             <Fade in={true} timeout={800}>
-              <Box sx={{ textAlign: "center", my: "auto" }}>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  my: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                }}
+              >
                 <img
                   src={Logo}
                   alt="InteliPlan Logo"

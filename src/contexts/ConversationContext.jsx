@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
-import useAzureOpenAI from "../services/useAzureOpenAI";
+import useAzureOpenAI from "../hooks/useAzureOpenAI";
 import useThreadValidator from "../hooks/useThreadValidator";
 
 const ConversationContext = createContext();
