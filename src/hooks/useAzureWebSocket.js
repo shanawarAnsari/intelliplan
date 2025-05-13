@@ -23,14 +23,12 @@ const useAzureWebSocket = (url) => {
       socketRef.current = new WebSocket(url);
 
       socketRef.current.onopen = () => {
-        console.log("WebSocket connection established");
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
         setError(null);
       };
 
-      socketRef.current.onclose = (event) => {
-        console.log("WebSocket connection closed");
+      socketRef.current.onclose = () => {
         setIsConnected(false);
         attemptReconnect();
       };
@@ -48,6 +46,7 @@ const useAzureWebSocket = (url) => {
       setError(`Error creating WebSocket connection: ${err.message}`);
     }
   }, [url]);
+
   const handleMessage = useCallback((event) => {
     try {
       const data = JSON.parse(event.data);
@@ -63,6 +62,7 @@ const useAzureWebSocket = (url) => {
       console.error("Error handling WebSocket message:", err);
     }
   }, []);
+
   const on = useCallback((messageType, handler) => {
     if (!messageHandlersRef.current.has(messageType)) {
       messageHandlersRef.current.set(messageType, []);
@@ -79,13 +79,10 @@ const useAzureWebSocket = (url) => {
       }
     };
   }, []);
+
   const attemptReconnect = useCallback(() => {
     if (reconnectAttemptsRef.current < maxReconnectAttempts) {
       reconnectAttemptsRef.current++;
-      console.log(
-        `Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`
-      );
-
       setTimeout(() => {
         connect();
       }, reconnectDelay);
@@ -93,6 +90,7 @@ const useAzureWebSocket = (url) => {
       setError("Maximum reconnection attempts reached");
     }
   }, [connect]);
+
   const send = useCallback((message) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
@@ -110,6 +108,7 @@ const useAzureWebSocket = (url) => {
       return false;
     }
   }, []);
+
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.close();

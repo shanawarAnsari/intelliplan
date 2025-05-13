@@ -1,4 +1,3 @@
-// Assistant IDs from environment variables
 export const COORDINATOR_ASSISTANT_ID =
   process.env.REACT_APP_COORDINATOR_ASSISTANT_ID || "asst_6VsHLyDwxFQhoxZakELHag4x";
 export const SALES_ASSISTANT_ID =
@@ -6,7 +5,6 @@ export const SALES_ASSISTANT_ID =
 export const FORECAST_ASSISTANT_ID =
   process.env.REACT_APP_FORECAST_ASSISTANT_ID || "asst_fJohmubFJ1rLarIbgKXXVV5c";
 
-// Assistant names for UI display
 export const ASSISTANT_NAMES = {
   [COORDINATOR_ASSISTANT_ID]: "Coordinator",
   [SALES_ASSISTANT_ID]: "Sales",

@@ -85,7 +85,6 @@ const MessageInput = ({ onSendMessage, disabled }) => {
           }}
           className={message.trim() && !disabled ? "button-pulse" : ""}
         >
-          {" "}
           <SendIcon fontSize="small" />
         </IconButton>
       </Box>

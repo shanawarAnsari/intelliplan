@@ -51,36 +51,31 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     setConversationToDelete(conversation);
     setDeleteDialogOpen(true);
   };
+
   const handleDeleteConversation = () => {
     try {
       if (!conversationToDelete) return;
 
       const conversationId = conversationToDelete.id;
-      console.log("Deleting conversation:", conversationId);
 
-      // Remove from conversations state
       const updatedConversations = conversations.filter(
         (conv) => conv.id !== conversationId
       );
 
-      // Update local state
       setConversations(updatedConversations);
-
-      // Update localStorage directly
       localStorage.setItem("conversations", JSON.stringify(updatedConversations));
 
-      // If deleted conversation was active, create a new one
       if (activeConversation && activeConversation.id === conversationId) {
         handleNewConversation();
       }
 
-      // Close the dialog
       setDeleteDialogOpen(false);
       setConversationToDelete(null);
     } catch (error) {
       console.error("Error deleting conversation:", error);
     }
   };
+
   const validConversations = conversations.filter(
     (conv) => conv.messages && conv.messages.length > 0
   );
@@ -186,7 +181,6 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
                         },
                       }}
                     >
-                      {" "}
                       <Box
                         sx={{
                           display: "flex",
@@ -216,7 +210,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
                             },
                           }}
                           sx={{ flex: 1 }}
-                        />{" "}
+                        />
                         <IconButton
                           size="small"
                           sx={{
@@ -242,7 +236,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
             </List>
           </Box>
         </>
-      )}{" "}
+      )}
       <Box
         sx={{
           pt: 2,
@@ -259,6 +253,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       </Box>
     </Box>
   );
+
   return (
     <>
       <Drawer
@@ -287,7 +282,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         }}
       >
         {drawerContent}
-      </Drawer>{" "}
+      </Drawer>
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}

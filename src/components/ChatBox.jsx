@@ -30,12 +30,15 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
   };
+
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
         text: msg.content,
         isBot: msg.role === "assistant",
         timestamp: new Date(msg.timestamp) || new Date(),
+        assistantName: msg.assistantName,
+        routedFrom: msg.routedFrom,
       }));
       setMessages(formattedMessages);
     } else {
@@ -79,6 +82,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   }, [messages]);
 
   const isChatEmpty = messages.length === 0;
+
   const renderMessages = () => {
     return messages.map((message, index) => (
       <ChatMessage
@@ -94,7 +98,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         onRegenerateResponse={
           message.isBot
             ? () => {
-                // Find the last user message before this bot message
                 const lastUserMessageIndex = messages
                   .slice(0, index)
                   .map((m, i) => ({ ...m, index: i }))
@@ -121,16 +124,15 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         backgroundColor: theme.palette.background.default,
       }}
     >
-      {/* Header Bar - Reduced padding */}
       <Box
         sx={{
-          p: "8px 12px", // Reduced padding from 12px 16px
+          p: "8px 12px",
           borderBottom: `1px solid ${theme.palette.divider}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           backgroundColor: theme.palette.background.paper,
-          boxShadow: "0px 1px 3px rgba(0,0,0,0.1)", // Subtle shadow
+          boxShadow: "0px 1px 3px rgba(0,0,0,0.1)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -145,7 +147,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   "&:hover": {
                     color: theme.palette.text.primary,
                   },
-                }} // Reduced margin
+                }}
               >
                 <MenuIcon />
               </IconButton>
@@ -185,9 +187,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 "&:hover": {
                   transform: "scale(1.05)",
                 },
-              }} // Reduced size
+              }}
             >
-              <AccountCircleIcon fontSize="small" /> {/* Added smaller icon */}
+              <AccountCircleIcon fontSize="small" />
             </Avatar>
           </IconButton>
           <Typography
@@ -197,17 +199,17 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               fontWeight: "medium",
               color: theme.palette.text.primary,
               fontSize: "0.85rem",
-            }} // Smaller margin and text
+            }}
           ></Typography>
         </Box>
       </Box>
-      {/* Help Drawer */}
+
       <HelpFAQ open={helpDrawerOpen} onClose={() => setHelpDrawerOpen(false)} />
-      {/* Chat Content Area */}
+
       <Box
         sx={{
           width: "100%",
-          maxWidth: "900px", // Kept this the same for readability
+          maxWidth: "900px",
           mx: "auto",
           flexGrow: 1,
           display: "flex",
@@ -215,12 +217,11 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           overflow: "hidden",
         }}
       >
-        {/* Messages area or empty state - Reduced padding */}
         <Box
           sx={{
             flexGrow: 1,
             overflowY: "auto",
-            p: 2, // Reduced padding from 3
+            p: 2,
             display: "flex",
             flexDirection: "column",
           }}
@@ -238,9 +239,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   }}
                 />
                 <Typography
-                  variant="h5" // Changed from h4 to h5 for smaller heading
+                  variant="h5"
                   sx={{
-                    mb: 1, // Reduced margin from 2
+                    mb: 1,
                     color: theme.palette.text.primary,
                     fontWeight: "medium",
                   }}
@@ -282,18 +283,18 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 display: "flex",
                 justifyContent: "flex-start",
                 alignItems: "center",
-                p: 1, // Reduced padding from 2
-                mt: 0.5, // Reduced margin from 1
+                p: 1,
+                mt: 0.5,
               }}
               className="message-in-left"
             >
               <CircularProgress
-                size={16} // Reduced size from 20
-                sx={{ mr: 1, color: theme.palette.primary.main }} // Reduced margin
+                size={16}
+                sx={{ mr: 1, color: theme.palette.primary.main }}
               />
               <Typography
                 variant="body2"
-                sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }} // Smaller text
+                sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }}
               >
                 {messages?.length > 0 && "Generating response..."}
               </Typography>
@@ -302,7 +303,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           <div ref={messagesEndRef} />
         </Box>
 
-        {/* Input at bottom when chat has messages - Reduced padding */}
         {(!isChatEmpty || messages.length > 0) && (
           <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
             <MessageInput onSendMessage={handleSendMessage} disabled={isLoading} />

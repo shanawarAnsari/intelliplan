@@ -24,6 +24,7 @@ export const ConversationProvider = ({ children }) => {
     createThread,
   } = useAzureOpenAI();
   const { validateThread, formatThreadId } = useThreadValidator();
+
   useEffect(() => {
     const loadSavedConversations = async () => {
       try {
@@ -56,6 +57,7 @@ export const ConversationProvider = ({ children }) => {
 
     loadSavedConversations();
   }, [createThread, setThreadId]);
+
   const selectConversation = useCallback(
     async (conversationId) => {
       try {
@@ -165,16 +167,12 @@ export const ConversationProvider = ({ children }) => {
           }
           return prev;
         });
-        console.log(`Sending message to the coordinator assistant: "${message}"`);
 
-        // Send message to Test_CoordinatorAssistant_Ahmad
         const response = await conversationHandler(
           message,
           activeConversation.id,
           "asst_6VsHLyDwxFQhoxZakELHag4x"
         );
-
-        console.log("Got response from conversation handler:", response);
 
         if (response) {
           const assistantMessage = {
@@ -185,11 +183,8 @@ export const ConversationProvider = ({ children }) => {
             routedFrom: response.routedFrom || null,
           };
 
-          console.log("Created assistant message:", assistantMessage);
-
           const finalMessages = [...updatedMessages, assistantMessage];
 
-          // Update conversation title based on first message if it's untitled
           const finalConversation = {
             ...updatedConversation,
             messages: finalMessages,
@@ -199,19 +194,14 @@ export const ConversationProvider = ({ children }) => {
                 ? message.substring(0, 30) + (message.length > 30 ? "..." : "")
                 : updatedConversation.title,
           };
-          console.log(
-            "Setting active conversation with final messages:",
-            finalMessages
-          );
+
           setActiveConversation(finalConversation);
           setConversations((prev) => {
             const updated = prev.map((conv) =>
               conv.id === activeConversation.id ? finalConversation : conv
             );
 
-            // Update localStorage
             localStorage.setItem("conversations", JSON.stringify(updated));
-            console.log("Updated conversations in localStorage");
             return updated;
           });
         }
@@ -231,7 +221,6 @@ export const ConversationProvider = ({ children }) => {
     (content, assistantName, routedFrom) => {
       if (!activeConversation) return;
 
-      // Create assistant message
       const assistantMessage = {
         role: "assistant",
         content: content,
@@ -240,23 +229,18 @@ export const ConversationProvider = ({ children }) => {
         routedFrom: routedFrom,
       };
 
-      console.log("Adding assistant message to conversation:", assistantMessage);
-
-      // Add assistant message to conversation
       const updatedMessages = [...activeConversation.messages, assistantMessage];
       const updatedConversation = {
         ...activeConversation,
         messages: updatedMessages,
       };
 
-      // Update state
       setActiveConversation(updatedConversation);
       setConversations((prev) => {
         const updated = prev.map((conv) =>
           conv.id === activeConversation.id ? updatedConversation : conv
         );
 
-        // Update localStorage
         localStorage.setItem("conversations", JSON.stringify(updated));
         return updated;
       });

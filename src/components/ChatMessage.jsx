@@ -52,6 +52,7 @@ const ChatMessage = ({
     setImageLoading(false);
     setImageError(true);
   };
+
   useEffect(() => {
     if (isImage) {
       setImageLoading(true);
@@ -61,7 +62,6 @@ const ChatMessage = ({
         const loadImage = async () => {
           try {
             const url = await fetchImageFromOpenAI(imageFileId);
-            console.log("Image URL fetched:", url);
             setImageUrl(url);
             setImageError(false);
           } catch (error) {
@@ -74,7 +74,6 @@ const ChatMessage = ({
 
         loadImage();
       } else {
-        // No URL or file ID available
         setImageError(true);
         setImageLoading(false);
       }
@@ -113,7 +112,7 @@ const ChatMessage = ({
           >
             <SmartToyIcon sx={{ fontSize: 16 }} />
           </Avatar>
-        )}{" "}
+        )}
         <Paper
           elevation={1}
           sx={{
@@ -122,7 +121,7 @@ const ChatMessage = ({
             maxWidth: { xs: "85%", sm: "75%" },
             bgcolor: isBot
               ? isRoutingMessage
-                ? "rgba(25, 118, 210, 0.08)" // Light blue background for routing messages
+                ? "rgba(25, 118, 210, 0.08)"
                 : theme.palette.background.secondary
               : theme.palette.primary.main,
             color: isBot
@@ -194,7 +193,7 @@ const ChatMessage = ({
             <AccountCircleIcon sx={{ fontSize: 16 }} />
           </Avatar>
         )}
-      </Box>{" "}
+      </Box>
       {isBot && (
         <Box
           sx={{
@@ -238,7 +237,7 @@ const ChatMessage = ({
             >
               <AutorenewIcon fontSize="small" />
             </IconButton>
-          </Tooltip>{" "}
+          </Tooltip>
           {assistantName && (
             <Typography
               variant="caption"
