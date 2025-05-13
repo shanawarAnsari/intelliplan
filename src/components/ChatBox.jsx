@@ -78,6 +78,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         text: msg.content,
         isBot: msg.role === "assistant",
         timestamp: new Date(),
+        isImage: msg.isImage || false,
+        imageUrl: msg.imageUrl || null,
+        imageFileId: msg.imageFileId || null,
       }));
       setMessages(formattedMessages);
     } else {
@@ -99,6 +102,35 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   }, [messages]);
 
   const isChatEmpty = messages.length === 0;
+  const renderMessages = () => {
+    return messages.map((message, index) => (
+      <ChatMessage
+        key={`msg-${index}`}
+        message={message.text}
+        isBot={message.isBot}
+        timestamp={message.timestamp}
+        isImage={message.isImage}
+        imageUrl={message.imageUrl}
+        imageFileId={message.imageFileId}
+        onRegenerateResponse={
+          message.isBot
+            ? () => {
+                // Find the last user message before this bot message
+                const lastUserMessageIndex = messages
+                  .slice(0, index)
+                  .map((m, i) => ({ ...m, index: i }))
+                  .filter((m) => !m.isBot)
+                  .pop();
+
+                if (lastUserMessageIndex) {
+                  handleSendMessage(messages[lastUserMessageIndex.index].text);
+                }
+              }
+            : undefined
+        }
+      />
+    ));
+  };
 
   return (
     <Box
@@ -365,32 +397,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               </Box>
             </Fade>
           ) : (
-            messages.map((message, index) => (
-              <ChatMessage
-                key={`msg-${index}`}
-                message={message.text}
-                isBot={message.isBot}
-                timestamp={message.timestamp}
-                onRegenerateResponse={
-                  message.isBot
-                    ? () => {
-                        // Find the last user message before this bot message
-                        const lastUserMessageIndex = messages
-                          .slice(0, index)
-                          .map((m, i) => ({ ...m, index: i }))
-                          .filter((m) => !m.isBot)
-                          .pop();
-
-                        if (lastUserMessageIndex) {
-                          handleSendMessage(
-                            messages[lastUserMessageIndex.index].text
-                          );
-                        }
-                      }
-                    : undefined
-                }
-              />
-            ))
+            renderMessages()
           )}
           {isBotResponding && messages?.length > 0 && (
             <Box

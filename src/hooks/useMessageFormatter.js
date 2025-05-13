@@ -20,8 +20,34 @@ const useMessageFormatter = () => {
   const formatForUI = useCallback((message) => {
     // Handle different message content formats
     let content = "";
+    let isImage = false;
+    let imageUrl = null;
+    let imageFileId = null;
+
+    // Check if message has the isImage flag already set (from processed messages)
+    if (message.isImage) {
+      isImage = true;
+      imageUrl = message.imageUrl;
+      imageFileId = message.imageFileId;
+    }
 
     if (message.content && Array.isArray(message.content)) {
+      // Check for image file first
+      const imageItem = message.content.find((item) => item.type === "image_file");
+      if (imageItem && imageItem.image_file) {
+        isImage = true;
+        imageFileId = imageItem.image_file.file_id;
+
+        // Get URL if available, otherwise it will be loaded later
+        if (imageItem.image_file.url) {
+          imageUrl = imageItem.image_file.url;
+        } else if (imageFileId) {
+          // Create placeholder for image that will be loaded
+          console.log(`Image file ID detected: ${imageFileId}`);
+        }
+      }
+
+      // Get text content as well
       content = message.content
         .map((item) => {
           if (item.type === "text") {
@@ -29,7 +55,8 @@ const useMessageFormatter = () => {
           }
           return "";
         })
-        .join("\n");
+        .join("\n")
+        .trim();
     } else if (typeof message.content === "string") {
       content = message.content;
     }
@@ -41,6 +68,9 @@ const useMessageFormatter = () => {
         ? new Date(message.created_at * 1000)
         : new Date(),
       id: message.id || `msg-${Date.now()}`,
+      isImage,
+      imageUrl,
+      imageFileId,
     };
   }, []);
 

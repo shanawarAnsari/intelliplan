@@ -1,6 +1,7 @@
 // Azure OpenAI Service using functional approach
 import { useState, useCallback, useEffect } from "react";
 import { AzureOpenAI } from "openai";
+import { fetchImageFromOpenAI } from "./ImageService";
 
 /**
  * Custom hook for Azure OpenAI Assistant API
@@ -49,7 +50,7 @@ const useAzureOpenAI = () => {
 
     initializeClient();
   }, []);
-  // Using fixed assistant ID: asst_fJohmubFJ1rLarIbgKXXVV5c
+
   /**
    * Create a new thread
    */
@@ -180,6 +181,45 @@ const useAzureOpenAI = () => {
   );
 
   /**
+   * Process message content to handle images and other content types
+   * @param {Array} content - Message content items
+   */
+  const processMessageContent = useCallback(async (content) => {
+    if (!content || !Array.isArray(content)) return content;
+
+    // Create a new array of content with processed items
+    const processedContent = [...content];
+
+    // Process each content item
+    for (let i = 0; i < processedContent.length; i++) {
+      const item = processedContent[i];
+
+      // Handle image files
+      if (item.type === "image_file" && item.image_file && item.image_file.file_id) {
+        try {
+          // Fetch image URL
+          const imageUrl = await fetchImageFromOpenAI(item.image_file.file_id);
+          // Add the URL to the item
+          processedContent[i] = {
+            ...item,
+            image_file: {
+              ...item.image_file,
+              url: imageUrl,
+            },
+          };
+        } catch (error) {
+          console.error(
+            `Failed to process image ${item.image_file.file_id}:`,
+            error
+          );
+        }
+      }
+    }
+
+    return processedContent;
+  }, []);
+
+  /**
    * Run the assistant on a thread
    */
   const runAssistant = useCallback(
@@ -233,9 +273,41 @@ const useAzureOpenAI = () => {
             const assistantMessages = messagesResponse.data.filter(
               (msg) => msg.role === "assistant"
             );
+
             if (assistantMessages.length > 0) {
               const latestMessage = assistantMessages[0];
-              const answer = latestMessage.content[0].text.value;
+
+              // Process message content for images and other types
+              const processedContent = await processMessageContent(
+                latestMessage.content
+              );
+
+              // Check for different content types
+              let isImage = false;
+              let imageUrl = null;
+              let imageFileId = null;
+              let textContent = "";
+
+              // Extract content based on type
+              if (Array.isArray(processedContent)) {
+                // Look for image content first
+                const imageItem = processedContent.find(
+                  (item) => item.type === "image_file"
+                );
+                if (imageItem && imageItem.image_file) {
+                  isImage = true;
+                  imageFileId = imageItem.image_file.file_id;
+                  imageUrl = imageItem.image_file.url;
+                }
+
+                // Get text content as well (might be in a separate item)
+                const textItems = processedContent
+                  .filter((item) => item.type === "text")
+                  .map((item) => item.text?.value || "")
+                  .join("\n");
+
+                textContent = textItems;
+              }
 
               // Update messages state
               setMessages((prev) => [
@@ -243,15 +315,21 @@ const useAzureOpenAI = () => {
                 {
                   id: latestMessage.id,
                   role: "assistant",
-                  content: answer,
+                  content: textContent,
                   threadId: activeThreadId,
                   timestamp: new Date(),
+                  isImage,
+                  imageUrl,
+                  imageFileId,
                 },
               ]);
 
               return {
-                answer,
+                answer: textContent,
                 conversationId: activeThreadId,
+                isImage,
+                imageUrl,
+                imageFileId,
               };
             } else {
               return {
@@ -291,11 +369,11 @@ const useAzureOpenAI = () => {
         setIsLoading(false);
       }
     },
-    [client, assistantId, threadId]
+    [client, assistantId, threadId, processMessageContent]
   );
 
   /**
-   * Get messages from a thread
+   * Get messages from a thread with processed image content
    */
   const getThreadMessages = useCallback(
     async (currentThreadId = null) => {
@@ -319,7 +397,18 @@ const useAzureOpenAI = () => {
         const messagesResponse = await client.beta.threads.messages.list(
           activeThreadId
         );
-        return messagesResponse.data;
+
+        // Process each message to handle images
+        const processedMessages = [];
+        for (const message of messagesResponse.data) {
+          const processedContent = await processMessageContent(message.content);
+          processedMessages.push({
+            ...message,
+            content: processedContent,
+          });
+        }
+
+        return processedMessages;
       } catch (err) {
         console.error(`Error getting thread messages: ${err.message}`);
         setError(`Error getting thread messages: ${err.message}`);
@@ -328,7 +417,7 @@ const useAzureOpenAI = () => {
         setIsLoading(false);
       }
     },
-    [client, threadId]
+    [client, threadId, processMessageContent]
   );
 
   /**
@@ -379,12 +468,6 @@ const useAzureOpenAI = () => {
           if (!thread) throw new Error("Failed to create thread");
           useThreadId = thread.id;
           setThreadId(useThreadId);
-        } // Create a new thread if needed or if previous thread wasn't found
-        if (createNewThread) {
-          const thread = await createThread();
-          if (!thread) throw new Error("Failed to create thread");
-          useThreadId = thread.id;
-          setThreadId(useThreadId);
         }
 
         // Send message to the validated thread
@@ -413,6 +496,7 @@ const useAzureOpenAI = () => {
     },
     [client, threadId, assistantId, createThread, sendMessage, runAssistant]
   );
+
   return {
     client,
     assistantId,

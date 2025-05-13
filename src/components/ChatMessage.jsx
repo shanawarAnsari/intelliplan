@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -7,16 +7,29 @@ import {
   Avatar,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
+import { fetchImageFromOpenAI } from "../services/ImageService";
 
-const ChatMessage = ({ message, isBot, timestamp, onRegenerateResponse }) => {
+const ChatMessage = ({
+  message,
+  isBot,
+  timestamp,
+  onRegenerateResponse,
+  imageUrl: initialImageUrl,
+  isImage,
+  imageFileId,
+}) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
+  const [imageLoading, setImageLoading] = useState(isImage);
+  const [imageError, setImageError] = useState(false);
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -27,13 +40,54 @@ const ChatMessage = ({ message, isBot, timestamp, onRegenerateResponse }) => {
       onRegenerateResponse();
     }
   };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    setImageLoading(false);
+    setImageError(true);
+  };
+
+  // Load image with authentication if needed
+  useEffect(() => {
+    if (isImage) {
+      if (initialImageUrl) {
+        // Image URL was provided directly
+        setImageUrl(initialImageUrl);
+        setImageLoading(true);
+      } else if (imageFileId) {
+        // Need to fetch the image using the file ID
+        const loadImage = async () => {
+          try {
+            setImageLoading(true);
+            const url = await fetchImageFromOpenAI(imageFileId);
+            setImageUrl(url);
+          } catch (error) {
+            console.error("Failed to load image:", error);
+            setImageError(true);
+          } finally {
+            setImageLoading(false);
+          }
+        };
+
+        loadImage();
+      } else {
+        // No URL or file ID available
+        setImageError(true);
+        setImageLoading(false);
+      }
+    }
+  }, [isImage, initialImageUrl, imageFileId]);
+
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
         alignItems: isBot ? "flex-start" : "flex-end",
-        mb: 1, // Reduced from 1.5 to 1
+        mb: 1,
       }}
       className={isBot ? "message-in-left" : "message-in-right"}
     >
@@ -41,7 +95,7 @@ const ChatMessage = ({ message, isBot, timestamp, onRegenerateResponse }) => {
         sx={{
           display: "flex",
           flexDirection: "row",
-          alignItems: "flex-start", // Changed from flex-end to center for vertical alignment
+          alignItems: "flex-start",
           width: "100%",
           justifyContent: isBot ? "flex-start" : "flex-end",
           mb: 0.5,
@@ -79,15 +133,49 @@ const ChatMessage = ({ message, isBot, timestamp, onRegenerateResponse }) => {
               : "0px 1px 3px rgba(0,0,0,0.2)",
           }}
         >
-          <Typography
-            sx={{
-              whiteSpace: "pre-wrap",
-              fontSize: "0.9rem",
-              lineHeight: 1.5,
-            }}
-          >
-            {message}
-          </Typography>
+          {isImage ? (
+            <Box sx={{ textAlign: "center", position: "relative", minHeight: 100 }}>
+              {imageLoading && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    py: 4,
+                  }}
+                >
+                  <CircularProgress size={40} />
+                </Box>
+              )}
+              {imageError ? (
+                <Typography color="error" sx={{ py: 2 }}>
+                  Failed to load image
+                </Typography>
+              ) : (
+                <img
+                  src={imageUrl}
+                  alt="AI generated visualization"
+                  style={{
+                    maxWidth: "100%",
+                    borderRadius: 8,
+                    display: imageLoading ? "none" : "block",
+                  }}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                />
+              )}
+            </Box>
+          ) : (
+            <Typography
+              sx={{
+                whiteSpace: "pre-wrap",
+                fontSize: "0.9rem",
+                lineHeight: 1.5,
+              }}
+            >
+              {message}
+            </Typography>
+          )}
         </Paper>
 
         {!isBot && (
@@ -103,14 +191,14 @@ const ChatMessage = ({ message, isBot, timestamp, onRegenerateResponse }) => {
             <AccountCircleIcon sx={{ fontSize: 16 }} />
           </Avatar>
         )}
-      </Box>{" "}
+      </Box>
       {isBot && (
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             mt: 0.5,
-            ml: 4, // Align with the message
+            ml: 4,
           }}
         >
           <Tooltip title={isLiked ? "Unlike" : "Like"}>
@@ -177,7 +265,7 @@ const ChatMessage = ({ message, isBot, timestamp, onRegenerateResponse }) => {
             color: theme.palette.text.secondary,
             fontSize: "0.65rem",
             alignSelf: "flex-end",
-            pr: 4, // Add padding to align with the message when there's an avatar
+            pr: 4,
           }}
         >
           {new Date(timestamp).toLocaleTimeString([], {
