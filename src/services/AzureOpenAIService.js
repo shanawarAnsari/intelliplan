@@ -48,7 +48,7 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
 
   // 1) Start a Coordinator thread
   const thread = await client.beta.threads.create();
-  progress(`Coordinator thread created: ${thread.id}`);
+  progress(`Coordinator assiatant launched`);
   console.log(`[DEBUG] Created coordinator thread: ${thread.id}`);
 
   await client.beta.threads.messages.create(thread.id, {
@@ -63,14 +63,14 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
   let run = await client.beta.threads.runs.create(thread.id, {
     assistant_id: COORDINATOR_ID,
   });
-  progress(`Coordinator run launched: ${run.id}. Waiting for completion...`);
+  progress(`Waiting for completion...`);
   console.log(`[DEBUG] Launched coordinator run: ${run.id}`);
   run = await waitOnRun(thread.id, run.id);
   progress("Coordinator run completed.");
 
   // 3) If it requested tools, handle each call
   if (run.status === "requires_action" && run.required_action) {
-    progress(`Coordinator requires action: ${run.required_action.type}`);
+    progress(`Coordinator requires action`);
     console.log(`[DEBUG] Coordinator requires action: ${run.required_action.type}`);
     const toolResults = [];
     const calls = run.required_action.submit_tool_outputs.tool_calls;
@@ -85,29 +85,27 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
         }, function=${fnName}, args=${JSON.stringify(args)}`
       );
 
-      // Determine the subPrompt: use args.prompt if available and non-empty, otherwise fallback to the initial userPrompt.
       let finalSubPrompt =
         args && typeof args.prompt === "string" && args.prompt.trim() !== ""
           ? args.prompt
           : userPrompt;
 
       const aid =
-        fnName === "route_to_sales"
+        fnName === "get_sales_data"
           ? SALES_ID
-          : fnName === "route_to_forecast"
+          : fnName === "forecast"
             ? SALES_ID
-            : FORECAST_ID; // Adjusted routing logic
+            : FORECAST_ID;
 
-      progress(`Routing to assistant ID: ${aid} with prompt: "${finalSubPrompt}"`);
+      progress(`Routing to specialized assistant with prompt: "${finalSubPrompt}"`);
       console.log(
-        `[DEBUG] Dispatching to assistant ${aid} with prompt: ${JSON.stringify(
+        `[DEBUG] Dispatching to assistant with prompt: ${JSON.stringify(
           finalSubPrompt
         )}`
       );
 
       progress("Creating sub-thread...");
       const subThread = await client.beta.threads.create();
-      progress(`Sub-thread created: ${subThread.id}`);
       console.log(`  [DEBUG] Created sub-thread: ${subThread.id}`);
 
       await client.beta.threads.messages.create(subThread.id, {
@@ -115,16 +113,13 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
         content: finalSubPrompt, // finalSubPrompt is now guaranteed to be a string
       });
 
-      progress(`Running sub-assistant (${aid})...`);
+      progress(`Running sub-assistant...`);
       let subRun = await client.beta.threads.runs.create(subThread.id, {
         assistant_id: aid,
       });
-      progress(
-        `Sub-assistant run launched: ${subRun.id}. Waiting for completion...`
-      );
       console.log(`  [DEBUG] Launched sub-run: ${subRun.id}`);
       subRun = await waitOnRun(subThread.id, subRun.id);
-      progress(`Sub-assistant run (${aid}) completed.`);
+      progress(`Sub-assistant run completed.`);
 
       if (subRun.status === "completed") {
         const msgs = await client.beta.threads.messages.list(subThread.id, {
@@ -134,7 +129,7 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
         const lastMsg = msgs.data[0];
         const result = extractTextFromMessage(lastMsg);
         progress(
-          `Sub-assistant (${aid}) output received: "${result.substring(0, 50)}..."`
+          `Sub-assistant output received: "${result.substring(0, 50)}..."`
         );
         console.log(`  [DEBUG] Sub-agent output: ${JSON.stringify(result)}`);
         toolResults.push({ tool_call_id: call.id, output: result });
