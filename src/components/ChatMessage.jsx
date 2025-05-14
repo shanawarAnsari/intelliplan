@@ -14,8 +14,6 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import Logger from "./Logger";
 import { fetchImageFromOpenAI } from "../services/ImageService";
 
@@ -57,10 +55,6 @@ const ChatMessage = ({
   const handleImageError = () => {
     setImageLoading(false);
     setImageError(true);
-  };
-
-  const toggleLogger = () => {
-    setIsLoggerExpanded(!isLoggerExpanded);
   };
 
   useEffect(() => {
@@ -319,30 +313,23 @@ const ChatMessage = ({
             alignSelf: "flex-end",
           }}
         >
-          <IconButton
-            size="small"
-            onClick={toggleLogger}
-            sx={{
-              color: theme.palette.text.secondary,
-              mr: 0.5,
-            }}
-          >
-            {isLoggerExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-          <Typography
-            variant="caption"
-            sx={{
-              display: "inline-block",
-              color: theme.palette.text.secondary,
-              fontSize: "0.65rem",
-            }}
-          >
-            {new Date(timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </Typography>
+          {timestamp && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "inline-block",
+                ml: 1,
+                color: theme.palette.text.secondary,
+                fontSize: "0.65rem",
+              }}
+            >
+              {new Date(timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })}
+            </Typography>
+          )}
         </Box>
       )}
       {!isBot && isLoggerExpanded && logs && (

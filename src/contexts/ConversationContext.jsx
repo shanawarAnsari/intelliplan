@@ -250,6 +250,22 @@ export const ConversationProvider = ({ children }) => {
     [activeConversation]
   );
 
+  const updateConversation = useCallback((updatedConv) => {
+    setConversations((prevConversations) => {
+      const index = prevConversations.findIndex((c) => c.id === updatedConv.id);
+      if (index !== -1) {
+        const updatedConversations = [...prevConversations];
+        updatedConversations[index] = updatedConv;
+
+        // Save to localStorage
+        localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+
+        return updatedConversations;
+      }
+      return prevConversations;
+    });
+  }, []);
+
   const value = {
     conversations,
     activeConversation,
@@ -260,6 +276,7 @@ export const ConversationProvider = ({ children }) => {
     sendMessage,
     addAssistantMessageToConversation,
     setConversations,
+    updateConversation, // Add updateConversation to the context
   };
 
   return (

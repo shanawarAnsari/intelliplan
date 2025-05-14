@@ -20,7 +20,7 @@ const Logger = ({ logs, isLoading }) => {
     <Box
       ref={logContainerRef}
       sx={{
-        maxHeight: "7rem",
+        maxHeight: "8rem",
         overflowY: "auto",
         backgroundColor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
         p: 1.5,

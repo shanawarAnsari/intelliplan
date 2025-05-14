@@ -28,7 +28,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
-  const { activeConversation } = useConversation();
+  const { activeConversation, updateConversation, conversations, setConversations } =
+    useConversation();
 
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
@@ -68,8 +69,45 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         text: assistantResponse,
         isBot: true,
         timestamp: new Date(),
-      };
-      setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+      }; // Update messages state with both user and assistant messages
+      const updatedMessages = [...messages, userMessage, assistantMessage];
+      setMessages(updatedMessages);
+
+      // Save to conversation context
+      if (activeConversation) {
+        const updatedConversation = {
+          ...activeConversation,
+          messages: updatedMessages.map((msg) => ({
+            content: msg.text,
+            role: msg.isBot ? "assistant" : "user",
+            timestamp: msg.timestamp,
+          })),
+          title:
+            activeConversation.title === "New Conversation"
+              ? text.substring(0, 30) + (text.length > 30 ? "..." : "")
+              : activeConversation.title,
+        };
+
+        // Update conversation in context and localStorage
+        if (updateConversation) {
+          updateConversation(updatedConversation);
+
+          // Ensure the conversation is added to the list of conversations
+          const existingConvIndex = conversations.findIndex(
+            (conv) => conv.id === updatedConversation.id
+          );
+
+          if (existingConvIndex === -1) {
+            // If this is a new conversation, add it to the list
+            const updatedConversations = [...conversations, updatedConversation];
+            setConversations(updatedConversations);
+            localStorage.setItem(
+              "conversations",
+              JSON.stringify(updatedConversations)
+            );
+          }
+        }
+      }
     } catch (error) {
       console.error("Error communicating with the assistant:", error);
       setMessages((prevMessages) => [
@@ -83,7 +121,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       ]);
     } finally {
       setIsLoading(false);
-      // Do not clear logs here, let the Logger component manage its visibility
     }
   };
 
@@ -109,16 +146,16 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           onRegenerateResponse={
             message.isBot
               ? () => {
-                const lastUserMessageIndex = messages
-                  .slice(0, index)
-                  .map((m, i) => ({ ...m, index: i }))
-                  .filter((m) => !m.isBot)
-                  .pop();
+                  const lastUserMessageIndex = messages
+                    .slice(0, index)
+                    .map((m, i) => ({ ...m, index: i }))
+                    .filter((m) => !m.isBot)
+                    .pop();
 
-                if (lastUserMessageIndex) {
-                  handleSendMessage(messages[lastUserMessageIndex.index].text);
+                  if (lastUserMessageIndex) {
+                    handleSendMessage(messages[lastUserMessageIndex.index].text);
+                  }
                 }
-              }
               : undefined
           }
         />
@@ -127,7 +164,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           (isLoading || progressLogs.length > 0) &&
           index === messages.length - 1 && (
             <Box
-              sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 0.5, mb: 1 }}
+              sx={{ width: "100%", maxWidth: "825px", ml: "auto", mt: 0.5, mb: 1 }}
             >
               <Logger logs={progressLogs} isLoading={isLoading} />
             </Box>
@@ -251,9 +288,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           {isChatEmpty && !isLoading ? (
             <>
               {" "}
-              <Box
-                sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2, }}
-              >
+              <Box sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2 }}>
                 <DomainCards />
               </Box>
               <Fade in={true} timeout={800}>
