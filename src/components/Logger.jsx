@@ -22,7 +22,7 @@ const Logger = ({ logs, isLoading }) => {
       sx={{
         maxHeight: "8rem",
         overflowY: "auto",
-        backgroundColor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+        backgroundColor: "#171b25",
         p: 1.5,
         fontSize: "0.75rem",
         fontFamily: "monospace",
