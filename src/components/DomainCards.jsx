@@ -1,5 +1,5 @@
 // filepath: d:\Dev\intelliplan\src\components\DomainCards.jsx
-import React from "react";
+import React, { useState } from "react";
 import { Box, Paper, Typography, Grid, useTheme } from "@mui/material";
 
 const cardData = [
@@ -13,6 +13,11 @@ const cardData = [
 
 const DomainCards = () => {
   const theme = useTheme();
+  const [selectedCard, setSelectedCard] = useState("Demand Planning"); // Default selected card
+
+  const handleCardClick = (title) => {
+    setSelectedCard((prev) => (prev === title ? null : title)); // Toggle selection, allowing only one card to be selected
+  };
 
   return (
     <Box
@@ -30,6 +35,7 @@ const DomainCards = () => {
         {cardData.map((card, index) => (
           <Grid item xs={4} sm={card.width} md={card.width} key={index}>
             <Paper
+              onClick={() => handleCardClick(card.title)} // Add click handler
               sx={{
                 p: 2, // Increased padding
                 height: card.height,
@@ -42,11 +48,16 @@ const DomainCards = () => {
 
                 // Glass finish styles
                 background:
-                  "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))",
+                  selectedCard === card.title
+                    ? "linear-gradient(135deg, rgba(25, 118, 210, 0.2), rgba(25, 118, 210, 0.1))"
+                    : "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))", // Change background for selected card
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)", // For Safari
                 borderRadius: "20px",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
+                border:
+                  selectedCard === card.title
+                    ? "2px solid #1976d2"
+                    : "1px solid rgba(255, 255, 255, 0.18)", // Highlight selected card
                 // boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
 
                 position: "relative", // For pseudo-element positioning
@@ -76,6 +87,7 @@ const DomainCards = () => {
                   transition: "left 0.6s ease-in-out", // Shimmer animation
                   pointerEvents: "none", // Make sure it's not interactive
                 },
+                cursor: "pointer", // Indicate clickable
               }}
             >
               <Typography
