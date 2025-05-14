@@ -47,7 +47,7 @@ const DomainCards = () => {
                 WebkitBackdropFilter: "blur(10px)", // For Safari
                 borderRadius: "20px",
                 border: "1px solid rgba(255, 255, 255, 0.18)",
-                boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+                // boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
 
                 position: "relative", // For pseudo-element positioning
                 overflow: "hidden", // To contain the pseudo-element

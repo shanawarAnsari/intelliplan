@@ -81,8 +81,7 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
       const args = JSON.parse(call.function.arguments);
       progress(`Handling tool call: ${fnName} with args: ${JSON.stringify(args)}`);
       console.log(
-        `[DEBUG] Handling tool_call_id=${
-          call.id
+        `[DEBUG] Handling tool_call_id=${call.id
         }, function=${fnName}, args=${JSON.stringify(args)}`
       );
 
@@ -93,11 +92,11 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
           : userPrompt;
 
       const aid =
-        fnName === "route_to_forecast"
+        fnName === "route_to_sales"
           ? SALES_ID
-          : fnName === "route_to_sales"
-          ? SALES_ID
-          : FORECAST_ID; // Adjusted routing logic
+          : fnName === "route_to_forecast"
+            ? SALES_ID
+            : FORECAST_ID; // Adjusted routing logic
 
       progress(`Routing to assistant ID: ${aid} with prompt: "${finalSubPrompt}"`);
       console.log(
