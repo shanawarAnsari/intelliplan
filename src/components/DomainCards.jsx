@@ -3,14 +3,12 @@ import React from "react";
 import { Box, Paper, Typography, Grid, useTheme } from "@mui/material";
 
 const cardData = [
-  { title: "Marketing", width: 3, height: "60px" }, // Increased height
-  { title: "Sales", width: 3, height: "60px" }, // Increased height
-  { title: "IT Domain", width: 3, height: "60px" }, // Increased height
-  { title: "Planning", width: 3, height: "60px" }, // Increased height
-  { title: "Finance", width: 3, height: "60px" }, // Increased height
-  { title: "Operations", width: 3, height: "60px" }, // Increased height
-  { title: "Logistics", width: 3, height: "60px" }, // Increased height
-  { title: "Management", width: 3, height: "60px" }, // Increased height
+  { title: "Marketing", width: 4, height: "60px" }, // Increased height
+  { title: "RGM", width: 4, height: "60px" }, // Increased height
+  { title: "Finance", width: 4, height: "60px" }, // Increased height
+  { title: "Sales", width: 4, height: "60px" }, // Increased height
+  { title: "Supply Planning", width: 4, height: "60px" }, // Increased height
+  { title: "Demand Planning", width: 4, height: "60px" }, // Increased height
 ];
 
 const DomainCards = () => {
@@ -30,7 +28,7 @@ const DomainCards = () => {
         {" "}
         {/* Minimal spacing */}
         {cardData.map((card, index) => (
-          <Grid item xs={6} sm={card.width} md={card.width} key={index}>
+          <Grid item xs={4} sm={card.width} md={card.width} key={index}>
             <Paper
               sx={{
                 p: 2, // Increased padding

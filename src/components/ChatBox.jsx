@@ -109,16 +109,16 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           onRegenerateResponse={
             message.isBot
               ? () => {
-                  const lastUserMessageIndex = messages
-                    .slice(0, index)
-                    .map((m, i) => ({ ...m, index: i }))
-                    .filter((m) => !m.isBot)
-                    .pop();
+                const lastUserMessageIndex = messages
+                  .slice(0, index)
+                  .map((m, i) => ({ ...m, index: i }))
+                  .filter((m) => !m.isBot)
+                  .pop();
 
-                  if (lastUserMessageIndex) {
-                    handleSendMessage(messages[lastUserMessageIndex.index].text);
-                  }
+                if (lastUserMessageIndex) {
+                  handleSendMessage(messages[lastUserMessageIndex.index].text);
                 }
+              }
               : undefined
           }
         />
@@ -252,7 +252,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             <>
               {" "}
               <Box
-                sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2, mb: 3 }}
+                sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2, }}
               >
                 <DomainCards />
               </Box>
