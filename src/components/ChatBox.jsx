@@ -19,10 +19,12 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import HelpFAQ from "./HelpFAQ";
 import { orchestrate } from "../services/AzureOpenAIService";
 import DomainCards from "./DomainCards"; // Import the new component
+import Logger from "./Logger"; // Import the Logger component
 
 const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [progressLogs, setProgressLogs] = useState([]); // State for logger
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
@@ -53,9 +55,15 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     const userMessage = { text, isBot: false, timestamp: new Date() };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setIsLoading(true);
+    setProgressLogs([]); // Clear previous logs
+
+    const onProgressUpdate = (progress) => {
+      setProgressLogs((prevLogs) => [...prevLogs, progress.text]);
+    };
 
     try {
-      const assistantResponse = await orchestrate(text);
+      // Pass onProgressUpdate to orchestrate
+      const assistantResponse = await orchestrate(text, onProgressUpdate);
       const assistantMessage = {
         text: assistantResponse,
         isBot: true,
@@ -75,6 +83,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       ]);
     } finally {
       setIsLoading(false);
+      // Do not clear logs here, let the Logger component manage its visibility
     }
   };
 
@@ -86,32 +95,44 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
 
   const renderMessages = () => {
     return messages.map((message, index) => (
-      <ChatMessage
-        key={`msg-${index}`}
-        message={message.text}
-        isBot={message.isBot}
-        timestamp={message.timestamp}
-        isImage={message.isImage}
-        imageUrl={message.imageUrl}
-        imageFileId={message.imageFileId}
-        assistantName={message.assistantName}
-        routedFrom={message.routedFrom}
-        onRegenerateResponse={
-          message.isBot
-            ? () => {
-                const lastUserMessageIndex = messages
-                  .slice(0, index)
-                  .map((m, i) => ({ ...m, index: i }))
-                  .filter((m) => !m.isBot)
-                  .pop();
+      <React.Fragment key={`msg-frag-${index}`}>
+        <ChatMessage
+          key={`msg-${index}`}
+          message={message.text}
+          isBot={message.isBot}
+          timestamp={message.timestamp}
+          isImage={message.isImage}
+          imageUrl={message.imageUrl}
+          imageFileId={message.imageFileId}
+          assistantName={message.assistantName}
+          routedFrom={message.routedFrom}
+          onRegenerateResponse={
+            message.isBot
+              ? () => {
+                  const lastUserMessageIndex = messages
+                    .slice(0, index)
+                    .map((m, i) => ({ ...m, index: i }))
+                    .filter((m) => !m.isBot)
+                    .pop();
 
-                if (lastUserMessageIndex) {
-                  handleSendMessage(messages[lastUserMessageIndex.index].text);
+                  if (lastUserMessageIndex) {
+                    handleSendMessage(messages[lastUserMessageIndex.index].text);
+                  }
                 }
-              }
-            : undefined
-        }
-      />
+              : undefined
+          }
+        />
+        {/* Render Logger component after user message if loading or if logs exist */}
+        {!message.isBot &&
+          (isLoading || progressLogs.length > 0) &&
+          index === messages.length - 1 && (
+            <Box
+              sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 0.5, mb: 1 }}
+            >
+              <Logger logs={progressLogs} isLoading={isLoading} />
+            </Box>
+          )}
+      </React.Fragment>
     ));
   };
 
@@ -227,68 +248,73 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             flexDirection: "column",
           }}
         >
-          {/* Render DomainCards instead of the MessageInput here when chat is empty */}
-          <Box sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2, mb: 3 }}>
-            <DomainCards />
-          </Box>
           {isChatEmpty && !isLoading ? (
-            <Fade in={true} timeout={800}>
+            <>
+              {" "}
               <Box
-                sx={{
-                  textAlign: "center",
-                  my: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
-                }}
+                sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2, mb: 3 }}
               >
-                <img
-                  src={Logo}
-                  alt="InteliPlan Logo"
-                  style={{
-                    width: 180,
-                    height: 40,
-                    marginBottom: theme.spacing(2),
-                  }}
-                />
-                <Typography
-                  variant="h5"
-                  sx={{
-                    mb: 1,
-                    color: theme.palette.text.primary,
-                    fontWeight: "medium",
-                  }}
-                  className="text-reveal"
-                >
-                  How can I assist you today?
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ mb: 3, color: "#a5a5a5" }}
-                  className="text-reveal"
-                >
-                  Ask a question, analyze data, or select a conversation from
-                  history.
-                </Typography>
-
-                {messages.length === 0 && (
-                  <Fade
-                    in={true}
-                    timeout={1000}
-                    style={{ transitionDelay: "300ms" }}
-                  >
-                    <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
-                      <MessageInput
-                        onSendMessage={handleSendMessage}
-                        disabled={isLoading}
-                      />
-                    </Box>
-                  </Fade>
-                )}
+                <DomainCards />
               </Box>
-            </Fade>
+              <Fade in={true} timeout={800}>
+                {/* Render DomainCards instead of the MessageInput here when chat is empty */}
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    my: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                  }}
+                >
+                  <img
+                    src={Logo}
+                    alt="InteliPlan Logo"
+                    style={{
+                      width: 180,
+                      height: 40,
+                      marginBottom: theme.spacing(2),
+                    }}
+                  />
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      mb: 1,
+                      color: theme.palette.text.primary,
+                      fontWeight: "medium",
+                    }}
+                    className="text-reveal"
+                  >
+                    How can I assist you today?
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 3, color: "#a5a5a5" }}
+                    className="text-reveal"
+                  >
+                    Ask a question, analyze data, or select a conversation from
+                    history.
+                  </Typography>
+
+                  {messages.length === 0 && (
+                    <Fade
+                      in={true}
+                      timeout={1000}
+                      style={{ transitionDelay: "300ms" }}
+                    >
+                      <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
+                        <MessageInput
+                          onSendMessage={handleSendMessage}
+                          disabled={isLoading}
+                        />
+                      </Box>
+                    </Fade>
+                  )}
+                </Box>
+              </Fade>
+            </>
           ) : (
             renderMessages()
           )}
