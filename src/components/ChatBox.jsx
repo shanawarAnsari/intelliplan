@@ -8,6 +8,7 @@ import {
   CircularProgress,
   useTheme,
   Fade,
+  Button,
 } from "@mui/material";
 import { useConversation } from "../contexts/ConversationContext";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -27,11 +28,13 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [progressLogs, setProgressLogs] = useState([]); // State for logger
   const [progressImages, setProgressImages] = useState([]); // Track images during streaming
+  const [streamStopped, setStreamStopped] = useState(false); // State for stream stopped
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
   const { activeConversation, updateConversation, conversations, setConversations } =
     useConversation();
+  const emitterRef = useRef(null);
 
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
@@ -69,6 +72,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     setIsLoading(true);
     setProgressLogs([]);
     setProgressImages([]);
+    setStreamStopped(false); // Reset on new message
 
     // Add the user message to the chat
     setMessages((prevMessages) => [...prevMessages, userMessage]);
@@ -76,6 +80,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     try {
       // Use streaming approach
       const emitter = orchestrateStreaming(text);
+      emitterRef.current = emitter;
 
       // Handle streaming updates
       emitter.on("update", (update) => {
@@ -217,6 +222,11 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
 
         setIsLoading(false);
       });
+
+      emitter.on("stopped", () => {
+        setIsLoading(false);
+        setStreamStopped(true);
+      });
     } catch (error) {
       console.error("Error communicating with the assistant:", error);
 
@@ -233,6 +243,21 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
       ]);
 
       setIsLoading(false);
+    }
+  };
+
+  const handleStopGenerating = () => {
+    if (emitterRef.current && emitterRef.current.stop) {
+      emitterRef.current.stop();
+    }
+    setIsLoading(false);
+  };
+
+  const handleRegenerate = () => {
+    // Find the last user message
+    const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
+    if (lastUserMsg) {
+      handleSendMessage(lastUserMsg.text);
     }
   };
 
@@ -463,7 +488,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                         <MessageInput
                           onSendMessage={handleSendMessage}
                           disabled={isLoading}
-                          onStopGenerating={() => setIsLoading(false)}
+                          onStopGenerating={handleStopGenerating}
                         />
                       </Box>
                     </Fade>
@@ -497,6 +522,27 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               </Typography>
             </Box>
           )}
+          {streamStopped && messages.length > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Button
+                variant="outlined"
+                // style={{
+                //   background: "#eee",
+                //   color: "#888",
+                //   border: "1px solid #ccc",
+                //   borderRadius: 6,
+                //   padding: "8px 18px",
+                //   fontSize: "1rem",
+                //   cursor: "pointer",
+                //   opacity: 0.7,
+                //   pointerEvents: "auto",
+                // }}
+                onClick={handleRegenerate}
+              >
+                Regenerate response?
+              </Button>
+            </Box>
+          )}
           <div ref={messagesEndRef} />
         </Box>{" "}
         {(!isChatEmpty || messages.length > 0) && (
@@ -504,7 +550,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             <MessageInput
               onSendMessage={handleSendMessage}
               disabled={isLoading}
-              onStopGenerating={() => setIsLoading(false)}
+              onStopGenerating={handleStopGenerating}
             />
           </Box>
         )}

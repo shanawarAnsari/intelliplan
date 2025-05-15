@@ -8,14 +8,22 @@ import {
 
 export function orchestrateStreaming(userPrompt) {
   const emitter = new EventEmitter();
+  let stopped = false;
 
   const emitUpdate = (type, content, handler) => {
-    emitter.emit("update", {
-      type,
-      content,
-      handler,
-      timestamp: new Date(),
-    });
+    if (!stopped) {
+      emitter.emit("update", {
+        type,
+        content,
+        handler,
+        timestamp: new Date(),
+      });
+    }
+  };
+
+  emitter.stop = () => {
+    stopped = true;
+    emitter.emit("stopped");
   };
 
   const runOrchestration = async () => {
@@ -25,6 +33,7 @@ export function orchestrateStreaming(userPrompt) {
 
       // 1) Create a thread
       const thread = await client.beta.threads.create();
+      if (stopped) return { accumulatedText: "", finalRun: null };
       emitUpdate("debug", `Coordinator thread created: ${thread.id}`);
 
       // Send user prompt
@@ -32,10 +41,12 @@ export function orchestrateStreaming(userPrompt) {
         role: "user",
         content: userPrompt,
       });
+      if (stopped) return { accumulatedText: "", finalRun: null };
       emitUpdate("debug", "User prompt sent to coordinator.");
 
       // Process a stream and get the final content
       const processStreamAndGetFinals = async (streamMethod, handlerName) => {
+        if (stopped) return { accumulatedText: "", finalRun: null };
         let accumulatedText = "";
         let pendingSentence = "";
         let sentenceTimeout = null;
@@ -102,6 +113,7 @@ export function orchestrateStreaming(userPrompt) {
 
         // Execute the function that starts the stream
         const stream = streamMethod();
+        if (stopped) return { accumulatedText: "", finalRun: null };
 
         // Attach event listeners
         stream.on("connect", () => {
@@ -132,6 +144,7 @@ export function orchestrateStreaming(userPrompt) {
 
         // Listen for other events including errors
         stream.on("error", (error) => {
+          if (stopped) return { accumulatedText: "", finalRun: null };
           console.error(`Stream error for ${handlerName}:`, error);
           emitUpdate(
             "error",
@@ -141,6 +154,7 @@ export function orchestrateStreaming(userPrompt) {
         });
         // Wait for stream completion
         const finalRun = await stream.finalRun();
+        if (stopped) return { accumulatedText: "", finalRun: null };
 
         // Create a local copy to work with in case outer scope variable is reset elsewhere
         let remainingChunk = accumulatedChunk || "";
@@ -173,6 +187,7 @@ export function orchestrateStreaming(userPrompt) {
             }),
           "Coordinator"
         );
+      if (stopped) return { accumulatedText: "", finalRun: null };
       emitUpdate(
         "debug",
         `Coordinator initial run ended. Status: ${currentRun.status}`,
@@ -191,6 +206,7 @@ export function orchestrateStreaming(userPrompt) {
         const calls = currentRun.required_action.submit_tool_outputs.tool_calls;
 
         for (const call of calls) {
+          if (stopped) return { accumulatedText: "", finalRun: null };
           if (call.type === "function") {
             const fnName = call.function.name;
             let args;
@@ -234,10 +250,12 @@ export function orchestrateStreaming(userPrompt) {
             );
 
             const subThread = await client.beta.threads.create();
+            if (stopped) return { accumulatedText: "", finalRun: null };
             await client.beta.threads.messages.create(subThread.id, {
               role: "user",
               content: finalSubPrompt,
             });
+            if (stopped) return { accumulatedText: "", finalRun: null };
 
             const { accumulatedText: subText, finalRun: subRun } =
               await processStreamAndGetFinals(
@@ -247,6 +265,7 @@ export function orchestrateStreaming(userPrompt) {
                   }),
                 subHandlerName
               );
+            if (stopped) return { accumulatedText: "", finalRun: null };
 
             emitUpdate(
               "debug",
@@ -260,6 +279,7 @@ export function orchestrateStreaming(userPrompt) {
                 order: "desc",
                 limit: 1,
               });
+              if (stopped) return { accumulatedText: "", finalRun: null };
 
               if (msgs.data[0].content.some((c) => c.type === "image_file")) {
                 // If there are images, provide a structured response
@@ -306,6 +326,7 @@ export function orchestrateStreaming(userPrompt) {
                 ),
               "CoordinatorFinal"
             );
+          if (stopped) return { accumulatedText: "", finalRun: null };
           finalAnswerText = finalText;
           emitUpdate(
             "debug",
