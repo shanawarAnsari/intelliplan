@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { TextField, IconButton, Paper, Box } from "@mui/material";
+import { TextField, IconButton, Paper, Box, Tooltip } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import StopCircleIcon from "@mui/icons-material/StopCircle";
 
-const MessageInput = ({ onSendMessage, disabled }) => {
+const MessageInput = ({ onSendMessage, disabled, onStopGenerating }) => {
   const [message, setMessage] = useState("");
 
   const handleSubmit = (e) => {
@@ -10,6 +11,12 @@ const MessageInput = ({ onSendMessage, disabled }) => {
     if (message.trim()) {
       onSendMessage(message);
       setMessage("");
+    }
+  };
+
+  const handleStopGenerating = () => {
+    if (onStopGenerating) {
+      onStopGenerating();
     }
   };
 
@@ -36,13 +43,15 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          // Only submit if not disabled and Enter is pressed without Shift
+          if (e.key === "Enter" && !e.shiftKey && !disabled) {
             e.preventDefault();
             handleSubmit(e);
           }
         }}
         variant="outlined"
-        disabled={disabled}
+        // Always allow typing - never disable the input field
+        disabled={false}
         InputProps={{
           sx: {
             borderRadius: "6px",
@@ -66,27 +75,47 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         }}
       />
       <Box>
-        <IconButton
-          type="submit"
-          color="primary"
-          disabled={!message.trim() || disabled}
-          sx={{
-            bgcolor: "primary.main",
-            color: "primary.contrastText",
-            "&:hover": {
-              bgcolor: "primary.dark",
-            },
-            "&.Mui-disabled": {
-              bgcolor: "action.disabledBackground",
-            },
-            width: "32px",
-            height: "32px",
-            padding: "6px",
-          }}
-          className={message.trim() && !disabled ? "button-pulse" : ""}
-        >
-          <SendIcon fontSize="small" />
-        </IconButton>
+        {disabled ? (
+          <Tooltip title="Stop generating">
+            <IconButton
+              onClick={handleStopGenerating}
+              sx={{
+                bgcolor: "rgba(211, 47, 47, 0.1)",
+                color: "#d32f2f",
+                "&:hover": {
+                  bgcolor: "rgba(211, 47, 47, 0.2)",
+                },
+                width: "32px",
+                height: "32px",
+                padding: "6px",
+              }}
+            >
+              <StopCircleIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <IconButton
+            type="submit"
+            color="primary"
+            disabled={!message.trim()}
+            sx={{
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              "&:hover": {
+                bgcolor: "primary.dark",
+              },
+              "&.Mui-disabled": {
+                bgcolor: "action.disabledBackground",
+              },
+              width: "32px",
+              height: "32px",
+              padding: "6px",
+            }}
+            className={message.trim() ? "button-pulse" : ""}
+          >
+            <SendIcon fontSize="small" />
+          </IconButton>
+        )}
       </Box>
     </Paper>
   );

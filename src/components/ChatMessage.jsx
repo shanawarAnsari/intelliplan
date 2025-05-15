@@ -25,11 +25,14 @@ const ChatMessage = ({
   imageUrl: initialImageUrl,
   isImage,
   imageFileId,
+  images, // Add support for multiple images array
   assistantName,
   routedFrom,
   isRoutingMessage,
   logs,
   isLoadingLogs,
+  isChunk = false,
+  isFinal = false,
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -79,6 +82,7 @@ const ChatMessage = ({
         }
       }
     };
+
     // Parse message text for image references and extract the file ID
     const parseMessageForImages = () => {
       if (!message) return null;
@@ -170,6 +174,7 @@ const ChatMessage = ({
             <SmartToyIcon sx={{ fontSize: 16 }} />
           </Avatar>
         )}
+
         <Paper
           elevation={1}
           sx={{
@@ -177,7 +182,11 @@ const ChatMessage = ({
             px: 2,
             maxWidth: { xs: "85%", sm: "75%" },
             bgcolor: isBot
-              ? isRoutingMessage
+              ? isChunk
+                ? "rgba(129, 199, 132, 0.1)" // Light green background for chunks
+                : isFinal
+                ? "rgba(25, 118, 210, 0.12)" // Light blue background for final answer
+                : isRoutingMessage
                 ? "rgba(25, 118, 210, 0.08)"
                 : theme.palette.background.secondary
               : theme.palette.primary.main,
@@ -188,22 +197,23 @@ const ChatMessage = ({
             boxShadow: isBot
               ? "0px 1px 3px rgba(0,0,0,0.12)"
               : "0px 1px 3px rgba(0,0,0,0.2)",
-            borderLeft: isRoutingMessage
+            borderLeft: isFinal
+              ? `3px solid ${theme.palette.primary.main}`
+              : isChunk
+              ? `2px solid rgba(129, 199, 132, 0.6)`
+              : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
               : "none",
+            opacity: isChunk ? 0.93 : 1, // Slightly transparent for chunks
+            transition: "opacity 0.3s ease, background-color 0.3s ease",
           }}
         >
+          {" "}
           {isBot ? (
             <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-              {assistantName && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mb: 0.5, fontWeight: "medium" }}
-                >
-                  {assistantName} {routedFrom && `(via ${routedFrom})`}
-                </Typography>
-              )}{" "}
+              {" "}
+              {/* Removed assistant name display to simplify the interface */}{" "}
+              {/* Streaming indicator - no longer needed as we use isChunk instead */}{" "}
               {/* Image display - show if it's an image message or if we have a URL */}
               {(isImage || imageUrl) && (
                 <Box sx={{ mt: 1, mb: 2, position: "relative" }}>
@@ -272,10 +282,93 @@ const ChatMessage = ({
                   )}
                 </Box>
               )}{" "}
+              {/* Display multiple images if available */}
+              {images && images.length > 0 && (
+                <Box sx={{ mt: 1, mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    {images.map((img, index) => (
+                      <Box key={`img-${index}`} sx={{ position: "relative" }}>
+                        <img
+                          src={img.url}
+                          alt={`Generated content ${index + 1}`}
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "60vh",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <IconButton
+                          onClick={() => {
+                            const a = document.createElement("a");
+                            a.href = img.url;
+                            a.download = `image-${Date.now()}-${index}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                          }}
+                          sx={{
+                            position: "absolute",
+                            top: 8,
+                            left: 8,
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            color: "#fff",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.7)",
+                              transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s ease",
+                            padding: "6px",
+                          }}
+                          size="small"
+                          title="Download image"
+                        >
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
               {message && (
-                <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-                  {message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")}
-                </Typography>
+                <>
+                  {" "}
+                  {isChunk && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5, fontStyle: "italic" }}
+                    >
+                      Thinking...
+                    </Typography>
+                  )}
+                  {isFinal && (
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      sx={{ display: "block", mb: 0.5, fontWeight: "medium" }}
+                    >
+                      Final Answer
+                    </Typography>
+                  )}{" "}
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      lineHeight: 1.6,
+                      fontSize: isChunk ? "0.9rem" : "1rem",
+                      fontWeight: isFinal ? "medium" : "normal",
+                    }}
+                  >
+                    {typeof message === "string"
+                      ? message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")
+                      : ""}
+                  </Typography>
+                </>
               )}
             </Box>
           ) : (
@@ -303,8 +396,8 @@ const ChatMessage = ({
             <AccountCircleIcon sx={{ fontSize: 16 }} />
           </Avatar>
         )}
-      </Box>
-      {isBot && (
+      </Box>{" "}
+      {isBot && !isChunk && (
         <Box
           sx={{
             display: "flex",
@@ -347,47 +440,8 @@ const ChatMessage = ({
             >
               <AutorenewIcon fontSize="small" />
             </IconButton>
-          </Tooltip>
-          {assistantName && (
-            <Typography
-              variant="caption"
-              sx={{
-                display: "inline-block",
-                ml: 1,
-                color: theme.palette.primary.main,
-                fontWeight: "bold",
-                fontSize: "0.7rem",
-                border: `1px solid ${theme.palette.primary.main}`,
-                borderRadius: "4px",
-                px: 0.5,
-                backgroundColor:
-                  assistantName === "Sales"
-                    ? "rgba(25, 118, 210, 0.08)"
-                    : assistantName === "Forecast"
-                    ? "rgba(46, 125, 50, 0.08)"
-                    : "transparent",
-              }}
-            >
-              {assistantName}
-            </Typography>
-          )}
-          {routedFrom && (
-            <Typography
-              variant="caption"
-              sx={{
-                display: "inline-block",
-                ml: 1,
-                color: theme.palette.text.secondary,
-                fontSize: "0.65rem",
-                fontStyle: "italic",
-                backgroundColor: "rgba(0, 0, 0, 0.04)",
-                borderRadius: "2px",
-                px: 0.5,
-              }}
-            >
-              via {routedFrom}
-            </Typography>
-          )}
+          </Tooltip>{" "}
+          {/* Removed assistant name and routing information display */}
           {timestamp && (
             <Typography
               variant="caption"

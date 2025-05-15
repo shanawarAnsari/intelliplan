@@ -11,13 +11,14 @@ import {
 } from "@mui/material";
 import { useConversation } from "../contexts/ConversationContext";
 import MenuIcon from "@mui/icons-material/Menu";
+import StopCircleIcon from "@mui/icons-material/StopCircle";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Logo from "../assets/Intelliplan-logo.png";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import HelpFAQ from "./HelpFAQ";
-import { orchestrate } from "../services/AzureOpenAIService";
+import { orchestrateStreaming } from "../services/StreamingService";
 import DomainCards from "./DomainCards"; // Import the new component
 import Logger from "./Logger"; // Import the Logger component
 
@@ -25,6 +26,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progressLogs, setProgressLogs] = useState([]); // State for logger
+  const [progressImages, setProgressImages] = useState([]); // Track images during streaming
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
@@ -37,6 +39,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
+        id:
+          msg.id ||
+          `restored-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         text: msg.content,
         isBot: msg.role === "assistant",
         timestamp: new Date(msg.timestamp) || new Date(),
@@ -45,6 +50,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         isImage: msg.isImage || false,
         imageUrl: msg.imageUrl,
         imageFileId: msg.imageFileId,
+        isChunk: msg.isChunk || false,
+        isFinal: msg.isFinal || false,
+        threadId: msg.threadId,
       }));
       setMessages(formattedMessages);
     } else {
@@ -56,130 +64,174 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     if (!text.trim()) return;
 
     const userMessage = { text, isBot: false, timestamp: new Date() };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+
+    // Clear previous logs and start loading state
     setIsLoading(true);
-    setProgressLogs([]); // Clear previous logs
+    setProgressLogs([]);
+    setProgressImages([]);
 
-    const onProgressUpdate = (progress) => {
-      setProgressLogs((prevLogs) => [...prevLogs, progress.text]);
-    };
+    // Add the user message to the chat
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+
     try {
-      // Pass onProgressUpdate to orchestrate
-      const assistantResponse = await orchestrate(text, onProgressUpdate);
+      // Use streaming approach
+      const emitter = orchestrateStreaming(text);
 
-      // Handle different response types (array of messages or single text)
-      let updatedMessages = [...messages, userMessage];
+      // Handle streaming updates
+      emitter.on("update", (update) => {
+        const { type, content, handler, timestamp } = update;
 
-      // Extract all image IDs from text messages to avoid duplicates
-      const textReferencedImageIds = new Set();
+        // Add to progress logs
+        setProgressLogs((prevLogs) => [
+          ...prevLogs,
+          `${handler || "System"} (${type}): ${
+            typeof content === "string" ? content : JSON.stringify(content)
+          }`,
+        ]);
 
-      if (Array.isArray(assistantResponse)) {
-        // First pass: collect all image IDs referenced in markdown
-        assistantResponse.forEach((respMsg) => {
-          if (respMsg.type === "text" && respMsg.content) {
-            const regex = /!\[.*?\]\(attachment:\/\/(.*?)\)/g;
-            let match;
-            while ((match = regex.exec(respMsg.content)) !== null) {
-              if (match[1]) textReferencedImageIds.add(match[1]);
-            }
-          }
-        });
+        // Add each text chunk as a separate message with a special style
+        if (type === "text_chunk") {
+          // Only add the chunk if it contains meaningful text (not just whitespace or punctuation)
+          if (content && content.trim().length > 3) {
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                id: `chunk-${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`,
+                text: content,
+                isBot: true,
+                timestamp: timestamp || new Date(),
+                isChunk: true, // Flag to identify as a stream chunk
+                // Remove handler to simplify the interface - we'll only show "Thinking..."
+              },
+            ]);
 
-        // Process text messages first
-        assistantResponse.forEach((respMsg) => {
-          if (respMsg.type === "text") {
-            updatedMessages.push({
-              text: respMsg.content,
-              isBot: true,
-              timestamp: respMsg.timestamp || new Date(),
-              isImage: respMsg.content && respMsg.content.includes("!["),
-            });
-          }
-        });
-
-        // Then add only standalone images that aren't already referenced in text
-        assistantResponse.forEach((respMsg) => {
-          if (
-            respMsg.type === "image" &&
-            !textReferencedImageIds.has(respMsg.fileId)
-          ) {
-            updatedMessages.push({
-              text: "Image generated",
-              isBot: true,
-              isImage: true,
-              imageFileId: respMsg.fileId,
-              imageUrl: respMsg.url,
-              timestamp: respMsg.timestamp || new Date(),
-            });
-          }
-        });
-      } else {
-        // Handle simple text response for backward compatibility
-        updatedMessages.push({
-          text: assistantResponse,
-          isBot: true,
-          timestamp: new Date(),
-          isImage:
-            assistantResponse &&
-            typeof assistantResponse === "string" &&
-            assistantResponse.includes("!["),
-        });
-      }
-
-      setMessages(updatedMessages);
-
-      // Save to conversation context
-      if (activeConversation) {
-        const updatedConversation = {
-          ...activeConversation,
-          messages: updatedMessages.map((msg) => ({
-            content: msg.text,
-            role: msg.isBot ? "assistant" : "user",
-            timestamp: msg.timestamp,
-            assistantName: msg.assistantName,
-            routedFrom: msg.routedFrom,
-            isImage: msg.isImage || false,
-            imageUrl: msg.imageUrl,
-            imageFileId: msg.imageFileId,
-          })),
-          title:
-            activeConversation.title === "New Conversation"
-              ? text.substring(0, 30) + (text.length > 30 ? "..." : "")
-              : activeConversation.title,
-        };
-
-        // Update conversation in context and localStorage
-        if (updateConversation) {
-          updateConversation(updatedConversation);
-
-          // Ensure the conversation is added to the list of conversations
-          const existingConvIndex = conversations.findIndex(
-            (conv) => conv.id === updatedConversation.id
-          );
-
-          if (existingConvIndex === -1) {
-            // If this is a new conversation, add it to the list
-            const updatedConversations = [...conversations, updatedConversation];
-            setConversations(updatedConversations);
-            localStorage.setItem(
-              "conversations",
-              JSON.stringify(updatedConversations)
-            );
+            // Scroll to the latest message
+            setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
           }
         }
-      }
+
+        // Handle images during streaming
+        else if (type === "image_file") {
+          console.log("Image received during streaming:", content.file_id);
+          setProgressImages((prevImages) => [
+            ...prevImages,
+            {
+              id: `image-${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(2, 9)}`,
+              fileId: content.file_id,
+              url: content.url,
+            },
+          ]);
+        }
+      }); // Handle final answer
+      emitter.on("finalAnswer", ({ answer, thread }) => {
+        // Add the final answer as a separate message with special styling
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: `final-${Date.now()}`,
+            text: answer,
+            isBot: true,
+            timestamp: new Date(),
+            isFinal: true, // Flag to identify as the final answer
+            threadId: thread?.id,
+            handler: "Final",
+            // Check if answer contains image references
+            isImage: (answer && answer.includes("![")) || progressImages.length > 0,
+            // Include all collected image URLs
+            images: progressImages.length > 0 ? progressImages : undefined,
+          },
+        ]);
+
+        // Update conversation context
+        if (activeConversation) {
+          // Get all messages, including chunks and the final answer
+          const conversationMessages = [...messages];
+
+          const updatedConversation = {
+            ...activeConversation,
+            messages: conversationMessages.map((msg) => ({
+              content: msg.text,
+              role: msg.isBot ? "assistant" : "user",
+              timestamp: msg.timestamp,
+              assistantName: msg.assistantName,
+              routedFrom: msg.routedFrom || msg.handler,
+              isImage: msg.isImage || false,
+              imageUrl: msg.imageUrl,
+              imageFileId: msg.imageFileId,
+              threadId: msg.threadId,
+              isChunk: msg.isChunk || false,
+              isFinal: msg.isFinal || false,
+            })),
+            title:
+              activeConversation.title === "New Conversation"
+                ? text.substring(0, 30) + (text.length > 30 ? "..." : "")
+                : activeConversation.title,
+          };
+
+          // Update conversation in context and localStorage
+          if (updateConversation) {
+            updateConversation(updatedConversation);
+
+            // Ensure the conversation is added to the list of conversations
+            const existingConvIndex = conversations.findIndex(
+              (conv) => conv.id === updatedConversation.id
+            );
+
+            if (existingConvIndex === -1) {
+              // If this is a new conversation, add it to the list
+              const updatedConversations = [...conversations, updatedConversation];
+              setConversations(updatedConversations);
+              localStorage.setItem(
+                "conversations",
+                JSON.stringify(updatedConversations)
+              );
+            }
+          }
+        }
+
+        setIsLoading(false);
+      });
+
+      // Handle errors
+      emitter.on("error", ({ message, error }) => {
+        console.error("Streaming error:", error);
+        setProgressLogs((prevLogs) => [...prevLogs, `Error: ${message}`]);
+
+        // Add error message
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: `error-${Date.now()}`,
+            text: `Error: ${message}`,
+            isBot: true,
+            timestamp: new Date(),
+            isError: true,
+          },
+        ]);
+
+        setIsLoading(false);
+      });
     } catch (error) {
       console.error("Error communicating with the assistant:", error);
+
+      // Add error message
       setMessages((prevMessages) => [
         ...prevMessages,
         {
+          id: `error-${Date.now()}`,
           text: "Sorry, there was an error processing your request. Please try again.",
           isBot: true,
           timestamp: new Date(),
           isError: true,
         },
       ]);
-    } finally {
+
       setIsLoading(false);
     }
   };
@@ -191,48 +243,52 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const isChatEmpty = messages.length === 0;
 
   const renderMessages = () => {
-    return messages.map((message, index) => (
-      <React.Fragment key={`msg-frag-${index}`}>
-        <ChatMessage
-          key={`msg-${index}`}
-          message={message.text}
-          isBot={message.isBot}
-          timestamp={message.timestamp}
-          isImage={message.isImage}
-          imageUrl={message.imageUrl}
-          imageFileId={message.imageFileId}
-          assistantName={message.assistantName}
-          routedFrom={message.routedFrom}
-          onRegenerateResponse={
-            message.isBot
-              ? () => {
-                  const lastUserMessageIndex = messages
-                    .slice(0, index)
-                    .map((m, i) => ({ ...m, index: i }))
-                    .filter((m) => !m.isBot)
-                    .pop();
+    return messages.map((message, index) => {
+      return (
+        <React.Fragment key={`msg-frag-${index}`}>
+          <ChatMessage
+            key={`msg-${index}`}
+            message={typeof message === "string" ? message : message.text}
+            isBot={message.isBot}
+            timestamp={message.timestamp}
+            isImage={message.isFinal && message.isImage} // Only show images in final answers
+            imageUrl={message.imageUrl}
+            imageFileId={message.imageFileId}
+            images={message.images} // Pass collected images to ChatMessage
+            // Removed assistantName and routedFrom to simplify UI
+            isChunk={message.isChunk}
+            isFinal={message.isFinal}
+            onRegenerateResponse={
+              message.isBot
+                ? () => {
+                    const lastUserMessageIndex = messages
+                      .slice(0, index)
+                      .map((m, i) => ({ ...m, index: i }))
+                      .filter((m) => !m.isBot)
+                      .pop();
 
-                  if (lastUserMessageIndex) {
-                    handleSendMessage(messages[lastUserMessageIndex.index].text);
+                    if (lastUserMessageIndex) {
+                      handleSendMessage(messages[lastUserMessageIndex.index].text);
+                    }
                   }
-                }
-              : undefined
-          }
-          logs={message.logs}
-          isLoadingLogs={isLoading && index === messages.length - 1}
-        />
-        {/* Render Logger component after user message if loading or if logs exist */}
-        {!message.isBot &&
-          (isLoading || progressLogs.length > 0) &&
-          index === messages.length - 1 && (
-            <Box
-              sx={{ width: "100%", maxWidth: "825px", ml: "auto", mt: 0.5, mb: 1 }}
-            >
-              <Logger logs={progressLogs} isLoading={isLoading} />
-            </Box>
-          )}
-      </React.Fragment>
-    ));
+                : undefined
+            }
+            logs={message.logs}
+            isLoadingLogs={isLoading && index === messages.length - 1}
+          />
+          {/* Render Logger component after user message if loading or if logs exist */}
+          {!message.isBot &&
+            (isLoading || progressLogs.length > 0) &&
+            index === messages.length - 1 && (
+              <Box
+                sx={{ width: "100%", maxWidth: "825px", ml: "auto", mt: 0.5, mb: 1 }}
+              >
+                <Logger logs={progressLogs} isLoading={isLoading} />
+              </Box>
+            )}
+        </React.Fragment>
+      );
+    });
   };
 
   return (
@@ -321,7 +377,10 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               color: theme.palette.text.primary,
               fontSize: "0.85rem",
             }}
-          ></Typography>
+          >
+            {" "}
+            Doe, John
+          </Typography>
         </Box>
       </Box>
 
@@ -393,8 +452,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   >
                     Ask a question, analyze data, or select a conversation from
                     history.
-                  </Typography>
-
+                  </Typography>{" "}
                   {messages.length === 0 && (
                     <Fade
                       in={true}
@@ -405,6 +463,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                         <MessageInput
                           onSendMessage={handleSendMessage}
                           disabled={isLoading}
+                          onStopGenerating={() => setIsLoading(false)}
                         />
                       </Box>
                     </Fade>
@@ -414,7 +473,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             </>
           ) : (
             renderMessages()
-          )}
+          )}{" "}
           {isLoading && messages?.length > 0 && (
             <Box
               sx={{
@@ -429,21 +488,24 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               <CircularProgress
                 size={16}
                 sx={{ mr: 1, color: theme.palette.primary.main }}
-              />
+              />{" "}
               <Typography
                 variant="body2"
                 sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }}
               >
-                {messages?.length > 0 && "Generating response..."}
+                {messages?.length > 0 && "working on it..."}
               </Typography>
             </Box>
           )}
           <div ref={messagesEndRef} />
-        </Box>
-
+        </Box>{" "}
         {(!isChatEmpty || messages.length > 0) && (
           <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <MessageInput onSendMessage={handleSendMessage} disabled={isLoading} />
+            <MessageInput
+              onSendMessage={handleSendMessage}
+              disabled={isLoading}
+              onStopGenerating={() => setIsLoading(false)}
+            />
           </Box>
         )}
       </Box>
