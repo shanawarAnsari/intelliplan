@@ -34,7 +34,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
   };
-
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
@@ -43,6 +42,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         timestamp: new Date(msg.timestamp) || new Date(),
         assistantName: msg.assistantName,
         routedFrom: msg.routedFrom,
+        isImage: msg.isImage || false,
+        imageUrl: msg.imageUrl,
+        imageFileId: msg.imageFileId,
       }));
       setMessages(formattedMessages);
     } else {
@@ -61,16 +63,69 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     const onProgressUpdate = (progress) => {
       setProgressLogs((prevLogs) => [...prevLogs, progress.text]);
     };
-
     try {
       // Pass onProgressUpdate to orchestrate
       const assistantResponse = await orchestrate(text, onProgressUpdate);
-      const assistantMessage = {
-        text: assistantResponse,
-        isBot: true,
-        timestamp: new Date(),
-      }; // Update messages state with both user and assistant messages
-      const updatedMessages = [...messages, userMessage, assistantMessage];
+
+      // Handle different response types (array of messages or single text)
+      let updatedMessages = [...messages, userMessage];
+
+      // Extract all image IDs from text messages to avoid duplicates
+      const textReferencedImageIds = new Set();
+
+      if (Array.isArray(assistantResponse)) {
+        // First pass: collect all image IDs referenced in markdown
+        assistantResponse.forEach((respMsg) => {
+          if (respMsg.type === "text" && respMsg.content) {
+            const regex = /!\[.*?\]\(attachment:\/\/(.*?)\)/g;
+            let match;
+            while ((match = regex.exec(respMsg.content)) !== null) {
+              if (match[1]) textReferencedImageIds.add(match[1]);
+            }
+          }
+        });
+
+        // Process text messages first
+        assistantResponse.forEach((respMsg) => {
+          if (respMsg.type === "text") {
+            updatedMessages.push({
+              text: respMsg.content,
+              isBot: true,
+              timestamp: respMsg.timestamp || new Date(),
+              isImage: respMsg.content && respMsg.content.includes("!["),
+            });
+          }
+        });
+
+        // Then add only standalone images that aren't already referenced in text
+        assistantResponse.forEach((respMsg) => {
+          if (
+            respMsg.type === "image" &&
+            !textReferencedImageIds.has(respMsg.fileId)
+          ) {
+            updatedMessages.push({
+              text: "Image generated",
+              isBot: true,
+              isImage: true,
+              imageFileId: respMsg.fileId,
+              imageUrl: respMsg.url,
+              timestamp: respMsg.timestamp || new Date(),
+            });
+          }
+        });
+      } else {
+        // Handle simple text response for backward compatibility
+        updatedMessages.push({
+          text: assistantResponse,
+          isBot: true,
+          timestamp: new Date(),
+          isImage:
+            assistantResponse &&
+            typeof assistantResponse === "string" &&
+            assistantResponse.includes("!["),
+        });
+      }
+
       setMessages(updatedMessages);
 
       // Save to conversation context
@@ -81,6 +136,11 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             content: msg.text,
             role: msg.isBot ? "assistant" : "user",
             timestamp: msg.timestamp,
+            assistantName: msg.assistantName,
+            routedFrom: msg.routedFrom,
+            isImage: msg.isImage || false,
+            imageUrl: msg.imageUrl,
+            imageFileId: msg.imageFileId,
           })),
           title:
             activeConversation.title === "New Conversation"
@@ -158,6 +218,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 }
               : undefined
           }
+          logs={message.logs}
+          isLoadingLogs={isLoading && index === messages.length - 1}
         />
         {/* Render Logger component after user message if loading or if logs exist */}
         {!message.isBot &&

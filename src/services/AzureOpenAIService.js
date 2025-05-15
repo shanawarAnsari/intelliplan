@@ -14,20 +14,49 @@ async function waitOnRun(threadId, runId) {
   return run;
 }
 
-function extractTextFromMessage(message) {
-  let full = "";
+function extractContentFromMessage(message) {
+  let textContent = "";
+  let imageFiles = [];
+
+  if (!message.content || !Array.isArray(message.content)) {
+    return { text: message.content || "", images: [] };
+  }
+
+  // First pass: Extract any image patterns from text
   for (const block of message.content) {
-    if (block.text) {
-      if (typeof block.text === "object") {
-        full += block.text.value ?? "";
-      } else {
-        full += block.text.value;
+    if (block.type === "text") {
+      const value =
+        (typeof block.text === "object" ? block.text.value : block.text.value) ?? "";
+      textContent += value;
+
+      // Extract image references like ![alt text](attachment://assistant-xyz)
+      const regex = /!\[.*?\]\(attachment:\/\/(.*?)\)/g;
+      let match;
+
+      while ((match = regex.exec(value)) !== null) {
+        // Get the image attachment ID
+        const attachmentId = match[1];
+        if (attachmentId) {
+          imageFiles.push({
+            fileId: attachmentId,
+            url: null,
+            isAttachment: true,
+            position: match.index,
+          });
+        }
       }
-    } else if (block.code) {
-      full += block.code.value;
+    } else if (block.type === "code") {
+      textContent += block.code?.value ?? "";
+    } else if (block.type === "image_file") {
+      imageFiles.push({
+        fileId: block.image_file?.file_id,
+        url: block.image_file?.url,
+        isAttachment: false,
+      });
     }
   }
-  return full;
+
+  return { text: textContent, images: imageFiles };
 }
 
 export async function orchestrate(userPrompt, onProgressUpdate) {
@@ -97,16 +126,31 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
       });
       subRun = await waitOnRun(subThread.id, subRun.id);
       progress(`Sub-assistant run completed.`);
-
       if (subRun.status === "completed") {
         const msgs = await client.beta.threads.messages.list(subThread.id, {
           order: "desc", // Get the latest messages first
           limit: 1, // We only need the last message from the sub-assistant
         });
         const lastMsg = msgs.data[0];
-        const result = extractTextFromMessage(lastMsg);
-        progress(`Sub-assistant output received: "${result.substring(0, 50)}..."`);
-        toolResults.push({ tool_call_id: call.id, output: result });
+        const content = extractContentFromMessage(lastMsg);
+
+        // Check if there are images
+        if (content.images && content.images.length > 0) {
+          // For image responses, include both text and image data
+          const result = JSON.stringify({
+            text: content.text,
+            images: content.images,
+          });
+          progress(
+            `Sub-assistant output received with text and ${content.images.length} images`
+          );
+          toolResults.push({ tool_call_id: call.id, output: result });
+        } else {
+          // For text-only responses
+          const result = content.text;
+          progress(`Sub-assistant output received: "${result.substring(0, 50)}..."`);
+          toolResults.push({ tool_call_id: call.id, output: result });
+        }
       } else {
         toolResults.push({
           tool_call_id: call.id,
@@ -132,17 +176,71 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
       "No tool actions required by coordinator, or run status was not 'requires_action'."
     );
   }
-
   // 5) Fetch and return the Coordinator's answer
   if (run.status === "completed") {
     const messages = await client.beta.threads.messages.list(thread.id, {
-      order: "desc", // Get the latest messages first
-      limit: 1, // We only need the last message from the coordinator
+      order: "desc", // Get the latest messages
+      limit: 10, // Get multiple messages to check for images
     });
-    const finalMsg = messages.data[0]; // The last message should be the assistant's response
-    const response = extractTextFromMessage(finalMsg);
-    progress("Final response received from coordinator.");
-    return response;
+
+    // Process all assistant messages for both text and images
+    const responseMessages = [];
+    for (const msg of messages.data) {
+      if (msg.role === "assistant") {
+        const content = extractContentFromMessage(msg);
+
+        // Add text message if it exists
+        if (content.text && content.text.trim() !== "") {
+          responseMessages.push({
+            type: "text",
+            content: content.text,
+            timestamp: msg.created_at ? new Date(msg.created_at * 1000) : new Date(),
+          });
+        } // Add image messages
+        if (content.images && content.images.length > 0) {
+          for (const img of content.images) {
+            console.log("Found image in response:", img);
+            responseMessages.push({
+              type: "image",
+              fileId: img.fileId,
+              url: img.url,
+              timestamp: msg.created_at
+                ? new Date(msg.created_at * 1000)
+                : new Date(),
+            });
+          }
+        }
+      }
+    }
+
+    progress(
+      "Final response received from coordinator - processed all message types."
+    );
+
+    // Return either a composite response object with text and images or just the text for backward compatibility
+    if (responseMessages.length > 0) {
+      // Check for image references in text messages
+      for (const msg of responseMessages) {
+        if (msg.type === "text" && msg.content && msg.content.includes("![")) {
+          // Signal that this message contains embedded image references
+          msg.containsImageReferences = true;
+        }
+      }
+
+      if (
+        responseMessages.some(
+          (msg) => msg.type === "image" || msg.containsImageReferences
+        )
+      ) {
+        // Return structured response with multiple message types
+        return responseMessages;
+      } else {
+        // For backward compatibility, return just the text
+        return responseMessages[0].content;
+      }
+    } else {
+      return "No response content was found.";
+    }
   } else {
     progress(
       `Error: Coordinator run ${run.id} did not complete successfully. Status: ${run.status}`

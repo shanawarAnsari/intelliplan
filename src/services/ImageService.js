@@ -11,6 +11,8 @@ export const fetchImageFromOpenAI = async (fileId) => {
     const azureEndpoint = ENDPOINT.endsWith("/") ? ENDPOINT : `${ENDPOINT}/`;
     const url = `${azureEndpoint}openai/files/${fileId}/content?api-version=${API_VERSION}`;
 
+    console.log(`Fetching image from URL: ${url}`);
+
     const response = await fetch(url, {
       method: "GET",
       headers: {

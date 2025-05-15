@@ -15,7 +15,6 @@ import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import Logger from "./Logger";
-import { fetchImageFromOpenAI } from "../services/ImageService";
 
 const ChatMessage = ({
   message,
@@ -56,33 +55,86 @@ const ChatMessage = ({
     setImageLoading(false);
     setImageError(true);
   };
-
   useEffect(() => {
-    if (isImage) {
-      setImageLoading(true);
-      if (initialImageUrl) {
-        setImageUrl(initialImageUrl);
-      } else if (imageFileId) {
-        const loadImage = async () => {
-          try {
-            const url = await fetchImageFromOpenAI(imageFileId);
-            setImageUrl(url);
-            setImageError(false);
-          } catch (error) {
-            console.error("Failed to load image:", error);
-            setImageError(true);
-          } finally {
-            setImageLoading(false);
-          }
-        };
+    let isMounted = true;
 
-        loadImage();
-      } else {
-        setImageError(true);
-        setImageLoading(false);
+    const loadImage = async (fileId) => {
+      try {
+        setImageLoading(true);
+        const ImageService = await import("../services/ImageService").then(
+          (module) => module.default
+        );
+        console.log("Fetching image with file ID:", fileId);
+        const url = await ImageService.fetchImageFromOpenAI(fileId);
+        if (isMounted) {
+          setImageUrl(url);
+          setImageLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to load image:", error);
+        if (isMounted) {
+          setImageError(true);
+          setImageLoading(false);
+        }
       }
+    };
+    // Parse message text for image references and extract the file ID
+    const parseMessageForImages = () => {
+      if (!message) return null;
+
+      // Match markdown image references like: ![Monthly Sales Chart](attachment://assistant-GsoXybGGDUJsLAqyCGZykV)
+      const regex = /!\[(.*?)\]\(attachment:\/\/(.*?)\)/g;
+      const matches = Array.from(message.matchAll(regex));
+
+      if (matches && matches.length > 0) {
+        // Found at least one image reference in the message text
+        const firstMatch = matches[0];
+        const attachmentId = firstMatch[2];
+        const altText = firstMatch[1];
+        console.log(
+          "Found image reference in message:",
+          attachmentId,
+          "Alt text:",
+          altText
+        );
+
+        return attachmentId;
+      }
+      return null;
+    }; // If we have a message with an image attachment but no explicit imageFileId
+    const extractedFileId = parseMessageForImages();
+
+    // Determine which file ID to use
+    const fileIdToUse = imageFileId || extractedFileId;
+
+    // Log what's happening for debugging
+    console.log(
+      "Image processing - extractedFileId:",
+      extractedFileId,
+      "imageFileId:",
+      imageFileId,
+      "useFileId:",
+      fileIdToUse,
+      "isImage:",
+      isImage
+    );
+
+    // Only load the image if we have a file ID or if this is marked as an image message
+    if (fileIdToUse) {
+      console.log("Loading image with file ID:", fileIdToUse);
+      loadImage(fileIdToUse);
+    } else if (isImage && !initialImageUrl) {
+      console.log("Message marked as image but no file ID found");
+      setImageError(true);
     }
-  }, [isImage, initialImageUrl, imageFileId]);
+
+    return () => {
+      isMounted = false;
+      if (imageUrl && imageUrl.startsWith("blob:") && !initialImageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [isImage, initialImageUrl, imageFileId, message]);
 
   return (
     <Box
@@ -140,36 +192,59 @@ const ChatMessage = ({
               : "none",
           }}
         >
-          {isImage ? (
-            <Box sx={{ textAlign: "center", position: "relative", minHeight: 100 }}>
-              {imageLoading && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    py: 4,
-                  }}
+          {isBot ? (
+            <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
+              {assistantName && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 0.5, fontWeight: "medium" }}
                 >
-                  <CircularProgress size={40} />
-                </Box>
-              )}
-              {imageError ? (
-                <Typography color="secondary" sx={{ py: 2, fontSize: "0.75rem" }}>
-                  Image Unavailable!
+                  {assistantName} {routedFrom && `(via ${routedFrom})`}
                 </Typography>
-              ) : (
-                <img
-                  src={imageUrl}
-                  alt="AI generated visualization"
-                  style={{
-                    maxWidth: "100%",
-                    borderRadius: 8,
-                    display: imageLoading ? "none" : "block",
-                  }}
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                />
+              )}{" "}
+              {/* Image display - show if it's an image message or if we have a URL */}
+              {(isImage || imageUrl) && (
+                <Box sx={{ mt: 1, mb: 2, position: "relative" }}>
+                  {imageLoading && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: 200,
+                        bgcolor: "background.paper",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <CircularProgress size={30} />
+                    </Box>
+                  )}
+                  {imageUrl && (
+                    <img
+                      src={imageUrl}
+                      alt="Generated content"
+                      onLoad={handleImageLoad}
+                      onError={handleImageError}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "60vh",
+                        borderRadius: "8px",
+                        display: imageLoading ? "none" : "block",
+                      }}
+                    />
+                  )}
+                  {imageError && (
+                    <Typography color="error" sx={{ mt: 1 }}>
+                      Failed to load image. Please try again.
+                    </Typography>
+                  )}
+                </Box>
+              )}{" "}
+              {message && (
+                <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
+                  {message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")}
+                </Typography>
               )}
             </Box>
           ) : (
