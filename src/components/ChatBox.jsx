@@ -29,6 +29,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const [progressLogs, setProgressLogs] = useState([]); // State for logger
   const [progressImages, setProgressImages] = useState([]); // Track images during streaming
   const [streamStopped, setStreamStopped] = useState(false); // State for stream stopped
+  const [currentThreadId, setCurrentThreadId] = useState(null); // Store current thread ID for conversation continuity
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
@@ -74,12 +75,17 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     setProgressImages([]);
     setStreamStopped(false); // Reset on new message
 
+    // Log the current thread ID being used
+    console.log("Using thread ID for this message:", currentThreadId);
+
     // Add the user message to the chat
     setMessages((prevMessages) => [...prevMessages, userMessage]);
-
     try {
-      // Use streaming approach
-      const emitter = orchestrateStreaming(text);
+      // Use streaming approach with the current thread ID
+      const threadIdToUse =
+        currentThreadId || activeConversation?.threadId || activeConversation?.id;
+      console.log("Using thread ID for this message:", threadIdToUse);
+      const emitter = orchestrateStreaming(text, threadIdToUse);
       emitterRef.current = emitter;
 
       // Handle streaming updates
@@ -117,11 +123,10 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
             }, 100);
           }
-        }
-
-        // Handle images during streaming
+        } // Handle images during streaming
         else if (type === "image_file") {
           console.log("Image received during streaming:", content.file_id);
+          // Make sure we have both fileId and url
           setProgressImages((prevImages) => [
             ...prevImages,
             {
@@ -130,11 +135,21 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                 .substring(2, 9)}`,
               fileId: content.file_id,
               url: content.url,
+              // Add a timestamp for potential sorting/ordering
+              timestamp: new Date(),
             },
           ]);
         }
       }); // Handle final answer
       emitter.on("finalAnswer", ({ answer, thread }) => {
+        // Store the thread ID for future messages in this conversation
+        if (thread && thread.id) {
+          console.log("Storing thread ID for future messages:", thread.id);
+          setCurrentThreadId(thread.id);
+        } else {
+          console.warn("No thread ID received in finalAnswer");
+        }
+
         // Add the final answer as a separate message with special styling
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -151,15 +166,15 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             // Include all collected image URLs
             images: progressImages.length > 0 ? progressImages : undefined,
           },
-        ]);
-
-        // Update conversation context
+        ]); // Update conversation context
         if (activeConversation) {
           // Get all messages, including chunks and the final answer
           const conversationMessages = [...messages];
 
           const updatedConversation = {
             ...activeConversation,
+            id: thread?.id || activeConversation.id, // Use the thread ID as the conversation ID
+            threadId: thread?.id, // Store thread ID explicitly
             messages: conversationMessages.map((msg) => ({
               content: msg.text,
               role: msg.isBot ? "assistant" : "user",

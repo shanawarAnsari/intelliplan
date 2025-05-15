@@ -6,9 +6,51 @@ import {
   FORECAST_ASSISTANT_ID,
 } from "../utils/assistantConstants";
 
-export function orchestrateStreaming(userPrompt) {
+export function orchestrateStreaming(userPrompt, threadId = null) {
   const emitter = new EventEmitter();
   let stopped = false;
+
+  // Add this helper function at the beginning of orchestrateStreaming
+  const checkForActiveRuns = async (threadId) => {
+    try {
+      if (!threadId) return false;
+
+      // List runs on the thread
+      const runs = await client.beta.threads.runs.list(threadId);
+
+      // Check if any runs are still active
+      const activeRuns = runs.data.filter((run) =>
+        ["queued", "in_progress", "requires_action"].includes(run.status)
+      );
+
+      if (activeRuns.length > 0) {
+        console.log(
+          `Found active runs on thread ${threadId}:`,
+          activeRuns.map((r) => r.id)
+        );
+
+        // For each active run, try to cancel it
+        for (const run of activeRuns) {
+          try {
+            console.log(`Cancelling run ${run.id} on thread ${threadId}`);
+            await client.beta.threads.runs.cancel(threadId, run.id);
+            console.log(`Successfully cancelled run ${run.id}`);
+          } catch (err) {
+            console.warn(`Failed to cancel run ${run.id}:`, err.message);
+          }
+        }
+
+        // Wait a bit to ensure cancellation is processed
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking for active runs:", error);
+      return false;
+    }
+  };
 
   const emitUpdate = (type, content, handler) => {
     if (!stopped) {
@@ -25,16 +67,30 @@ export function orchestrateStreaming(userPrompt) {
     stopped = true;
     emitter.emit("stopped");
   };
-
   const runOrchestration = async () => {
     try {
       emitUpdate("status", "Orchestration started.");
-      const orchestrationStartTime = Date.now();
+      const orchestrationStartTime = Date.now(); // 1) Create or reuse a thread
+      let thread;
+      if (threadId) {
+        // Reuse the existing thread
+        thread = { id: threadId };
+        console.log("StreamingService: Reusing existing thread:", threadId);
+        emitUpdate("debug", `Reusing existing thread: ${threadId}`);
+      } else {
+        // Create a new thread
+        console.log("StreamingService: Creating new thread");
+        thread = await client.beta.threads.create();
+        if (stopped) return { accumulatedText: "", finalRun: null };
+        console.log("StreamingService: Created new thread with ID:", thread.id);
+        emitUpdate("debug", `Coordinator thread created: ${thread.id}`);
+      }
 
-      // 1) Create a thread
-      const thread = await client.beta.threads.create();
-      if (stopped) return { accumulatedText: "", finalRun: null };
-      emitUpdate("debug", `Coordinator thread created: ${thread.id}`);
+      // Check for and cancel any active runs on the thread
+      await checkForActiveRuns(thread.id);
+
+      // Check for and cancel any active runs on the thread
+      await checkForActiveRuns(thread.id);
 
       // Send user prompt
       await client.beta.threads.messages.create(thread.id, {
@@ -343,6 +399,10 @@ export function orchestrateStreaming(userPrompt) {
           (orchestrationEndTime - orchestrationStartTime) / 1000
         }s`
       );
+
+      // Log the thread ID before emitting the final answer
+      console.log("Emitting final answer with thread ID:", thread.id);
+
       emitter.emit("finalAnswer", { answer: finalAnswerText, thread: thread });
     } catch (error) {
       console.error("Orchestration error:", error);

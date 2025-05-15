@@ -8,6 +8,7 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -16,6 +17,147 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import DownloadIcon from "@mui/icons-material/Download";
 import Logger from "./Logger";
+
+const ImageComponent = ({ img, index }) => {
+  const [imgLoading, setImgLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
+  const [imgRetryCount, setImgRetryCount] = useState(0);
+
+  useEffect(() => {
+    let timerId;
+    if (imgError && imgRetryCount < 3) {
+      timerId = setTimeout(() => {
+        console.log(`Retrying image ${index} (attempt ${imgRetryCount + 1})`);
+        setImgRetryCount((prev) => prev + 1);
+        setImgError(false);
+        setImgLoading(true);
+      }, 2000 * (imgRetryCount + 1)); // Increasing backoff
+    }
+    return () => clearTimeout(timerId);
+  }, [imgError, imgRetryCount, index]);
+
+  return (
+    <Box key={`img-${index}`} sx={{ position: "relative" }}>
+      {imgLoading && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: 200,
+            bgcolor: "background.paper",
+            borderRadius: 1,
+          }}
+        >
+          <CircularProgress size={30} />
+        </Box>
+      )}
+
+      {imgError && (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: 150,
+            bgcolor: "background.paper",
+            borderRadius: 1,
+            p: 2,
+          }}
+        >
+          <Typography color="error" sx={{ mb: 1 }}>
+            Image failed to load
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setImgRetryCount((prev) => prev + 1);
+              setImgError(false);
+              setImgLoading(true);
+            }}
+          >
+            Retry Loading
+          </Button>
+        </Box>
+      )}
+
+      <img
+        src={img.url}
+        alt={`Generated content ${index + 1}`}
+        style={{
+          maxWidth: "100%",
+          maxHeight: "60vh",
+          borderRadius: "8px",
+          display: imgLoading || imgError ? "none" : "block",
+        }}
+        onLoad={() => {
+          console.log(`Image ${index} loaded:`, img.url);
+          setImgLoading(false);
+        }}
+        onError={(e) => {
+          console.error(`Error loading image ${index}:`, e);
+          if (img.fileId) {
+            setImgLoading(true);
+            const loadFallbackImage = async () => {
+              try {
+                const ImageService = await import("../services/ImageService");
+                const url = await ImageService.default.fetchImageFromOpenAI(
+                  img.fileId
+                );
+                if (url) {
+                  e.target.src = url;
+                } else {
+                  setImgError(true);
+                  setImgLoading(false);
+                }
+              } catch (err) {
+                console.error("Failed to load fallback image:", err);
+                setImgError(true);
+                setImgLoading(false);
+              }
+            };
+            loadFallbackImage();
+          } else {
+            setImgError(true);
+            setImgLoading(false);
+          }
+        }}
+      />
+
+      {!imgLoading && !imgError && (
+        <IconButton
+          onClick={() => {
+            const a = document.createElement("a");
+            a.href = img.url;
+            a.download = `image-${Date.now()}-${index}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }}
+          sx={{
+            position: "absolute",
+            top: 8,
+            left: 8,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            color: "#fff",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              transform: "scale(1.1)",
+            },
+            transition: "all 0.2s ease",
+            padding: "6px",
+          }}
+          size="small"
+          title="Download image"
+        >
+          <DownloadIcon fontSize="small" />
+        </IconButton>
+      )}
+    </Box>
+  );
+};
 
 const ChatMessage = ({
   message,
@@ -121,16 +263,24 @@ const ChatMessage = ({
       "useFileId:",
       fileIdToUse,
       "isImage:",
-      isImage
+      isImage,
+      "images:",
+      images
     );
 
     // Only load the image if we have a file ID or if this is marked as an image message
     if (fileIdToUse) {
       console.log("Loading image with file ID:", fileIdToUse);
       loadImage(fileIdToUse);
-    } else if (isImage && !initialImageUrl) {
+    } else if (isImage && images && images.length > 0) {
+      // If we have images array from progressImages, use those directly
+      console.log("Using images from progressImages array:", images);
+      // No need to load anything, the image URLs are already in the images array
+      setImageLoading(false);
+    } else if (isImage && !initialImageUrl && !images) {
       console.log("Message marked as image but no file ID found");
       setImageError(true);
+      setImageLoading(false);
     }
 
     return () => {
@@ -139,7 +289,7 @@ const ChatMessage = ({
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [isImage, initialImageUrl, imageFileId, message]);
+  }, [isImage, initialImageUrl, imageFileId, message, images]);
 
   return (
     <Box
@@ -282,7 +432,7 @@ const ChatMessage = ({
                   )}
                 </Box>
               )}{" "}
-              {/* Display multiple images if available */}
+              {/* Display multiple images if available */}{" "}
               {images && images.length > 0 && (
                 <Box sx={{ mt: 1, mb: 2 }}>
                   <Box
@@ -293,44 +443,7 @@ const ChatMessage = ({
                     }}
                   >
                     {images.map((img, index) => (
-                      <Box key={`img-${index}`} sx={{ position: "relative" }}>
-                        <img
-                          src={img.url}
-                          alt={`Generated content ${index + 1}`}
-                          style={{
-                            maxWidth: "100%",
-                            maxHeight: "60vh",
-                            borderRadius: "8px",
-                          }}
-                        />
-                        <IconButton
-                          onClick={() => {
-                            const a = document.createElement("a");
-                            a.href = img.url;
-                            a.download = `image-${Date.now()}-${index}.png`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                          }}
-                          sx={{
-                            position: "absolute",
-                            top: 8,
-                            left: 8,
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            color: "#fff",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                              transform: "scale(1.1)",
-                            },
-                            transition: "all 0.2s ease",
-                            padding: "6px",
-                          }}
-                          size="small"
-                          title="Download image"
-                        >
-                          <DownloadIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
+                      <ImageComponent key={`img-${index}`} img={img} index={index} />
                     ))}
                   </Box>
                 </Box>
