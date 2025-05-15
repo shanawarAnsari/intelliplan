@@ -14,6 +14,7 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
+import DownloadIcon from "@mui/icons-material/Download";
 import Logger from "./Logger";
 
 const ChatMessage = ({
@@ -219,20 +220,50 @@ const ChatMessage = ({
                     >
                       <CircularProgress size={30} />
                     </Box>
-                  )}
+                  )}{" "}
                   {imageUrl && (
-                    <img
-                      src={imageUrl}
-                      alt="Generated content"
-                      onLoad={handleImageLoad}
-                      onError={handleImageError}
-                      style={{
-                        maxWidth: "100%",
-                        maxHeight: "60vh",
-                        borderRadius: "8px",
-                        display: imageLoading ? "none" : "block",
-                      }}
-                    />
+                    <Box sx={{ position: "relative" }}>
+                      <img
+                        src={imageUrl}
+                        alt="Generated content"
+                        onLoad={handleImageLoad}
+                        onError={handleImageError}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "60vh",
+                          borderRadius: "8px",
+                          display: imageLoading ? "none" : "block",
+                        }}
+                      />
+                      <IconButton
+                        onClick={() => {
+                          // Create a temporary anchor element
+                          const a = document.createElement("a");
+                          a.href = imageUrl;
+                          a.download = `image-${Date.now()}.png`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          left: 8,
+                          backgroundColor: "rgba(0, 0, 0, 0.5)",
+                          color: "#fff",
+                          "&:hover": {
+                            backgroundColor: "rgba(0, 0, 0, 0.7)",
+                            transform: "scale(1.1)",
+                          },
+                          transition: "all 0.2s ease",
+                          padding: "6px",
+                        }}
+                        size="small"
+                        title="Download image"
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   )}
                   {imageError && (
                     <Typography color="error" sx={{ mt: 1 }}>

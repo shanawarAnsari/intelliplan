@@ -3,9 +3,6 @@ import React, { useState } from "react";
 import { Box, Paper, Typography, Grid, useTheme } from "@mui/material";
 
 const cardData = [
-  { title: "Marketing", width: 4, height: "60px" }, // Increased height
-  { title: "RGM", width: 4, height: "60px" }, // Increased height
-  { title: "Finance", width: 4, height: "60px" }, // Increased height
   { title: "Sales", width: 4, height: "60px" }, // Increased height
   { title: "Supply Planning", width: 4, height: "60px" }, // Increased height
   { title: "Demand Planning", width: 4, height: "60px" }, // Increased height
