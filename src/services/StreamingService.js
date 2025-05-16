@@ -67,10 +67,13 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
     stopped = true;
     emitter.emit("stopped");
   };
+
   const runOrchestration = async () => {
     try {
       emitUpdate("status", "Orchestration started.");
-      const orchestrationStartTime = Date.now(); // 1) Create or reuse a thread
+      const orchestrationStartTime = Date.now();
+
+      // 1) Create or reuse a thread
       let thread;
       if (threadId) {
         // Reuse the existing thread
@@ -81,13 +84,10 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
         // Create a new thread
         console.log("StreamingService: Creating new thread");
         thread = await client.beta.threads.create();
-        if (stopped) return { accumulatedText: "", finalRun: null };
+        if (stopped) return;
         console.log("StreamingService: Created new thread with ID:", thread.id);
         emitUpdate("debug", `Coordinator thread created: ${thread.id}`);
       }
-
-      // Check for and cancel any active runs on the thread
-      await checkForActiveRuns(thread.id);
 
       // Check for and cancel any active runs on the thread
       await checkForActiveRuns(thread.id);
@@ -103,71 +103,83 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
       // Process a stream and get the final content
       const processStreamAndGetFinals = async (streamMethod, handlerName) => {
         if (stopped) return { accumulatedText: "", finalRun: null };
+
         let accumulatedText = "";
         let pendingSentence = "";
         let sentenceTimeout = null;
-        let accumulatedChunk = ""; // Define this variable in the outer scope so it's accessible throughout the function
+        let accumulatedChunk = "";
+
         const processAndEmitSentences = (text) => {
           pendingSentence += text;
 
-          // Look for sentence endings (., !, ?)
-          const sentenceRegex = /([.!?:])\s+|\n+/g;
+          // Don't emit anything until we have a substantial amount of text
+          if (
+            pendingSentence.length < 30 &&
+            !pendingSentence.includes(".") &&
+            !pendingSentence.includes("!") &&
+            !pendingSentence.includes("?")
+          ) {
+            return; // Wait for more text to accumulate
+          }
+
+          // Comprehensive regex for sentence detection
+          const sentenceRegex = /([.!?](?:\s+|$)|\n+)/g;
           let match;
           let lastIndex = 0;
-          let sentenceCount = 0;
-          // Reset accumulatedChunk for this round of processing
-          accumulatedChunk = "";
+
+          let paragraphBuffer = "";
           let emitted = false;
 
           while ((match = sentenceRegex.exec(pendingSentence)) !== null) {
-            const sentence = pendingSentence.slice(lastIndex, match.index + 1);
-            if (sentence.trim().length > 0) {
-              accumulatedChunk += sentence;
-              sentenceCount++;
+            // Get the complete sentence including punctuation
+            const sentence = pendingSentence.slice(
+              lastIndex,
+              match.index + match[0].length
+            );
 
-              // Emit chunks when we have 2-3 sentences or if the chunk is getting large
-              if (sentenceCount >= 2 || accumulatedChunk.length > 150) {
-                emitUpdate("text_chunk", accumulatedChunk, handlerName);
-                accumulatedChunk = "";
-                sentenceCount = 0;
+            if (sentence.trim().length > 0) {
+              // Add to paragraph buffer
+              paragraphBuffer += sentence;
+
+              // If enough text, emit the chunk
+              if (paragraphBuffer.length > 120 || match[0].includes("\n")) {
+                emitUpdate("text_chunk", paragraphBuffer, handlerName);
+                paragraphBuffer = "";
                 emitted = true;
               }
             }
             lastIndex = match.index + match[0].length;
           }
+
           if (emitted) {
-            // Keep the incomplete part for next time
+            // Keep incomplete part for next time
             pendingSentence = pendingSentence.slice(lastIndex);
 
-            // Reset the timeout since we emitted something
             if (sentenceTimeout) {
               clearTimeout(sentenceTimeout);
               sentenceTimeout = null;
             }
           } else {
-            // If no complete sentence was found, set a timeout to emit anyway after a delay
-            // This handles cases where text doesn't end with proper punctuation
+            // If no complete sentence found, set timeout to emit anyway
             if (!sentenceTimeout && pendingSentence.trim().length > 0) {
               sentenceTimeout = setTimeout(() => {
                 if (pendingSentence.trim().length > 0) {
-                  // Add any pending content to our accumulated chunk
                   if (accumulatedChunk.length > 0) {
                     accumulatedChunk += pendingSentence;
                     emitUpdate("text_chunk", accumulatedChunk, handlerName);
                     accumulatedChunk = "";
                   } else if (pendingSentence.trim().length > 10) {
-                    // Only emit if it's a substantial chunk
                     emitUpdate("text_chunk", pendingSentence, handlerName);
                   }
                   pendingSentence = "";
                 }
                 sentenceTimeout = null;
-              }, 750); // 0.75 second timeout for smoother experience
+              }, 750);
             }
           }
         };
 
-        // Execute the function that starts the stream
+        // Execute stream function
         const stream = streamMethod();
         if (stopped) return { accumulatedText: "", finalRun: null };
 
@@ -184,10 +196,8 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
           const content = messageDelta.content?.[0];
           if (content?.type === "text" && content.text?.value) {
             accumulatedText += content.text.value;
-            // Process the new text and emit complete sentences
             processAndEmitSentences(content.text.value);
           } else if (content?.type === "image_file") {
-            // Store image information but only emit in final answer
             if (!accumulatedText.includes(`[IMAGE:${content.image_file.file_id}]`)) {
               accumulatedText += `[IMAGE:${content.image_file.file_id}]`;
             }
@@ -198,7 +208,6 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
           emitUpdate("tool_call_created", toolCall, handlerName);
         });
 
-        // Listen for other events including errors
         stream.on("error", (error) => {
           if (stopped) return { accumulatedText: "", finalRun: null };
           console.error(`Stream error for ${handlerName}:`, error);
@@ -208,14 +217,14 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
             handlerName
           );
         });
-        // Wait for stream completion
+
+        // Wait for completion
         const finalRun = await stream.finalRun();
         if (stopped) return { accumulatedText: "", finalRun: null };
 
-        // Create a local copy to work with in case outer scope variable is reset elsewhere
+        // Process any remaining text
         let remainingChunk = accumulatedChunk || "";
 
-        // Emit any remaining text in either accumulated chunk or pending sentence
         if (remainingChunk && remainingChunk.trim().length > 0) {
           if (pendingSentence && pendingSentence.trim().length > 0) {
             remainingChunk += pendingSentence;
@@ -225,7 +234,7 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
           emitUpdate("text_chunk", pendingSentence, handlerName);
         }
 
-        // Clean up any pending timeout
+        // Clean up timeout
         if (sentenceTimeout) {
           clearTimeout(sentenceTimeout);
         }
@@ -243,7 +252,9 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
             }),
           "Coordinator"
         );
+
       if (stopped) return { accumulatedText: "", finalRun: null };
+
       emitUpdate(
         "debug",
         `Coordinator initial run ended. Status: ${currentRun.status}`,
@@ -263,6 +274,7 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
 
         for (const call of calls) {
           if (stopped) return { accumulatedText: "", finalRun: null };
+
           if (call.type === "function") {
             const fnName = call.function.name;
             let args;
@@ -307,6 +319,7 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
 
             const subThread = await client.beta.threads.create();
             if (stopped) return { accumulatedText: "", finalRun: null };
+
             await client.beta.threads.messages.create(subThread.id, {
               role: "user",
               content: finalSubPrompt,

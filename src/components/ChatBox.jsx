@@ -123,57 +123,88 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
 
       // Handle streaming updates
       emitter.on("update", (update) => {
-        const { type, content, handler, timestamp } = update;
-
-        // Add to progress logs
+        const { type, content, handler, timestamp } = update; // Add to progress logs
         setProgressLogs((prevLogs) => [
           ...prevLogs,
           `${handler || "System"} (${type}): ${
             typeof content === "string" ? content : JSON.stringify(content)
           }`,
-        ]);
-
-        // Add each text chunk as a separate message with a special style
+        ]); // Add each text chunk as a separate message with a special style
         if (type === "text_chunk") {
           // Only add the chunk if it contains meaningful text (not just whitespace or punctuation)
-          if (content && content.trim().length > 3) {
-            setMessages((prevMessages) => [
-              ...prevMessages,
-              {
-                id: `chunk-${Date.now()}-${Math.random()
-                  .toString(36)
-                  .substring(2, 9)}`,
-                text: content,
-                isBot: true,
-                timestamp: timestamp || new Date(),
-                isChunk: true, // Flag to identify as a stream chunk
-                // Remove handler to simplify the interface - we'll only show "Thinking..."
-              },
-            ]);
+          if (content && content.trim().length > 10) {
+            // Require more substantial content
+            // Merge with previous chunk if it exists and is recent
+            setMessages((prevMessages) => {
+              // Find the last message
+              const lastMsg =
+                prevMessages.length > 0
+                  ? prevMessages[prevMessages.length - 1]
+                  : null;
+
+              // Check if the last message was a chunk and it's recent (within 2 seconds)
+              const isLastMsgChunk = lastMsg && lastMsg.isBot && lastMsg.isChunk;
+              const isRecent =
+                lastMsg && new Date() - new Date(lastMsg.timestamp) < 2000; // Within 2 seconds
+
+              if (isLastMsgChunk && isRecent) {
+                // Update the existing chunk with merged content - preserve formatting
+                const updatedMessages = [...prevMessages];
+                updatedMessages[updatedMessages.length - 1] = {
+                  ...lastMsg,
+                  text: `${lastMsg.text}${
+                    lastMsg.text.endsWith(" ") || content.startsWith(" ") ? "" : " "
+                  }${content}`,
+                  timestamp: new Date(),
+                };
+                return updatedMessages;
+              } else {
+                // Create a new chunk
+                return [
+                  ...prevMessages,
+                  {
+                    id: `chunk-${Date.now()}-${Math.random()
+                      .toString(36)
+                      .substring(2, 9)}`,
+                    text: content,
+                    isBot: true,
+                    timestamp: timestamp || new Date(),
+                    isChunk: true, // Flag to identify as a stream chunk
+                  },
+                ];
+              }
+            });
 
             // Scroll to the latest message
             setTimeout(() => {
               messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
             }, 100);
           }
-        } // Handle images during streaming
-        else if (type === "image_file") {
+        } else if (type === "image_file") {
           console.log("Image received during streaming:", content.file_id);
-          // Make sure we have both fileId and url
-          setProgressImages((prevImages) => [
-            ...prevImages,
-            {
-              id: `image-${Date.now()}-${Math.random()
-                .toString(36)
-                .substring(2, 9)}`,
-              fileId: content.file_id,
-              url: content.url,
-              // Add a timestamp for potential sorting/ordering
-              timestamp: new Date(),
-            },
-          ]);
+          // Add image only if it's not already added (prevent duplicates)
+          setProgressImages((prevImages) => {
+            const imageExists = prevImages.some(
+              (img) => img.fileId === content.file_id
+            );
+            if (imageExists) return prevImages;
+
+            return [
+              ...prevImages,
+              {
+                id: `image-${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`,
+                fileId: content.file_id,
+                url: content.url,
+                timestamp: new Date(),
+              },
+            ];
+          });
         }
-      }); // Handle final answer
+      });
+
+      // Handle final answer
       emitter.on("finalAnswer", ({ answer, thread }) => {
         // Store the thread ID for future messages in this conversation
         if (thread && thread.id) {
@@ -183,23 +214,30 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
           console.warn("No thread ID received in finalAnswer");
         }
 
+        // Create a final message with proper styling
+        const finalMessage = {
+          id: `final-${Date.now()}`,
+          text: answer,
+          isBot: true,
+          timestamp: new Date(),
+          isFinal: true, // Flag to identify as the final answer
+          threadId: thread?.id,
+          handler: "Final",
+          // Check if answer contains image references
+          isImage: (answer && answer.includes("![")) || progressImages.length > 0,
+          // Include all collected image URLs
+          images: progressImages.length > 0 ? progressImages : undefined,
+        };
+
         // Add the final answer as a separate message with special styling
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: `final-${Date.now()}`,
-            text: answer,
-            isBot: true,
-            timestamp: new Date(),
-            isFinal: true, // Flag to identify as the final answer
-            threadId: thread?.id,
-            handler: "Final",
-            // Check if answer contains image references
-            isImage: (answer && answer.includes("![")) || progressImages.length > 0,
-            // Include all collected image URLs
-            images: progressImages.length > 0 ? progressImages : undefined,
-          },
-        ]); // Update conversation context
+        setMessages((prevMessages) => [...prevMessages, finalMessage]);
+
+        // Force scroll to the bottom to ensure final message is visible
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+
+        // Update conversation context
         if (activeConversation) {
           // Get all messages, including chunks and the final answer
           const conversationMessages = [...messages];
@@ -367,14 +405,12 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
           logs={message.logs}
           isLoadingLogs={isLoading && isLastMessageInStream}
         />
-      );
-
-      // Render sticky "Thinking..." indicator immediately after the last user message if still loading
+      ); // Render sticky "Thinking..." indicator immediately after the last user message if still loading
       if (!message.isBot && index === lastUserMessageIndex && isLoading) {
         messageElements.push(
           <ThinkingIndicator
             key={`thinking-sticky-${message.id || index}`}
-            text="Thinking"
+            text="Processing your request"
             isSticky={true}
             showSpinner={true}
             lineVariant="partial"
@@ -382,19 +418,21 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
         );
       }
 
-      // // Render "End of response" indicator after the final bot message group
-      // if (message.isBot && message.isFinal && isLastMessageInStream && !isLoading) {
-      //   messageElements.push(
-      //     <ThinkingIndicator
-      //       key={`final-indicator-${message.id || index}`}
-      //       text="End of response"
-      //       isSticky={false} // Not sticky
-      //       showSpinner={false} // No spinner for final answer
-      //       lineVariant="full" // Full line for final answer
-      //       isDone={true} // Mark as done
-      //     />
-      //   );
-      // }      // Render Logger component after the last user message if allowed and relevant
+      // Render "End of response" indicator after the final bot message group
+      if (message.isBot && message.isFinal && isLastMessageInStream && !isLoading) {
+        messageElements.push(
+          <ThinkingIndicator
+            key={`final-indicator-${message.id || index}`}
+            text="End of response"
+            isSticky={false} // Not sticky
+            showSpinner={false} // No spinner for final answer
+            lineVariant="full" // Full line for final answer
+            isDone={true} // Mark as done
+          />
+        );
+      }
+
+      // Render Logger component after the last user message if allowed and relevant
       if (
         !message.isBot &&
         (isLoading || progressLogs.length > 0) &&

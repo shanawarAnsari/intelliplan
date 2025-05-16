@@ -328,14 +328,14 @@ const ChatMessage = ({
         <Paper
           elevation={1}
           sx={{
-            p: 1,
-            px: 2,
+            p: isChunk ? 0.8 : 1,
+            px: isChunk ? 1.5 : 2,
             maxWidth: { xs: "85%", sm: "75%" },
             bgcolor: isBot
               ? isChunk
-                ? "rgba(99, 130, 101, 0.1)" // Light green background for chunks
+                ? "rgba(71, 71, 71, 0.7)" // Lighter background for chunks
                 : isFinal
-                ? "rgba(25, 118, 210, 0.12)" // Light blue background for final answer
+                ? "rgba(25, 118, 210, 0.12)" // Light blue for final answer
                 : isRoutingMessage
                 ? "rgba(25, 118, 210, 0.08)"
                 : theme.palette.background.secondary
@@ -343,18 +343,20 @@ const ChatMessage = ({
             color: isBot
               ? theme.palette.text.primary
               : theme.palette.primary.contrastText,
-            borderRadius: "12px",
+            borderRadius: isChunk ? "10px" : "12px",
             boxShadow: isBot
-              ? "0px 1px 3px rgba(0,0,0,0.12)"
+              ? isChunk
+                ? "none"
+                : "0px 1px 3px rgba(0,0,0,0.12)"
               : "0px 1px 3px rgba(0,0,0,0.2)",
             borderLeft: isFinal
               ? `3px solid ${theme.palette.primary.main}`
               : isChunk
-              ? `2px solid #a5a5a5`
+              ? "none"
               : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
               : "none",
-            opacity: isChunk ? 0.93 : 1, // Slightly transparent for chunks
+            opacity: isChunk ? 0.95 : 1,
             transition: "opacity 0.3s ease, background-color 0.3s ease",
           }}
         >
@@ -469,13 +471,21 @@ const ChatMessage = ({
               )}
               {message && (
                 <>
-                  {/* REMOVE Typography for isChunk and isFinal as ThinkingIndicator handles this */}
                   <Typography
                     variant="body1"
                     sx={{
                       lineHeight: 1.6,
-                      fontSize: "1rem", // Keep consistent font size
-                      fontWeight: isFinal ? "medium" : "normal", // Emphasize final answer
+                      fontSize: "1rem",
+                      fontWeight: isFinal ? "medium" : "normal",
+                      whiteSpace: "pre-wrap", // Preserve line breaks and formatting
+                      wordBreak: "break-word", // Prevent long words from breaking layout
+                      "& code": {
+                        // Style code blocks
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        padding: "2px 4px",
+                        borderRadius: "4px",
+                        fontFamily: "monospace",
+                      },
                     }}
                   >
                     {typeof message === "string"
