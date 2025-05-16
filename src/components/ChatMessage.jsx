@@ -323,17 +323,16 @@ const ChatMessage = ({
           >
             <SmartToyIcon sx={{ fontSize: 16 }} />
           </Avatar>
-        )}
-
+        )}{" "}
         <Paper
           elevation={1}
           sx={{
-            p: isChunk ? 0.8 : 1,
-            px: isChunk ? 1.5 : 2,
-            maxWidth: { xs: "85%", sm: "75%" },
+            p: isChunk ? 0.5 : 1,
+            px: isChunk ? 1.2 : 2,
+            maxWidth: { xs: isChunk ? "75%" : "85%", sm: isChunk ? "60%" : "75%" },
             bgcolor: isBot
               ? isChunk
-                ? "rgba(71, 71, 71, 0.7)" // Lighter background for chunks
+                ? "rgba(37, 37, 37, 0.52)" // Lighter background for chunks
                 : isFinal
                 ? "rgba(25, 118, 210, 0.12)" // Light blue for final answer
                 : isRoutingMessage
@@ -343,16 +342,16 @@ const ChatMessage = ({
             color: isBot
               ? theme.palette.text.primary
               : theme.palette.primary.contrastText,
-            borderRadius: isChunk ? "10px" : "12px",
+            borderRadius: isChunk ? "8px" : "12px",
             boxShadow: isBot
               ? isChunk
                 ? "none"
                 : "0px 1px 3px rgba(0,0,0,0.12)"
               : "0px 1px 3px rgba(0,0,0,0.2)",
             borderLeft: isFinal
-              ? `3px solid ${theme.palette.primary.main}`
+              ? `4px solid ${theme.palette.primary.main}`
               : isChunk
-              ? "none"
+              ? `2px solid rgb(136, 136, 136)`
               : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
               : "none",
@@ -471,11 +470,12 @@ const ChatMessage = ({
               )}
               {message && (
                 <>
+                  {" "}
                   <Typography
                     variant="body1"
                     sx={{
-                      lineHeight: 1.6,
-                      fontSize: "1rem",
+                      lineHeight: isChunk ? 1.5 : 1.6,
+                      fontSize: isChunk ? "0.85rem" : "1rem",
                       fontWeight: isFinal ? "medium" : "normal",
                       whiteSpace: "pre-wrap", // Preserve line breaks and formatting
                       wordBreak: "break-word", // Prevent long words from breaking layout
