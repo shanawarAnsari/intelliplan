@@ -126,8 +126,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
         const { type, content, handler, timestamp } = update; // Add to progress logs
         setProgressLogs((prevLogs) => [
           ...prevLogs,
-          `${handler || "System"} (${type}): ${
-            typeof content === "string" ? content : JSON.stringify(content)
+          `${handler || "System"} (${type}): ${typeof content === "string" ? content : JSON.stringify(content)
           }`,
         ]); // Add each text chunk as a separate message with a special style
         if (type === "text_chunk") {
@@ -152,9 +151,8 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
                 const updatedMessages = [...prevMessages];
                 updatedMessages[updatedMessages.length - 1] = {
                   ...lastMsg,
-                  text: `${lastMsg.text}${
-                    lastMsg.text.endsWith(" ") || content.startsWith(" ") ? "" : " "
-                  }${content}`,
+                  text: `${lastMsg.text}${lastMsg.text.endsWith(" ") || content.startsWith(" ") ? "" : " "
+                    }${content}`,
                   timestamp: new Date(),
                 };
                 return updatedMessages;
@@ -395,11 +393,11 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
           onRegenerateResponse={
             message.isBot && isLastMessageInStream && message.isFinal
               ? () => {
-                  const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
-                  if (lastUserMsg) {
-                    handleSendMessage(lastUserMsg.text);
-                  }
+                const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
+                if (lastUserMsg) {
+                  handleSendMessage(lastUserMsg.text);
                 }
+              }
               : undefined
           }
           logs={message.logs}
@@ -410,7 +408,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
         messageElements.push(
           <ThinkingIndicator
             key={`thinking-sticky-${message.id || index}`}
-            text="Processing your request"
+            text="Thinking..."
             isSticky={true}
             showSpinner={true}
             lineVariant="partial"
