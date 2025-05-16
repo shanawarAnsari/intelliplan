@@ -5,7 +5,6 @@ import {
   IconButton,
   Tooltip,
   Avatar,
-  CircularProgress,
   useTheme,
   Fade,
   Button,
@@ -22,14 +21,16 @@ import HelpFAQ from "./HelpFAQ";
 import { orchestrateStreaming } from "../services/StreamingService";
 import DomainCards from "./DomainCards"; // Import the new component
 import Logger from "./Logger"; // Import the Logger component
+import ThinkingIndicator from "./ThinkingIndicator"; // Import the new ThinkingIndicator
 
-const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
+const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progressLogs, setProgressLogs] = useState([]); // State for logger
   const [progressImages, setProgressImages] = useState([]); // Track images during streaming
   const [streamStopped, setStreamStopped] = useState(false); // State for stream stopped
   const [currentThreadId, setCurrentThreadId] = useState(null); // Store current thread ID for conversation continuity
+  const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true); // Control logger visibility - start with true for first message
   const messagesEndRef = useRef(null);
   const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
   const theme = useTheme();
@@ -40,6 +41,13 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
   };
+
+  // Notify parent component about loading state changes
+  useEffect(() => {
+    if (onIsLoadingChange) {
+      onIsLoadingChange(isLoading);
+    }
+  }, [isLoading, onIsLoadingChange]);
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
@@ -59,13 +67,38 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         threadId: msg.threadId,
       }));
       setMessages(formattedMessages);
+
+      // Reset currentThreadId based on the active conversation
+      // If it's a truly new conversation (e.g., no messages, no explicit threadId yet)
+      // or if the threadId from the conversation context should be used.
+      const isNewConversation =
+        !activeConversation.threadId || activeConversation.isNew;
+
+      if (isNewConversation) {
+        // For new conversations, reset thread ID and allow logger display
+        setCurrentThreadId(null);
+        setAllowLoggerDisplay(true); // Enable logger for new conversations
+      } else {
+        // For existing conversations, use the thread ID
+        setCurrentThreadId(
+          activeConversation.threadId || activeConversation.id || null
+        );
+        // Don't change allowLoggerDisplay here, it will be determined by handleSendMessage
+      }
     } else {
+      // No active conversation
       setMessages([]);
+      setCurrentThreadId(null);
+      setAllowLoggerDisplay(true); // Reset logger display permission for brand new conversations
     }
   }, [activeConversation]);
-
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
+
+    // Determine if the logger should be displayed for this interaction.
+    // Show logger if currentThreadId is null (implies new conversation/thread context).
+    const isNewThreadContext = !currentThreadId;
+    setAllowLoggerDisplay(isNewThreadContext);
 
     const userMessage = { text, isBot: false, timestamp: new Date() };
 
@@ -283,52 +316,88 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   const isChatEmpty = messages.length === 0;
 
   const renderMessages = () => {
-    return messages.map((message, index) => {
-      return (
-        <React.Fragment key={`msg-frag-${index}`}>
-          <ChatMessage
-            key={`msg-${index}`}
-            message={typeof message === "string" ? message : message.text}
-            isBot={message.isBot}
-            timestamp={message.timestamp}
-            isImage={message.isFinal && message.isImage} // Only show images in final answers
-            imageUrl={message.imageUrl}
-            imageFileId={message.imageFileId}
-            images={message.images} // Pass collected images to ChatMessage
-            // Removed assistantName and routedFrom to simplify UI
-            isChunk={message.isChunk}
-            isFinal={message.isFinal}
-            onRegenerateResponse={
-              message.isBot
-                ? () => {
-                    const lastUserMessageIndex = messages
-                      .slice(0, index)
-                      .map((m, i) => ({ ...m, index: i }))
-                      .filter((m) => !m.isBot)
-                      .pop();
+    const messageElements = [];
+    let lastUserMessageIndex = -1;
 
-                    if (lastUserMessageIndex) {
-                      handleSendMessage(messages[lastUserMessageIndex.index].text);
-                    }
-                  }
-                : undefined
-            }
-            logs={message.logs}
-            isLoadingLogs={isLoading && index === messages.length - 1}
-          />
-          {/* Render Logger component after user message if loading or if logs exist
-          {!message.isBot &&
-            (isLoading || progressLogs.length > 0) &&
-            index === messages.length - 1 && (
-              <Box
-                sx={{ width: "100%", maxWidth: "825px", ml: "auto", mt: 0.5, mb: 1 }}
-              >
-                <Logger logs={progressLogs} isLoading={isLoading} />
-              </Box>
-            )} */}
-        </React.Fragment>
-      );
+    // First pass: find the last user message index
+    messages.forEach((msg, idx) => {
+      if (!msg.isBot) lastUserMessageIndex = idx;
     });
+
+    messages.forEach((message, index) => {
+      const isLastMessageInStream = index === messages.length - 1;
+
+      // Add the ChatMessage component itself
+      messageElements.push(
+        <ChatMessage
+          key={message.id || `msg-${index}`} // Use message.id if available, otherwise fallback
+          message={typeof message === "string" ? message : message.text}
+          isBot={message.isBot}
+          timestamp={message.timestamp}
+          isImage={message.isFinal && message.isImage}
+          imageUrl={message.imageUrl}
+          imageFileId={message.imageFileId}
+          images={message.images}
+          isChunk={message.isChunk}
+          isFinal={message.isFinal}
+          onRegenerateResponse={
+            message.isBot && isLastMessageInStream && message.isFinal
+              ? () => {
+                  const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
+                  if (lastUserMsg) {
+                    handleSendMessage(lastUserMsg.text);
+                  }
+                }
+              : undefined
+          }
+          logs={message.logs}
+          isLoadingLogs={isLoading && isLastMessageInStream}
+        />
+      );
+
+      // Render sticky "Thinking..." indicator immediately after the last user message if still loading
+      if (!message.isBot && index === lastUserMessageIndex && isLoading) {
+        messageElements.push(
+          <ThinkingIndicator
+            key={`thinking-sticky-${message.id || index}`}
+            text="Thinking"
+            isSticky={true}
+            showSpinner={true}
+            lineVariant="partial"
+          />
+        );
+      }
+
+      // // Render "End of response" indicator after the final bot message group
+      // if (message.isBot && message.isFinal && isLastMessageInStream && !isLoading) {
+      //   messageElements.push(
+      //     <ThinkingIndicator
+      //       key={`final-indicator-${message.id || index}`}
+      //       text="End of response"
+      //       isSticky={false} // Not sticky
+      //       showSpinner={false} // No spinner for final answer
+      //       lineVariant="full" // Full line for final answer
+      //       isDone={true} // Mark as done
+      //     />
+      //   );
+      // }      // Render Logger component after the last user message if allowed and relevant
+      if (
+        !message.isBot &&
+        (isLoading || progressLogs.length > 0) &&
+        index === lastUserMessageIndex && // Show logger only after the *absolute* last user message
+        allowLoggerDisplay // Ensure logger visibility is controlled
+      ) {
+        messageElements.push(
+          <Box
+            key={`logger-box-${message.id || index}`}
+            sx={{ width: "100%", maxWidth: "825px", ml: "auto", mt: 0.5, mb: 1 }}
+          >
+            <Logger logs={progressLogs} isLoading={isLoading} />
+          </Box>
+        );
+      }
+    });
+    return messageElements;
   };
 
   return (
@@ -514,46 +583,9 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           ) : (
             renderMessages()
           )}{" "}
-          {isLoading && messages?.length > 0 && (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                p: 1,
-                mt: 0.5,
-              }}
-              className="message-in-left"
-            >
-              <CircularProgress
-                size={16}
-                sx={{ mr: 1, color: theme.palette.primary.main }}
-              />{" "}
-              <Typography
-                variant="body2"
-                sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem" }}
-              >
-                {messages?.length > 0 && "working on it..."}
-              </Typography>
-            </Box>
-          )}
           {streamStopped && messages.length > 0 && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              <Button
-                variant="outlined"
-                // style={{
-                //   background: "#eee",
-                //   color: "#888",
-                //   border: "1px solid #ccc",
-                //   borderRadius: 6,
-                //   padding: "8px 18px",
-                //   fontSize: "1rem",
-                //   cursor: "pointer",
-                //   opacity: 0.7,
-                //   pointerEvents: "auto",
-                // }}
-                onClick={handleRegenerate}
-              >
+              <Button variant="outlined" onClick={handleRegenerate}>
                 Regenerate response?
               </Button>
             </Box>

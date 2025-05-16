@@ -296,7 +296,7 @@ const ChatMessage = ({
       sx={{
         display: "flex",
         flexDirection: "column",
-        alignItems: isBot ? "flex-start" : "flex-end",
+        alignItems: isChunk ? "center" : isBot ? "flex-start" : "flex-end",
         mb: 1,
       }}
       className={isBot ? "message-in-left" : "message-in-right"}
@@ -307,11 +307,11 @@ const ChatMessage = ({
           flexDirection: "row",
           alignItems: "flex-start",
           width: "100%",
-          justifyContent: isBot ? "flex-start" : "flex-end",
+          justifyContent: isChunk ? "center" : isBot ? "flex-start" : "flex-end",
           mb: 0.5,
         }}
       >
-        {isBot && (
+        {isBot && !isChunk && (
           <Avatar
             sx={{
               width: 28,
@@ -333,7 +333,7 @@ const ChatMessage = ({
             maxWidth: { xs: "85%", sm: "75%" },
             bgcolor: isBot
               ? isChunk
-                ? "rgba(129, 199, 132, 0.1)" // Light green background for chunks
+                ? "rgba(99, 130, 101, 0.1)" // Light green background for chunks
                 : isFinal
                 ? "rgba(25, 118, 210, 0.12)" // Light blue background for final answer
                 : isRoutingMessage
@@ -350,7 +350,7 @@ const ChatMessage = ({
             borderLeft: isFinal
               ? `3px solid ${theme.palette.primary.main}`
               : isChunk
-              ? `2px solid rgba(129, 199, 132, 0.6)`
+              ? `1px solid rgba(129, 199, 132, 0.6)`
               : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
               : "none",
@@ -380,7 +380,7 @@ const ChatMessage = ({
                     >
                       <CircularProgress size={30} />
                     </Box>
-                  )}{" "}
+                  )}
                   {imageUrl && (
                     <Box sx={{ position: "relative" }}>
                       <img
@@ -397,13 +397,17 @@ const ChatMessage = ({
                       />
                       <IconButton
                         onClick={() => {
-                          // Create a temporary anchor element
-                          const a = document.createElement("a");
-                          a.href = imageUrl;
-                          a.download = `image-${Date.now()}.png`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
+                          // Create a temporary link element
+                          const link = document.createElement("a");
+                          link.href = imageUrl;
+                          // Extract filename from URL or use a default
+                          const filename =
+                            imageUrl.substring(imageUrl.lastIndexOf("/") + 1) ||
+                            "downloaded-image";
+                          link.download = filename;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
                         }}
                         sx={{
                           position: "absolute",
@@ -431,8 +435,23 @@ const ChatMessage = ({
                     </Typography>
                   )}
                 </Box>
-              )}{" "}
-              {/* Display multiple images if available */}{" "}
+              )}
+              {/* Remove assistant name and routed from if it's a chunk */}
+              {!isChunk && (assistantName || routedFrom) && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mb: 0.5,
+                    fontWeight: "medium",
+                    color: theme.palette.text.secondary,
+                    fontSize: "0.7rem",
+                  }}
+                >
+                  {assistantName && `via ${assistantName}`}
+                  {routedFrom && ` (${routedFrom})`}
+                </Typography>
+              )}
               {images && images.length > 0 && (
                 <Box sx={{ mt: 1, mb: 2 }}>
                   <Box
@@ -450,31 +469,13 @@ const ChatMessage = ({
               )}
               {message && (
                 <>
-                  {" "}
-                  {isChunk && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 0.5, fontStyle: "italic" }}
-                    >
-                      Thinking...
-                    </Typography>
-                  )}
-                  {isFinal && (
-                    <Typography
-                      variant="caption"
-                      color="primary"
-                      sx={{ display: "block", mb: 0.5, fontWeight: "medium" }}
-                    >
-                      Final Answer
-                    </Typography>
-                  )}{" "}
+                  {/* REMOVE Typography for isChunk and isFinal as ThinkingIndicator handles this */}
                   <Typography
                     variant="body1"
                     sx={{
                       lineHeight: 1.6,
-                      fontSize: isChunk ? "0.9rem" : "1rem",
-                      fontWeight: isFinal ? "medium" : "normal",
+                      fontSize: "1rem", // Keep consistent font size
+                      fontWeight: isFinal ? "medium" : "normal", // Emphasize final answer
                     }}
                   >
                     {typeof message === "string"
@@ -509,7 +510,7 @@ const ChatMessage = ({
             <AccountCircleIcon sx={{ fontSize: 16 }} />
           </Avatar>
         )}
-      </Box>{" "}
+      </Box>
       {isBot && !isChunk && (
         <Box
           sx={{
@@ -553,8 +554,7 @@ const ChatMessage = ({
             >
               <AutorenewIcon fontSize="small" />
             </IconButton>
-          </Tooltip>{" "}
-          {/* Removed assistant name and routing information display */}
+          </Tooltip>
           {timestamp && (
             <Typography
               variant="caption"

@@ -7,6 +7,7 @@ import { ConversationProvider } from "./contexts/ConversationContext";
 
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [isChatBoxLoading, setIsChatBoxLoading] = useState(false);
 
   const handleToggleDrawer = () => {
     setDrawerOpen(!drawerOpen);
@@ -15,12 +16,17 @@ function App() {
   return (
     <ThemeProviderWrapper>
       <ConversationProvider>
-        <Box sx={{ display: "flex" }}>
+        <Box sx={{ display: "flex", height: "100vh" }}>
           <ConversationHistory
             open={drawerOpen}
             onToggleDrawer={handleToggleDrawer}
+            isChatBoxLoading={isChatBoxLoading}
           />
-          <ChatBox drawerOpen={drawerOpen} onToggleDrawer={handleToggleDrawer} />
+          <ChatBox
+            drawerOpen={drawerOpen}
+            onToggleDrawer={handleToggleDrawer}
+            onIsLoadingChange={setIsChatBoxLoading}
+          />
         </Box>
       </ConversationProvider>
     </ThemeProviderWrapper>

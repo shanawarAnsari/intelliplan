@@ -28,7 +28,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import kimberlyClarkLogo from "../assets/KC_logo_for_dark.png";
 const drawerWidth = 280;
 
-const ConversationHistory = ({ open, onToggleDrawer }) => {
+const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
   const theme = useTheme();
   const {
     conversations,
@@ -104,6 +104,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           size="small"
           startIcon={<AddIcon />}
           onClick={handleNewConversation}
+          disabled={isChatBoxLoading} // Disable button when isChatBoxLoading is true
           sx={{
             textTransform: "none",
             borderRadius: theme.shape.borderRadius,
