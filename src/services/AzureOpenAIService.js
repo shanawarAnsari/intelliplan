@@ -107,8 +107,8 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
         fnName === "get_sales_data"
           ? SALES_ID
           : fnName === "forecast"
-          ? SALES_ID
-          : FORECAST_ID;
+            ? SALES_ID
+            : FORECAST_ID;
 
       progress(`Routing to specialized assistant with prompt: "${finalSubPrompt}"`);
 
@@ -168,12 +168,16 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
         tool_outputs: toolResults,
       });
       progress("Tool outputs submitted. Waiting for coordinator to process...");
+      console.log(`[DEBUG] Submitted outputs, new run id: ${run.id}`);
       run = await waitOnRun(thread.id, run.id);
       progress("Coordinator processing of tool outputs completed.");
     }
   } else {
     progress(
       "No tool actions required by coordinator, or run status was not 'requires_action'."
+    );
+    console.log(
+      "[DEBUG] No tools requested by coordinator or run status is not 'requires_action'."
     );
   }
   // 5) Fetch and return the Coordinator's answer
@@ -182,72 +186,24 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
       order: "desc", // Get the latest messages
       limit: 10, // Get multiple messages to check for images
     });
-
-    // Process all assistant messages for both text and images
-    const responseMessages = [];
-    for (const msg of messages.data) {
-      if (msg.role === "assistant") {
-        const content = extractContentFromMessage(msg);
-
-        // Add text message if it exists
-        if (content.text && content.text.trim() !== "") {
-          responseMessages.push({
-            type: "text",
-            content: content.text,
-            timestamp: msg.created_at ? new Date(msg.created_at * 1000) : new Date(),
-          });
-        } // Add image messages
-        if (content.images && content.images.length > 0) {
-          for (const img of content.images) {
-            console.log("Found image in response:", img);
-            responseMessages.push({
-              type: "image",
-              fileId: img.fileId,
-              url: img.url,
-              timestamp: msg.created_at
-                ? new Date(msg.created_at * 1000)
-                : new Date(),
-            });
-          }
-        }
-      }
-    }
-
-    progress(
-      "Final response received from coordinator - processed all message types."
-    );
-
-    // Return either a composite response object with text and images or just the text for backward compatibility
-    if (responseMessages.length > 0) {
-      // Check for image references in text messages
-      for (const msg of responseMessages) {
-        if (msg.type === "text" && msg.content && msg.content.includes("![")) {
-          // Signal that this message contains embedded image references
-          msg.containsImageReferences = true;
-        }
-      }
-
-      if (
-        responseMessages.some(
-          (msg) => msg.type === "image" || msg.containsImageReferences
-        )
-      ) {
-        // Return structured response with multiple message types
-        return responseMessages;
-      } else {
-        // For backward compatibility, return just the text
-        return responseMessages[0].content;
-      }
-    } else {
-      return "No response content was found.";
-    }
+    const finalMsg = messages.data[0]; // The last message should be the assistant's response
+    const response = extractTextFromMessage(finalMsg);
+    progress("Final response received from coordinator.");
+    console.log(`[DEBUG] Final coordinator response: ${JSON.stringify(response)}`);
+    return response;
   } else {
     progress(
       `Error: Coordinator run ${run.id} did not complete successfully. Status: ${run.status}`
     );
+    console.error(
+      `[ERROR] Coordinator run ${run.id} did not complete successfully. Status: ${run.status}`
+    );
     // Check for run.last_error to provide more details if available
     if (run.last_error) {
       progress(`Run failed with error: ${run.last_error.message}`);
+      console.error(
+        `[ERROR] Run failed with error: ${run.last_error.message} (Code: ${run.last_error.code})`
+      );
     }
     return "Error: Could not get a response from the assistant.";
   }
