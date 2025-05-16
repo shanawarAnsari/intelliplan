@@ -1,19 +1,17 @@
-// filepath: d:\Dev\intelliplan\src\components\DomainCards.jsx
 import React, { useState } from "react";
 import { Box, Paper, Typography, Grid, useTheme } from "@mui/material";
 
 const cardData = [
-  { title: "Sales", width: 4, height: "60px" }, // Increased height
-  { title: "Supply Planning", width: 4, height: "60px" }, // Increased height
-  { title: "Demand Planning", width: 4, height: "60px" }, // Increased height
+  { title: "Supply Planning", width: 4, height: "60px" },
+  { title: "Demand Planning", width: 4, height: "60px" },
 ];
 
 const DomainCards = () => {
   const theme = useTheme();
-  const [selectedCard, setSelectedCard] = useState("Demand Planning"); // Default selected card
+  const [selectedCard, setSelectedCard] = useState("Demand Planning");
 
   const handleCardClick = (title) => {
-    setSelectedCard((prev) => (prev === title ? null : title)); // Toggle selection, allowing only one card to be selected
+    setSelectedCard((prev) => (prev === title ? null : title));
   };
 
   return (
@@ -22,19 +20,16 @@ const DomainCards = () => {
         p: 1,
         backgroundColor: theme.palette.background.default,
         borderRadius: "8px",
-        // The component will be compact due to small card heights and paddings.
-        // Max width is controlled by its container in ChatBox.jsx (currently 700px)
       }}
     >
-      <Grid container spacing={1}>
-        {" "}
-        {/* Minimal spacing */}
+      <Grid container spacing={1} justifyContent="center">
         {cardData.map((card, index) => (
-          <Grid item xs={4} sm={card.width} md={card.width} key={index}>
+          <Grid item xs="auto" sm="auto" md="auto" key={index}>
             <Paper
-              onClick={() => handleCardClick(card.title)} // Add click handler
+              onClick={() => handleCardClick(card.title)}
               sx={{
-                p: 2, // Increased padding
+                py: 2,
+                px: 4,
                 height: card.height,
                 display: "flex",
                 flexDirection: "column",
@@ -42,57 +37,49 @@ const DomainCards = () => {
                 alignItems: "center",
                 textAlign: "center",
                 color: theme.palette.text.primary,
-
-                // Glass finish styles
                 background:
                   selectedCard === card.title
                     ? "linear-gradient(135deg, rgba(25, 118, 210, 0.2), rgba(25, 118, 210, 0.1))"
-                    : "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))", // Change background for selected card
+                    : "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))",
                 backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)", // For Safari
+                WebkitBackdropFilter: "blur(10px)",
                 borderRadius: "20px",
                 border:
                   selectedCard === card.title
                     ? "2px solid #1976d2"
-                    : "1px solid rgba(255, 255, 255, 0.18)", // Highlight selected card
-                // boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
-
-                position: "relative", // For pseudo-element positioning
-                overflow: "hidden", // To contain the pseudo-element
-
+                    : "1px solid rgba(255, 255, 255, 0.18)",
+                position: "relative",
+                overflow: "hidden",
                 transition:
                   "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-
                 "&:hover": {
-                  transform: "translateY(-3px)", // Bounce effect
-                  boxShadow: "0 12px 40px 0 rgba(0, 0, 0, 0.45)", // Enhanced shadow
+                  transform: "translateY(-3px)",
+                  boxShadow: "0 12px 40px 0 rgba(0, 0, 0, 0.45)",
                   "&::after": {
-                    left: "150%", // Animate shimmer to the right
+                    left: "150%",
                   },
                 },
-                // Shimmer pseudo-element
                 "&::after": {
                   content: '""',
                   position: "absolute",
                   top: 0,
-                  left: "-100%", // Start off-screen to the left
-                  width: "75%", // Width of the shine element
+                  left: "-100%",
+                  width: "75%",
                   height: "100%",
                   background:
                     "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
-                  transform: "skewX(-25deg)", // Angle the shine
-                  transition: "left 0.6s ease-in-out", // Shimmer animation
-                  pointerEvents: "none", // Make sure it's not interactive
+                  transform: "skewX(-25deg)",
+                  transition: "left 0.6s ease-in-out",
+                  pointerEvents: "none",
                 },
-                cursor: "pointer", // Indicate clickable
+                cursor: "pointer",
               }}
             >
               <Typography
                 variant="body2"
                 component="div"
-                sx={{ fontSize: "1rem", fontWeight: "normal" }} // Increased font size
+                sx={{ fontSize: "1rem", fontWeight: "normal" }}
               >
-                {" "}
                 {card.title}
               </Typography>
             </Paper>
