@@ -327,6 +327,20 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
     messages.forEach((message, index) => {
       const isLastMessageInStream = index === messages.length - 1;
 
+      // Add a divider before rendering the final bot message if it's marked as final
+      if (message.isBot && message.isFinal && !message.isChunk) {
+        messageElements.push(
+          <ThinkingIndicator
+            key={`divider-${message.id || index}`}
+            text="" // No text for divider
+            isSticky={false}
+            showSpinner={false}
+            lineVariant="full" // Full line divider
+            isDivider={true} // Mark as divider
+          />
+        );
+      }
+
       // Add the ChatMessage component itself
       messageElements.push(
         <ChatMessage

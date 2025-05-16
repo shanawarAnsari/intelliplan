@@ -350,7 +350,7 @@ const ChatMessage = ({
             borderLeft: isFinal
               ? `3px solid ${theme.palette.primary.main}`
               : isChunk
-              ? `1px solid rgba(129, 199, 132, 0.6)`
+              ? `2px solid #a5a5a5`
               : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
               : "none",

@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Box, Paper, Typography, Grid, useTheme } from "@mui/material";
 
 const cardData = [
-  { title: "Supply Planning", width: 4, height: "60px" },
   { title: "Demand Planning", width: 4, height: "60px" },
+  { title: "Supply Planning", width: 4, height: "60px" },
 ];
 
 const DomainCards = () => {
