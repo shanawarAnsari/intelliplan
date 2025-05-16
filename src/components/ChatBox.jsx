@@ -316,7 +316,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
             logs={message.logs}
             isLoadingLogs={isLoading && index === messages.length - 1}
           />
-          {/* Render Logger component after user message if loading or if logs exist */}
+          {/* Render Logger component after user message if loading or if logs exist
           {!message.isBot &&
             (isLoading || progressLogs.length > 0) &&
             index === messages.length - 1 && (
@@ -325,7 +325,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               >
                 <Logger logs={progressLogs} isLoading={isLoading} />
               </Box>
-            )}
+            )} */}
         </React.Fragment>
       );
     });
