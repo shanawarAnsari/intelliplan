@@ -8,27 +8,60 @@ export const fetchImageFromOpenAI = async (fileId) => {
       throw new Error("No file ID provided");
     }
 
+    // Make sure fileId is properly formatted (remove any 'assistant-' prefix if present)
+    const formattedFileId = fileId.startsWith("assistant-")
+      ? fileId
+      : `assistant-${fileId}`;
+
     const azureEndpoint = ENDPOINT.endsWith("/") ? ENDPOINT : `${ENDPOINT}/`;
-    const url = `${azureEndpoint}openai/files/${fileId}/content?api-version=${API_VERSION}`;
+    const url = `${azureEndpoint}openai/files/${formattedFileId}/content?api-version=${API_VERSION}`;
 
     console.log(`Fetching image from URL: ${url}`);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "api-key": API_KEY,
-        Accept: "image/*",
-      },
-    });
+    // Add retry logic for network issues
+    let retries = 0;
+    const maxRetries = 3;
 
-    if (!response.ok) {
-      console.error("Image fetch response:", await response.text());
-      throw new Error(
-        `Failed to fetch image: ${response.status} ${response.statusText}`
-      );
+    while (retries < maxRetries) {
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "api-key": API_KEY,
+            Accept: "image/*",
+            "Cache-Control": "no-cache", // Prevent caching issues
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.warn(
+              `Image not found (404). Will retry ${maxRetries - retries} more times.`
+            );
+            retries++;
+            await new Promise((resolve) => setTimeout(resolve, 1000 * retries)); // Exponential backoff
+            continue;
+          }
+
+          console.error("Image fetch response:", await response.text());
+          throw new Error(
+            `Failed to fetch image: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      } catch (fetchError) {
+        console.error(`Fetch attempt ${retries + 1} failed:`, fetchError);
+        retries++;
+
+        if (retries >= maxRetries) {
+          throw fetchError;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retries));
+      }
     }
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
   } catch (error) {
     console.error("Error fetching image from Azure OpenAI:", error);
     throw error;
