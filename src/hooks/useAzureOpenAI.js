@@ -5,10 +5,10 @@ import {
   SALES_ASSISTANT_ID,
   FORECAST_ASSISTANT_ID,
 } from "../utils/assistantConstants";
+import MessageProcessor from "../utils/MessageProcessor";
 
 /**
  * React hook for Azure OpenAI interactions
- * Simplified version to only include core functionality needed by components
  */
 const useAzureOpenAI = () => {
   const [client] = useState(openAIClient);
@@ -48,32 +48,7 @@ const useAzureOpenAI = () => {
   }, [client]);
 
   /**
-   * Extracts text content from various message formats
-   */
-  const extractTextFromMessage = useCallback((messageContent) => {
-    if (!messageContent) return "";
-
-    if (typeof messageContent === "string") {
-      return messageContent;
-    }
-
-    if (Array.isArray(messageContent)) {
-      return messageContent
-        .filter((block) => block.type === "text")
-        .map((block) => block.text?.value || "")
-        .join("\n");
-    }
-
-    if (messageContent.type === "text") {
-      return messageContent.text?.value || "";
-    }
-
-    return JSON.stringify(messageContent);
-  }, []);
-
-  /**
    * Main handler for conversation interactions
-   * This is the primary method that should be used by components
    */
   const conversationHandler = useCallback(
     async (message, conversationId = null, specificAssistantId = null) => {
@@ -151,7 +126,9 @@ const useAzureOpenAI = () => {
 
           if (messagesResponse.data.length > 0) {
             const lastMessage = messagesResponse.data[0];
-            const answerText = extractTextFromMessage(lastMessage.content);
+            const answerText = MessageProcessor.extractTextFromMessage(
+              lastMessage.content
+            );
 
             return {
               answer: answerText,
@@ -175,10 +152,9 @@ const useAzureOpenAI = () => {
         setIsLoading(false);
       }
     },
-    [client, threadId, assistantId, createThread, extractTextFromMessage]
+    [client, threadId, assistantId, createThread]
   );
 
-  // Return only essential elements needed by consuming components
   return {
     client,
     assistantId,

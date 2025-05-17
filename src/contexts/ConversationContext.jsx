@@ -8,6 +8,7 @@ import React, {
 import { v4 as uuidv4 } from "uuid";
 import useAzureOpenAI from "../hooks/useAzureOpenAI";
 import useThreadValidator from "../hooks/useThreadValidator";
+import MessageProcessor from "../utils/MessageProcessor";
 
 const ConversationContext = createContext();
 
@@ -45,8 +46,6 @@ export const ConversationProvider = ({ children }) => {
             messages: [],
             created: new Date(),
           };
-          setConversations(parsedConversations);
-
           setActiveConversation(newConversation);
           setThreadId(thread.id);
         }
@@ -191,7 +190,7 @@ export const ConversationProvider = ({ children }) => {
             title:
               updatedConversation.title === "New Conversation" &&
               finalMessages.length <= 2
-                ? message.substring(0, 30) + (message.length > 30 ? "..." : "")
+                ? MessageProcessor.formatConversationTitle(message)
                 : updatedConversation.title,
           };
 
@@ -257,7 +256,6 @@ export const ConversationProvider = ({ children }) => {
         const updatedConversations = [...prevConversations];
         updatedConversations[index] = updatedConv;
 
-        // Save to localStorage
         localStorage.setItem("conversations", JSON.stringify(updatedConversations));
 
         return updatedConversations;
@@ -276,7 +274,7 @@ export const ConversationProvider = ({ children }) => {
     sendMessage,
     addAssistantMessageToConversation,
     setConversations,
-    updateConversation, // Add updateConversation to the context
+    updateConversation,
   };
 
   return (
