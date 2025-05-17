@@ -4,7 +4,6 @@ import {
   IconButton,
   Tooltip,
   useTheme,
-  Drawer,
   Button,
   List,
   ListItem,
@@ -21,14 +20,13 @@ import {
 } from "@mui/material";
 
 import { useConversation } from "../contexts/ConversationContext";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import kimberlyClarkLogo from "../assets/KC_logo_for_dark.png";
-const drawerWidth = 280;
+const drawerWidth = "100%";
 
-const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
+const ConversationHistory = ({ isChatBoxLoading }) => {
   const theme = useTheme();
   const {
     conversations,
@@ -92,11 +90,11 @@ const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
       <Box
         sx={{
           py: 0.75,
-          ml: -1,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: `1px solid ${theme.palette.divider}`,
+          p: 1,
         }}
       >
         <Button
@@ -104,36 +102,22 @@ const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
           size="small"
           startIcon={<AddIcon />}
           onClick={handleNewConversation}
-          disabled={isChatBoxLoading} // Disable button when isChatBoxLoading is true
+          disabled={isChatBoxLoading}
           sx={{
             textTransform: "none",
             borderRadius: theme.shape.borderRadius,
             fontWeight: "medium",
             py: 1,
             px: 2,
-            ml: 1,
             backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText,
             "&:hover": {
-              backgroundColor: "#0087f9",
+              backgroundColor: theme.palette.primary.hover,
             },
           }}
         >
           New Conversation
         </Button>
-        <Tooltip title="Hide Sidebar">
-          <IconButton
-            onClick={onToggleDrawer}
-            sx={{
-              color: theme.palette.text.secondary,
-              "&:hover": {
-                backgroundColor: theme.palette.action.hover,
-              },
-            }}
-          >
-            <ChevronLeftIcon />
-          </IconButton>
-        </Tooltip>
       </Box>
       {validConversations && validConversations.length > 0 && (
         <>
@@ -141,8 +125,6 @@ const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
           <Box sx={{ px: 2, pt: 1.5 }}>
             <Typography
               variant="overline"
-              color="text.secondary"
-              fontWeight="medium"
               sx={{
                 fontWeight: "bold",
                 fontSize: "0.75rem",
@@ -159,12 +141,13 @@ const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
               {validConversations.map((conv, index) => (
                 <Fade
                   in={true}
-                  key={index}
+                  key={conv.id || index}
                   timeout={300}
                   style={{ transitionDelay: `${index * 50}ms` }}
                 >
                   <ListItem disablePadding>
                     <ListItemButton
+                      selected={activeConversation?.id === conv.id}
                       onClick={() => selectConversation(conv.id)}
                       sx={{
                         borderRadius: theme.shape.borderRadius,
@@ -242,8 +225,8 @@ const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
         sx={{
           pt: 2,
           mt: "auto",
-          ml: 1,
-          textAlign: "start",
+          textAlign: "center",
+          p: 1,
         }}
       >
         <img
@@ -257,33 +240,16 @@ const ConversationHistory = ({ open, onToggleDrawer, isChatBoxLoading }) => {
 
   return (
     <>
-      <Drawer
-        variant="persistent"
-        anchor="left"
-        open={open}
+      <Box
         sx={{
-          width: open ? drawerWidth : 0,
-          flexShrink: 0,
-          transition: theme.transitions.create("width", {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-            borderRight: `1px solid ${theme.palette.divider}`,
-            transition: theme.transitions.create(["width", "margin"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-            boxShadow: "none",
-            overflowX: "hidden",
-            bgcolor: theme.palette.background.default,
-          },
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto",
         }}
       >
         {drawerContent}
-      </Drawer>
+      </Box>
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}

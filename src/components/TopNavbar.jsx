@@ -7,12 +7,11 @@ import {
   Avatar,
   useTheme,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Logo from "../assets/Intelliplan-logo.png";
 
-const TopNavbar = ({ drawerOpen, onToggleDrawer, onToggleHelp }) => {
+const TopNavbar = ({ onToggleHelp }) => {
   const theme = useTheme();
 
   return (
@@ -25,26 +24,10 @@ const TopNavbar = ({ drawerOpen, onToggleDrawer, onToggleHelp }) => {
         justifyContent: "space-between",
         backgroundColor: theme.palette.background.paper,
         boxShadow: "0px 1px 3px rgba(0,0,0,0.1)",
+        width: "100%",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        {!drawerOpen && (
-          <Tooltip title="Open Sidebar">
-            <IconButton
-              onClick={onToggleDrawer}
-              sx={{
-                mr: 0.5,
-                color: theme.palette.text.secondary,
-                transition: "color 0.2s ease",
-                "&:hover": {
-                  color: theme.palette.text.primary,
-                },
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          </Tooltip>
-        )}
         <img src={Logo} alt="InteliPlan Logo" height="35" className="hover-lift" />
       </Box>
       <Box

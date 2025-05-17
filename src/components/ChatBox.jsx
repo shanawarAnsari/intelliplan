@@ -6,12 +6,10 @@ import ThinkingIndicator from "./ThinkingIndicator";
 import Logo from "../assets/Intelliplan-logo.png";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
-import HelpFAQ from "./HelpFAQ";
-import TopNavbar from "./TopNavbar";
 import { orchestrateStreaming } from "../services/StreamingService";
 import { useConversation } from "../contexts/ConversationContext";
 
-const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
+const ChatBox = ({ onIsLoadingChange }) => {
   // State management
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,18 +18,12 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
   const [streamStopped, setStreamStopped] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState(null);
   const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true);
-  const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
 
   // Refs and context
   const messagesEndRef = useRef(null);
   const emitterRef = useRef(null);
   const theme = useTheme();
   const { activeConversation, updateConversation } = useConversation();
-
-  // Toggle help drawer
-  const toggleHelpDrawer = () => {
-    setHelpDrawerOpen(!helpDrawerOpen);
-  };
 
   // Notify parent about loading state changes
   useEffect(() => {
@@ -78,7 +70,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
       setAllowLoggerDisplay(true);
     }
   }, [activeConversation]);
-
   // Handle sending a message
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
@@ -88,7 +79,14 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
     setAllowLoggerDisplay(isNewThreadContext);
 
     // Create the user message
-    const userMessage = { text, isBot: false, timestamp: new Date() };
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      text,
+      isBot: false,
+      timestamp: new Date(),
+      role: "user",
+      content: text,
+    };
 
     // Reset state for new message
     setIsLoading(true);
@@ -96,8 +94,17 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
     setProgressImages([]);
     setStreamStopped(false);
 
-    // Add user message to chat
+    // Add user message to chat and update conversation
     setMessages((prevMessages) => [...prevMessages, userMessage]);
+
+    // Update the conversation with the user message
+    if (activeConversation) {
+      const updatedConversation = {
+        ...activeConversation,
+        messages: [...(activeConversation.messages || []), userMessage],
+      };
+      updateConversation(updatedConversation);
+    }
 
     try {
       // Use streaming approach with thread ID
@@ -119,9 +126,16 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
 
         // Handle text chunks and other message types
         if (type === "text_chunk") {
+          // Check if the content contains a complete paragraph or meaningful unit
+          // Using moderate thresholds for message bubble size
+          const isSignificantContent =
+            content.length > 200 ||
+            (content.includes("\n\n") && content.length > 100) ||
+            (content.includes(".") && content.includes("\n") && content.length > 80);
+
           // Update message with streamed content
           setMessages((prevMessages) => {
-            // Find the last bot message that's a chunk or create a new one
+            // Find the last bot message that's a chunk
             const lastChunkIndex = [...prevMessages]
               .reverse()
               .findIndex((m) => m.isBot && m.isChunk);
@@ -130,28 +144,65 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
               ? prevMessages.length - 1 - lastChunkIndex
               : -1;
 
-            if (hasChunk) {
-              // Update existing chunk
-              const updatedMessages = [...prevMessages];
+            let updatedMessages = [...prevMessages];
+            let newMessage;
+
+            // Check if existing chunk is getting too large
+            const existingChunkIsLarge =
+              hasChunk &&
+              (updatedMessages[chunkIndex].text.length > 300 ||
+                updatedMessages[chunkIndex].text.split(". ").length > 2);
+
+            if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
+              // Update existing chunk if content isn't significant enough for a new bubble
               updatedMessages[chunkIndex] = {
                 ...updatedMessages[chunkIndex],
                 text: updatedMessages[chunkIndex].text + content,
+                content: updatedMessages[chunkIndex].text + content,
+                role: "assistant",
               };
-              return updatedMessages;
+              newMessage = updatedMessages[chunkIndex];
             } else {
-              // Create a new chunk message
-              return [
-                ...prevMessages,
-                {
-                  id: `chunk-${Date.now()}`,
-                  text: content,
-                  isBot: true,
-                  timestamp: new Date(),
-                  isChunk: true,
-                  isFinal: false,
-                },
-              ];
+              // Create a new chunk message for significant content or new paragraphs
+              newMessage = {
+                id: `chunk-${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`,
+                text: content,
+                content: content,
+                isBot: true,
+                role: "assistant",
+                timestamp: new Date(),
+                isChunk: true,
+                isFinal: false,
+              };
+              updatedMessages = [...updatedMessages, newMessage];
             }
+
+            // Update conversation to save thinking messages in history
+            if (activeConversation) {
+              const updatedConversation = {
+                ...activeConversation,
+                messages: [...(activeConversation.messages || [])],
+              };
+
+              // Either update the last message or add a new one
+              if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
+                const lastIndex = updatedConversation.messages.length - 1;
+                if (
+                  lastIndex >= 0 &&
+                  updatedConversation.messages[lastIndex].isChunk
+                ) {
+                  updatedConversation.messages[lastIndex] = newMessage;
+                }
+              } else {
+                updatedConversation.messages.push(newMessage);
+              }
+
+              updateConversation(updatedConversation);
+            }
+
+            return updatedMessages;
           });
         } else if (type === "image" && content && content.url) {
           // Handle image updates
@@ -174,12 +225,18 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
             };
             updateConversation(updatedConversation);
           }
-        }
-
-        // Create final message
+        } // Create final message
         setMessages((prevMessages) => {
-          // Remove any existing chunks
-          const messagesWithoutChunks = prevMessages.filter((msg) => !msg.isChunk);
+          // Keep chunks but mark them as final
+          const updatedMessages = prevMessages.map((msg) => {
+            if (msg.isChunk) {
+              return {
+                ...msg,
+                isFinal: true,
+              };
+            }
+            return msg;
+          });
 
           // Create the final message
           const finalMessage = {
@@ -192,7 +249,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
             images: progressImages.length > 0 ? progressImages : undefined,
           };
 
-          return [...messagesWithoutChunks, finalMessage];
+          return [...updatedMessages, finalMessage];
         });
 
         setIsLoading(false);
@@ -275,12 +332,11 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
 
     // Process each message
     messages.forEach((message, index) => {
-      const isLastMessageInStream = index === messages.length - 1;
-
-      // Add the ChatMessage component
+      const isLastMessageInStream = index === messages.length - 1; // Add the ChatMessage component
       messageElements.push(
         <ChatMessage
           key={message.id || `msg-${index}`}
+          id={message.id || `msg-${index}`} // Pass the message id
           message={typeof message === "string" ? message : message.text}
           isBot={message.isBot}
           timestamp={message.timestamp}
@@ -340,38 +396,26 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
     <Box
       sx={{
         flexGrow: 1,
-        height: "100vh",
         display: "flex",
         flexDirection: "column",
         backgroundColor: theme.palette.background.default,
+        height: "100%",
+        overflow: "hidden",
       }}
     >
-      {" "}
-      {/* Header */}
-      <TopNavbar
-        drawerOpen={drawerOpen}
-        onToggleDrawer={onToggleDrawer}
-        onToggleHelp={toggleHelpDrawer}
-      />
-      {/* Help FAQ Drawer */}
-      <HelpFAQ open={helpDrawerOpen} onClose={() => setHelpDrawerOpen(false)} />
-      {/* Chat Content */}
       <Box
         sx={{
-          width: "100%",
-          maxWidth: "900px",
-          mx: "auto",
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          p: 2,
         }}
       >
         <Box
           sx={{
             flexGrow: 1,
             overflowY: "auto",
-            p: 2,
             display: "flex",
             flexDirection: "column",
           }}
@@ -390,7 +434,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    height: "100%",
+                    flexGrow: 1,
                   }}
                 >
                   <img
@@ -421,21 +465,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
                     Ask a question, analyze data, or select a conversation from
                     history.
                   </Typography>
-                  {messages.length === 0 && (
-                    <Fade
-                      in={true}
-                      timeout={1000}
-                      style={{ transitionDelay: "300ms" }}
-                    >
-                      <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
-                        <MessageInput
-                          onSendMessage={handleSendMessage}
-                          disabled={isLoading}
-                          onStopGenerating={handleStopGenerating}
-                        />
-                      </Box>
-                    </Fade>
-                  )}
                 </Box>
               </Fade>
             </>
@@ -451,15 +480,14 @@ const ChatBox = ({ drawerOpen, onToggleDrawer, onIsLoadingChange }) => {
           )}
           <div ref={messagesEndRef} />
         </Box>
-        {(!isChatEmpty || messages.length > 0) && (
-          <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <MessageInput
-              onSendMessage={handleSendMessage}
-              disabled={isLoading}
-              onStopGenerating={handleStopGenerating}
-            />
-          </Box>
-        )}
+
+        <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            disabled={isLoading}
+            onStopGenerating={handleStopGenerating}
+          />
+        </Box>
       </Box>
     </Box>
   );

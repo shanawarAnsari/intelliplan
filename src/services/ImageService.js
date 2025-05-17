@@ -3,20 +3,20 @@ const ENDPOINT = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
 const API_VERSION = "2024-05-01-preview";
 
 export const fetchImageFromOpenAI = async (fileId) => {
+  if (!fileId) {
+    throw new Error("No file ID provided");
+  }
+
+  // Make sure fileId is properly formatted
+  const formattedFileId = fileId.startsWith("assistant-")
+    ? fileId
+    : `assistant-${fileId}`;
+
   try {
-    if (!fileId) {
-      throw new Error("No file ID provided");
-    }
-
-    // Make sure fileId is properly formatted (remove any 'assistant-' prefix if present)
-    const formattedFileId = fileId.startsWith("assistant-")
-      ? fileId
-      : `assistant-${fileId}`;
-
     const azureEndpoint = ENDPOINT.endsWith("/") ? ENDPOINT : `${ENDPOINT}/`;
     const url = `${azureEndpoint}openai/files/${formattedFileId}/content?api-version=${API_VERSION}`;
 
-    console.log(`Fetching image from URL: ${url}`);
+    console.log(`Fetching image from URL (cache miss): ${url}`);
 
     // Add retry logic for network issues
     let retries = 0;
@@ -48,9 +48,10 @@ export const fetchImageFromOpenAI = async (fileId) => {
             `Failed to fetch image: ${response.status} ${response.statusText}`
           );
         }
-
         const blob = await response.blob();
-        return URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
+        console.log(`Image fetched for fileId: ${formattedFileId}`);
+        return blobUrl;
       } catch (fetchError) {
         console.error(`Fetch attempt ${retries + 1} failed:`, fetchError);
         retries++;
@@ -71,6 +72,7 @@ export const fetchImageFromOpenAI = async (fileId) => {
 export const revokeImageUrl = (url) => {
   if (url && url.startsWith("blob:")) {
     URL.revokeObjectURL(url);
+    console.log(`Revoked blob URL`);
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -34,6 +34,7 @@ const ChatMessage = ({
   isLoadingLogs,
   isChunk = false,
   isFinal = false,
+  id, // Added message id prop
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -42,8 +43,33 @@ const ChatMessage = ({
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [isLoggerExpanded, setIsLoggerExpanded] = useState(false);
 
+  // Load like status from local storage
+  useEffect(() => {
+    const likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
+    if (likedMessages.some((likedMsg) => likedMsg.id === id)) {
+      setIsLiked(true);
+    }
+  }, [id]);
+
   const handleLike = () => {
-    setIsLiked(!isLiked);
+    const currentLikedStatus = !isLiked;
+    setIsLiked(currentLikedStatus);
+
+    let likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
+    if (currentLikedStatus) {
+      // Add to liked messages
+      const messageToLike = {
+        id, // Use the passed id
+        text: message, // The text content of the message
+        timestamp: timestamp,
+        isBot: isBot,
+      };
+      likedMessages.push(messageToLike);
+    } else {
+      // Remove from liked messages
+      likedMessages = likedMessages.filter((likedMsg) => likedMsg.id !== id);
+    }
+    localStorage.setItem("likedMessages", JSON.stringify(likedMessages));
   };
 
   const handleRegenerate = () => {
@@ -60,11 +86,19 @@ const ChatMessage = ({
     setImageLoading(false);
     setImageError(true);
   };
+  // Flag to track if the image has already been loaded successfully
+  const hasLoadedImageRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadImage = async (fileId) => {
+      // Skip fetch if image is already loaded
+      if (hasLoadedImageRef.current && imageUrl) {
+        console.log("Image already loaded, skipping fetch");
+        return;
+      }
+
       try {
         setImageLoading(true);
         const ImageService = await import("../services/ImageService");
@@ -72,6 +106,8 @@ const ChatMessage = ({
         if (isMounted) {
           setImageUrl(url);
           setImageLoading(false);
+          // Mark this image as successfully loaded
+          hasLoadedImageRef.current = true;
         }
       } catch (error) {
         console.error("Failed to load image:", error);
@@ -97,7 +133,8 @@ const ChatMessage = ({
     const extractedFileId = parseMessageForImages();
     const fileIdToUse = imageFileId || extractedFileId;
 
-    if (fileIdToUse) {
+    // Only attempt to load the image if we don't already have a valid imageUrl
+    if (fileIdToUse && (!imageUrl || !hasLoadedImageRef.current)) {
       loadImage(fileIdToUse);
     } else if (isImage && images && images.length > 0) {
       setImageLoading(false);
@@ -112,7 +149,7 @@ const ChatMessage = ({
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [isImage, initialImageUrl, imageFileId, message, images, imageUrl]);
+  }, [isImage, initialImageUrl, imageFileId, message, images]);
 
   return (
     <Box
@@ -150,12 +187,12 @@ const ChatMessage = ({
         <Paper
           elevation={1}
           sx={{
-            p: isChunk ? 0.5 : 1,
-            px: isChunk ? 1.2 : 2,
-            maxWidth: { xs: isChunk ? "75%" : "85%", sm: isChunk ? "60%" : "75%" },
+            p: isChunk ? 0.8 : 1,
+            px: isChunk ? 1.5 : 2,
+            maxWidth: { xs: isChunk ? "80%" : "85%", sm: isChunk ? "70%" : "75%" },
             bgcolor: isBot
               ? isChunk
-                ? "rgba(37, 37, 37, 0.52)"
+                ? "rgba(37, 37, 37, 0.65)" // Making chunk bubbles more visible
                 : isFinal
                 ? "rgba(25, 118, 210, 0.12)"
                 : isRoutingMessage
@@ -174,11 +211,11 @@ const ChatMessage = ({
             borderLeft: isFinal
               ? `4px solid ${theme.palette.primary.main}`
               : isChunk
-              ? `2px solid rgb(136, 136, 136)`
+              ? `2px solid rgba(180, 180, 180, 0.6)`
               : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
               : "none",
-            opacity: isChunk ? 0.95 : 1,
+            opacity: isChunk ? 0.98 : 1,
             transition: "opacity 0.3s ease, background-color 0.3s ease",
           }}
         >
