@@ -48,7 +48,7 @@ const LikedMessages = () => {
         display: "flex",
         flexDirection: "column",
         overflowY: "auto",
-        backgroundColor: theme.palette.background.paper,
+        backgroundColor: theme.palette.background.default,
       }}
     >
       <Typography variant="h6" sx={{ mb: 2, color: theme.palette.text.primary }}>

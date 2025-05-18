@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, useTheme, Button, Fade, Typography } from "@mui/material";
-import DomainCards from "./DomainCards";
 import Logger from "./Logger";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Logo from "../assets/Intelliplan-logo.png";
@@ -421,53 +420,48 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }}
         >
           {isChatEmpty && !isLoading ? (
-            <>
-              <Box sx={{ width: "100%", maxWidth: "700px", mx: "auto", mt: 2 }}>
-                <DomainCards />
-              </Box>
-              <Fade in={true} timeout={800}>
-                <Box
-                  sx={{
-                    textAlign: "center",
-                    my: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexGrow: 1,
+            <Fade in={true} timeout={800}>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  my: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexGrow: 1,
+                }}
+              >
+                <img
+                  src={Logo}
+                  alt="InteliPlan Logo"
+                  style={{
+                    width: 180,
+                    height: 40,
+                    marginBottom: theme.spacing(2),
                   }}
+                />
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 1,
+                    color: theme.palette.text.primary,
+                    fontWeight: "medium",
+                  }}
+                  className="text-reveal"
                 >
-                  <img
-                    src={Logo}
-                    alt="InteliPlan Logo"
-                    style={{
-                      width: 180,
-                      height: 40,
-                      marginBottom: theme.spacing(2),
-                    }}
-                  />
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      mb: 1,
-                      color: theme.palette.text.primary,
-                      fontWeight: "medium",
-                    }}
-                    className="text-reveal"
-                  >
-                    How can I assist you today?
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{ mb: 3, color: "#a5a5a5" }}
-                    className="text-reveal"
-                  >
-                    Ask a question, analyze data, or select a conversation from
-                    history.
-                  </Typography>
-                </Box>
-              </Fade>
-            </>
+                  How can I assist you today?
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 3, color: "#a5a5a5" }}
+                  className="text-reveal"
+                >
+                  Ask a question, analyze data, or select a conversation from
+                  history.
+                </Typography>
+              </Box>
+            </Fade>
           ) : (
             renderMessages()
           )}

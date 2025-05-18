@@ -40,60 +40,74 @@ export const designTokens = {
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontSize: 12, // Base font size reduced
     h1: {
+      fontSize: "2.125rem",
       fontWeight: 600,
       letterSpacing: "-0.025em",
     },
     h2: {
+      fontSize: "1.7rem",
       fontWeight: 600,
       letterSpacing: "-0.025em",
     },
     h3: {
+      fontSize: "1.275rem",
       fontWeight: 600,
       letterSpacing: "-0.025em",
     },
     h4: {
+      fontSize: "1.06rem",
       fontWeight: 600,
       letterSpacing: "-0.025em",
     },
     h5: {
+      fontSize: "0.935rem",
       fontWeight: 600,
       letterSpacing: "-0.025em",
     },
     h6: {
+      fontSize: "0.85rem",
       fontWeight: 600,
       letterSpacing: "-0.015em",
     },
-    subtitle1: {
-      letterSpacing: 0,
-    },
-    subtitle2: {
-      letterSpacing: 0,
-      fontWeight: 500,
-    },
     body1: {
+      fontSize: "0.744rem",
       letterSpacing: 0,
     },
     body2: {
+      fontSize: "0.68rem",
       letterSpacing: 0,
     },
+    subtitle1: {
+      fontSize: "0.744rem",
+      letterSpacing: 0,
+    },
+    subtitle2: {
+      fontSize: "0.68rem",
+      letterSpacing: 0,
+      fontWeight: 500,
+    },
     button: {
+      fontSize: "0.744rem",
       fontWeight: 500,
       letterSpacing: 0,
     },
     caption: {
+      fontSize: "0.638rem",
       letterSpacing: 0,
     },
     overline: {
+      fontSize: "0.595rem",
       letterSpacing: "0.05em",
       fontWeight: 600,
     },
     chatMessage: {
-      fontSize: "0.95rem",
+      fontSize: "0.723rem",
       lineHeight: 1.6,
     },
     timestamp: {
-      fontSize: "0.7rem",
+      fontSize: "0.553rem",
     },
   },
   shape: {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   IconButton,
@@ -6,13 +6,24 @@ import {
   Typography,
   Avatar,
   useTheme,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Logo from "../assets/Intelliplan-logo.png";
 
+const domains = [
+  { id: "demand", title: "Demand Planning" },
+  { id: "supply", title: "Supply Planning" },
+];
+
 const TopNavbar = ({ onToggleHelp }) => {
   const theme = useTheme();
+  const [selectedDomain, setSelectedDomain] = useState(domains[0]);
 
   return (
     <Box
@@ -28,8 +39,15 @@ const TopNavbar = ({ onToggleHelp }) => {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <img src={Logo} alt="InteliPlan Logo" height="35" className="hover-lift" />
+        <img
+          src={Logo}
+          alt="InteliPlan Logo"
+          height="35"
+          style={{ marginRight: theme.spacing(2) }}
+          className="hover-lift"
+        />
       </Box>
+
       <Box
         sx={{
           display: "flex",
@@ -37,6 +55,40 @@ const TopNavbar = ({ onToggleHelp }) => {
           color: theme.palette.text.secondary,
         }}
       >
+        {/* Domain Selection Dropdown */}
+        <FormControl
+          variant="outlined"
+          size="small"
+          sx={{
+            width: 180,
+            mr: 2,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "4px",
+              fontSize: "0.875rem",
+            },
+          }}
+        >
+          <InputLabel id="domain-select-label">Domain</InputLabel>
+          <Select
+            labelId="domain-select-label"
+            id="domain-select"
+            value={selectedDomain.id}
+            onChange={(e) => {
+              const selected = domains.find(
+                (domain) => domain.id === e.target.value
+              );
+              setSelectedDomain(selected);
+            }}
+            label="Domain"
+          >
+            {domains.map((domain) => (
+              <MenuItem key={domain.id} value={domain.id}>
+                {domain.title}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <Tooltip title="Help & FAQ">
           <IconButton
             onClick={onToggleHelp}
