@@ -14,7 +14,7 @@ import {
 import { designTokens } from "../../styles/theme";
 
 const InventoryStockChart = () => {
-  const [timeRange, setTimeRange] = useState("6m");
+  const [timeRange, setTimeRange] = useState("1y");
   const [chartType, setChartType] = useState("area");
 
   // Dummy data for inventory stock over time
@@ -158,20 +158,19 @@ const InventoryStockChart = () => {
       },
     },
     title: {
-      text: "", // Remove the title
-      align: "left",
-      style: {
-        color: designTokens.palette.text.primary,
-      },
-    },
-    subtitle: {
       text: "Inventory Stock Quantities Over Time",
       align: "center",
-      offsetY: 190, // Position right below the x-axis
       style: {
         color: designTokens.palette.text.primary,
         fontSize: "16px",
         fontWeight: 500,
+      },
+    },
+    subtitle: {
+      text: "",
+      align: "center",
+      style: {
+        color: designTokens.palette.text.primary,
       },
     },
     grid: {
@@ -312,7 +311,7 @@ const InventoryStockChart = () => {
         overflow: "hidden",
       }}
     >
-      <CardContent sx={{ padding: "8px" }}>
+      <CardContent sx={{ padding: "8px", marginBottom: -4 }}>
         <Box
           sx={{
             display: "flex",
@@ -320,8 +319,25 @@ const InventoryStockChart = () => {
             alignItems: "center",
           }}
         >
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <ToggleButtonGroup
+          <Box sx={{ display: "flex", gap: 1, marginBottom: -4, zIndex: 1 }}>
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 80 }}>
+              <Select
+                value={timeRange}
+                onChange={handleTimeRangeChange}
+                sx={{
+                  color: designTokens.palette.text.primary,
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: designTokens.palette.divider,
+                  },
+                }}
+              >
+                <MenuItem value="1m">1 Month</MenuItem>
+                <MenuItem value="3m">3 Months</MenuItem>
+                <MenuItem value="6m">6 Months</MenuItem>
+                <MenuItem value="1y">1 Year</MenuItem>
+              </Select>
+            </FormControl>
+            {/* <ToggleButtonGroup
               value={chartType}
               exclusive
               onChange={handleChartTypeChange}
@@ -346,32 +362,14 @@ const InventoryStockChart = () => {
               <ToggleButton value="bar" aria-label="bar chart">
                 Bar
               </ToggleButton>
-            </ToggleButtonGroup>
-
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
-              <Select
-                value={timeRange}
-                onChange={handleTimeRangeChange}
-                sx={{
-                  color: designTokens.palette.text.primary,
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: designTokens.palette.divider,
-                  },
-                }}
-              >
-                <MenuItem value="1m">1 Month</MenuItem>
-                <MenuItem value="3m">3 Months</MenuItem>
-                <MenuItem value="6m">6 Months</MenuItem>
-                <MenuItem value="1y">1 Year</MenuItem>
-              </Select>
-            </FormControl>
+            </ToggleButtonGroup> */}
           </Box>
         </Box>
         <ReactApexChart
           options={chartOptions}
           series={chartSeries}
           type={chartType}
-          height={250}
+          height={297}
         />
       </CardContent>
     </Card>

@@ -214,7 +214,7 @@ const ChatMessage = ({
               ? `2px solid rgba(180, 180, 180, 0.6)`
               : isRoutingMessage
               ? `3px solid ${theme.palette.primary.main}`
-              : "none",
+              : `4px solid transparent`,
             opacity: isChunk ? 0.98 : 1,
             transition: "opacity 0.3s ease, background-color 0.3s ease",
           }}

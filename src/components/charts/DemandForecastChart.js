@@ -78,20 +78,19 @@ const DemandForecastChart = () => {
       dashArray: [0, 0],
     },
     title: {
-      text: "", // Remove the title
-      align: "left",
-      style: {
-        color: designTokens.palette.text.primary,
-      },
-    },
-    subtitle: {
       text: "Demand Forecast vs Actual",
       align: "center",
-      offsetY: 190, // Position right below the x-axis
       style: {
         color: designTokens.palette.text.primary,
         fontSize: "16px",
         fontWeight: 500,
+      },
+    },
+    subtitle: {
+      text: "",
+      align: "center",
+      style: {
+        color: designTokens.palette.text.primary,
       },
     },
     grid: {
@@ -192,7 +191,7 @@ const DemandForecastChart = () => {
         overflow: "hidden",
       }}
     >
-      <CardContent sx={{ padding: "8px" }}>
+      <CardContent sx={{ padding: "8px", marginBottom: -4 }}>
         <Box
           sx={{
             display: "flex",
@@ -203,7 +202,7 @@ const DemandForecastChart = () => {
           <FormControl
             variant="outlined"
             size="small"
-            sx={{ minWidth: 120, marginBottom: -5, zIndex: 1 }}
+            sx={{ minWidth: 80, marginBottom: -4, zIndex: 1 }}
           >
             <Select
               value={timeRange}
@@ -225,7 +224,7 @@ const DemandForecastChart = () => {
           options={chartOptions}
           series={chartSeries}
           type="line"
-          height={250}
+          height={297}
         />
       </CardContent>
     </Card>

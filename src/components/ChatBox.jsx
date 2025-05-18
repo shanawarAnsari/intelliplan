@@ -30,7 +30,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
       onIsLoadingChange(isLoading);
     }
   }, [isLoading, onIsLoadingChange]);
-
   // Sync messages with active conversation
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
@@ -63,19 +62,22 @@ const ChatBox = ({ onIsLoadingChange }) => {
           activeConversation.threadId || activeConversation.id || null
         );
       }
+
+      // Force save the conversation to ensure it's in localStorage
+      if (activeConversation.id && !activeConversation.isNew) {
+        updateConversation(activeConversation);
+      }
     } else {
       setMessages([]);
       setCurrentThreadId(null);
       setAllowLoggerDisplay(true);
     }
-  }, [activeConversation]);
-  // Handle sending a message
+  }, [activeConversation, updateConversation]); // Handle sending a message
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
-    // Show logger only for new threads
-    const isNewThreadContext = !currentThreadId;
-    setAllowLoggerDisplay(isNewThreadContext);
+    // Always allow logger display regardless of thread context
+    setAllowLoggerDisplay(true);
 
     // Create the user message
     const userMessage = {
@@ -207,23 +209,49 @@ const ChatBox = ({ onIsLoadingChange }) => {
           // Handle image updates
           setProgressImages((prev) => [...prev, content]);
         }
-      });
-
-      // Handle final answer
+      }); // Handle final answer
       emitter.on("finalAnswer", ({ answer, thread }) => {
         // Store thread ID for future messages
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
+        } // Create the assistant message object
+        const assistantMessage = {
+          role: "assistant",
+          content: answer,
+          timestamp: new Date(),
+          assistantName: "Assistant",
+          routedFrom: null,
+          isChunk: false,
+          isFinal: true,
+        };
 
-          // Update conversation with thread ID
-          if (activeConversation) {
-            const updatedConversation = {
-              ...activeConversation,
-              threadId: thread.id,
-              id: thread.id,
-            };
-            updateConversation(updatedConversation);
-          }
+        // Generate a title based on the assistant's first response
+        let newTitle = activeConversation.title;
+        if (activeConversation.title === "New Conversation") {
+          // Extract first sentence or up to 40 chars from the assistant's response
+          const firstSentence = answer.split(".")[0].trim();
+          newTitle =
+            firstSentence.substring(0, 40) +
+            (firstSentence.length > 40 ? "..." : "");
+
+          // Make sure title is capitalized and has no trailing punctuation
+          newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
+          newTitle = newTitle.replace(/[.,;:!?]$/, "");
+        }
+
+        // Update conversation with thread ID and final answer
+        if (activeConversation) {
+          const updatedConversation = {
+            ...activeConversation,
+            threadId: thread?.id || activeConversation.id,
+            id: thread?.id || activeConversation.id,
+            messages: [
+              ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
+              assistantMessage,
+            ],
+            title: newTitle,
+          };
+          updateConversation(updatedConversation);
         } // Create final message
         setMessages((prevMessages) => {
           // Keep chunks but mark them as final
@@ -374,23 +402,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
           />
         );
       }
-
-      // Show logger after last user message if allowed
-      if (
-        !message.isBot &&
-        (isLoading || progressLogs.length > 0) &&
-        index === lastUserMessageIndex &&
-        allowLoggerDisplay
-      ) {
-        messageElements.push(
-          <Logger key="logger" logs={progressLogs} isLoading={isLoading} />
-        );
-      }
+      // Logger is now shown as a fixed element at the top, so we don't need to show it here
     });
 
     return messageElements;
   };
-
   return (
     <Box
       sx={{
@@ -400,23 +416,46 @@ const ChatBox = ({ onIsLoadingChange }) => {
         backgroundColor: theme.palette.background.default,
         height: "100%",
         overflow: "hidden",
+        position: "relative",
       }}
     >
+      {/* Main scrollable container - only one with overflow */}
       <Box
         sx={{
-          flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
-          p: 2,
+          flexGrow: 1,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: "70px" /* Reserve space for input box */,
+          overflowY: "auto" /* Single scrollbar here */,
+          overflowX: "hidden",
         }}
       >
+        {/* Fixed Logger that's always visible */}
+        {allowLoggerDisplay && (
+          <Box
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              pb: 1,
+              mb: 2,
+              backgroundColor: theme.palette.background.default,
+            }}
+          >
+            <Logger logs={progressLogs} isLoading={isLoading} showCountOnly={true} />
+          </Box>
+        )}{" "}
         <Box
           sx={{
+            px: 2,
             flexGrow: 1,
-            overflowY: "auto",
             display: "flex",
             flexDirection: "column",
+            overflow: "visible" /* Ensure no scrollbar here */,
           }}
         >
           {isChatEmpty && !isLoading ? (
@@ -474,14 +513,25 @@ const ChatBox = ({ onIsLoadingChange }) => {
           )}
           <div ref={messagesEndRef} />
         </Box>
-
-        <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            disabled={isLoading}
-            onStopGenerating={handleStopGenerating}
-          />
-        </Box>
+      </Box>{" "}
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.default,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "70px",
+          zIndex: 10,
+        }}
+      >
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          disabled={isLoading}
+          onStopGenerating={handleStopGenerating}
+        />
       </Box>
     </Box>
   );

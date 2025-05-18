@@ -25,16 +25,20 @@ export const ConversationProvider = ({ children }) => {
     createThread,
   } = useAzureOpenAI();
   const { validateThread, formatThreadId } = useThreadValidator();
-
   useEffect(() => {
     const loadSavedConversations = async () => {
       try {
         const savedConversations = localStorage.getItem("conversations");
         let parsedConversations = [];
         if (savedConversations) {
-          parsedConversations = JSON.parse(savedConversations);
+          parsedConversations = JSON.parse(savedConversations); // Only keep conversations that have at least one assistant message
+          // Filter out thinking messages and conversations with no final answers
           parsedConversations = parsedConversations.filter(
-            (conv) => conv.messages && conv.messages.length > 0
+            (conv) =>
+              conv.messages &&
+              conv.messages.some(
+                (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
+              )
           );
           setConversations(parsedConversations);
         }
@@ -78,11 +82,13 @@ export const ConversationProvider = ({ children }) => {
             setActiveConversation(updatedConversation);
             setThreadId(thread.id);
 
-            setConversations((prev) =>
-              prev.map((conv) =>
+            setConversations((prev) => {
+              const updated = prev.map((conv) =>
                 conv.id === conversationId ? updatedConversation : conv
-              )
-            );
+              );
+              localStorage.setItem("conversations", JSON.stringify(updated));
+              return updated;
+            });
           }
         }
       } catch (error) {
@@ -91,7 +97,6 @@ export const ConversationProvider = ({ children }) => {
     },
     [conversations, setThreadId, validateThread, formatThreadId, createThread]
   );
-
   const createNewConversation = useCallback(
     async (title) => {
       try {
@@ -104,8 +109,26 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
+        // Don't filter conversations, just add the new one to existing ones
         setConversations((prev) => {
-          return prev.filter((conv) => conv.messages && conv.messages.length > 0);
+          // Keep existing conversations with assistant messages
+          const validPrevConversations = prev.filter(
+            (conv) =>
+              conv.messages &&
+              conv.messages.some(
+                (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
+              )
+          );
+
+          // Add the new conversation
+          const updatedConversations = [...validPrevConversations, newConversation];
+
+          // Save to localStorage immediately
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+          return updatedConversations;
         });
 
         setActiveConversation(newConversation);
@@ -124,8 +147,15 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
+        // Don't filter conversations, just add the new one
         setConversations((prev) => {
-          return prev.filter((conv) => conv.messages && conv.messages.length > 0);
+          const updatedConversations = [...prev, fallbackConversation];
+          // Save to localStorage immediately
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+          return updatedConversations;
         });
 
         setActiveConversation(fallbackConversation);
@@ -159,12 +189,24 @@ export const ConversationProvider = ({ children }) => {
 
         setActiveConversation(updatedConversation);
         setConversations((prev) => {
-          if (prev.some((conv) => conv.id === activeConversation.id)) {
-            return prev.map((conv) =>
+          // Check if conversation already exists
+          const conversationExists = prev.some(
+            (conv) => conv.id === activeConversation.id
+          );
+
+          // Create updated conversations array
+          let updated;
+          if (conversationExists) {
+            updated = prev.map((conv) =>
               conv.id === activeConversation.id ? updatedConversation : conv
             );
+          } else {
+            updated = [...prev, updatedConversation];
           }
-          return prev;
+
+          // Save to localStorage
+          localStorage.setItem("conversations", JSON.stringify(updated));
+          return updated;
         });
 
         const response = await conversationHandler(
@@ -196,9 +238,17 @@ export const ConversationProvider = ({ children }) => {
 
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-            const updated = prev.map((conv) =>
-              conv.id === activeConversation.id ? finalConversation : conv
-            );
+            // Check if conversation exists in the array
+            const exists = prev.some((conv) => conv.id === activeConversation.id);
+            let updated;
+
+            if (exists) {
+              updated = prev.map((conv) =>
+                conv.id === activeConversation.id ? finalConversation : conv
+              );
+            } else {
+              updated = [...prev, finalConversation];
+            }
 
             localStorage.setItem("conversations", JSON.stringify(updated));
             return updated;
@@ -236,9 +286,16 @@ export const ConversationProvider = ({ children }) => {
 
       setActiveConversation(updatedConversation);
       setConversations((prev) => {
-        const updated = prev.map((conv) =>
-          conv.id === activeConversation.id ? updatedConversation : conv
-        );
+        const exists = prev.some((conv) => conv.id === activeConversation.id);
+        let updated;
+
+        if (exists) {
+          updated = prev.map((conv) =>
+            conv.id === activeConversation.id ? updatedConversation : conv
+          );
+        } else {
+          updated = [...prev, updatedConversation];
+        }
 
         localStorage.setItem("conversations", JSON.stringify(updated));
         return updated;
@@ -248,19 +305,41 @@ export const ConversationProvider = ({ children }) => {
     },
     [activeConversation]
   );
-
   const updateConversation = useCallback((updatedConv) => {
     setConversations((prevConversations) => {
-      const index = prevConversations.findIndex((c) => c.id === updatedConv.id);
-      if (index !== -1) {
-        const updatedConversations = [...prevConversations];
-        updatedConversations[index] = updatedConv;
+      // Check if the conversation has at least one assistant message that is not a thinking message
+      const hasAssistantMessage =
+        updatedConv.messages &&
+        updatedConv.messages.some(
+          (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
+        );
 
-        localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+      let updatedConversations;
 
-        return updatedConversations;
+      if (hasAssistantMessage) {
+        const index = prevConversations.findIndex((c) => c.id === updatedConv.id);
+
+        if (index !== -1) {
+          updatedConversations = [...prevConversations];
+          updatedConversations[index] = updatedConv;
+        } else {
+          updatedConversations = [...prevConversations, updatedConv];
+        }
+      } else {
+        // If no assistant messages, don't add to stored conversations
+        // But keep existing conversations that have assistant messages
+        updatedConversations = prevConversations.filter(
+          (c) =>
+            c.id !== updatedConv.id ||
+            (c.messages &&
+              c.messages.some(
+                (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
+              ))
+        );
       }
-      return prevConversations;
+
+      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+      return updatedConversations;
     });
   }, []);
 

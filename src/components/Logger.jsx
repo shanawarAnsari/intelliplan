@@ -60,7 +60,7 @@ const Logger = ({ logs, isLoading }) => {
             ml: 1,
           }}
         >
-          {expanded ? "Debug Logs" : `${logs.length} debug logs`}
+          {expanded ? "Logs" : `${logs.length} logs`}
         </Typography>
         <IconButton
           size="small"
@@ -74,12 +74,11 @@ const Logger = ({ logs, isLoading }) => {
           )}
         </IconButton>
       </Box>
-
       <Collapse in={expanded}>
         <Box
           ref={logContainerRef}
           sx={{
-            maxHeight: "20rem",
+            maxHeight: "7rem",
             overflowY: "auto",
             p: 1,
             fontSize: "0.75rem",
@@ -99,24 +98,8 @@ const Logger = ({ logs, isLoading }) => {
             </Typography>
           ))}
         </Box>
-      </Collapse>
-
-      {!expanded && logs.length > 0 && (
-        <Box
-          sx={{
-            p: 0.5,
-            fontSize: "0.75rem",
-            fontFamily: "monospace",
-            color: theme.palette.text.secondary,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            ml: 1,
-          }}
-        >
-          {logs[logs.length - 1]}
-        </Box>
-      )}
+      </Collapse>{" "}
+      {/* When collapsed, don't show any logs */}
     </Box>
   );
 };

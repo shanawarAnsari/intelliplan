@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, useTheme, Typography, IconButton } from "@mui/material";
+import React, { useRef, useEffect } from "react";
+import { Box, useTheme, Typography, IconButton, Tooltip } from "@mui/material";
 import TopNavbar from "./TopNavbar";
 import ConversationHistory from "./ConversationHistory";
 import ChatBox from "./ChatBox";
@@ -8,12 +8,17 @@ import HelpFAQ from "./HelpFAQ";
 import { DemandForecastChart, InventoryStockChart } from "./charts";
 import HistoryIcon from "@mui/icons-material/History";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import AddIcon from "@mui/icons-material/Add";
+import { useConversation } from "../contexts/ConversationContext";
 
 const MainLayout = () => {
   const theme = useTheme();
   const [helpDrawerOpen, setHelpDrawerOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [likedMessagesOpen, setLikedMessagesOpen] = React.useState(false);
+  const historyPanelRef = useRef(null);
+  const likedMessagesPanelRef = useRef(null);
+  const { createNewConversation } = useConversation();
 
   const toggleHelpDrawer = () => {
     setHelpDrawerOpen(!helpDrawerOpen);
@@ -29,16 +34,48 @@ const MainLayout = () => {
     if (likedMessagesOpen) setHistoryOpen(false);
   };
 
+  // Handle click outside of panels to close them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if history panel is open and click is outside of it
+      if (
+        historyOpen &&
+        historyPanelRef.current &&
+        !historyPanelRef.current.contains(event.target) &&
+        !event.target.closest('[data-testid="history-toggle"]')
+      ) {
+        setHistoryOpen(false);
+      }
+
+      // Check if liked messages panel is open and click is outside of it
+      if (
+        likedMessagesOpen &&
+        likedMessagesPanelRef.current &&
+        !likedMessagesPanelRef.current.contains(event.target) &&
+        !event.target.closest('[data-testid="liked-toggle"]')
+      ) {
+        setLikedMessagesOpen(false);
+      }
+    };
+
+    // Add the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [historyOpen, likedMessagesOpen]);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <TopNavbar onToggleHelp={toggleHelpDrawer} />
       <HelpFAQ open={helpDrawerOpen} onClose={toggleHelpDrawer} />
 
       <Box sx={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>
-        {/* Charts column - 50% width */}
         <Box
           sx={{
-            width: "50%",
+            width: "45%",
             display: "flex",
             flexDirection: "column",
             borderRight: `1px solid ${theme.palette.divider}`,
@@ -65,10 +102,9 @@ const MainLayout = () => {
           </Box>
         </Box>
 
-        {/* Chatbox column with sliding panels - 50% width */}
         <Box
           sx={{
-            width: "50%",
+            width: "55%",
             display: "flex",
             flexDirection: "row",
             position: "relative",
@@ -76,6 +112,7 @@ const MainLayout = () => {
         >
           {/* Slide-out History panel */}
           <Box
+            ref={historyPanelRef}
             sx={{
               width: historyOpen ? "300px" : "0px",
               transition: "width 0.3s ease",
@@ -86,7 +123,7 @@ const MainLayout = () => {
               height: "100%",
               position: "absolute",
               left: 0,
-              zIndex: 10,
+              zIndex: 100,
               backgroundColor: theme.palette.background.paper,
             }}
           >
@@ -106,7 +143,8 @@ const MainLayout = () => {
               height: "100%",
             }}
           >
-            {/* Toggle icons for history and liked messages */}
+            {" "}
+            {/* Toggle icons for new conversation, history and liked messages */}
             <Box
               sx={{
                 display: "flex",
@@ -114,23 +152,48 @@ const MainLayout = () => {
                 borderBottom: `1px solid ${theme.palette.divider}`,
               }}
             >
-              <IconButton
-                onClick={toggleHistory}
-                color={historyOpen ? "primary" : "default"}
-                sx={{ mr: 1 }}
-                size="small"
-              >
-                <HistoryIcon />
-              </IconButton>
-              <IconButton
-                onClick={toggleLikedMessages}
-                color={likedMessagesOpen ? "primary" : "default"}
-                size="small"
-              >
-                <FavoriteIcon />
-              </IconButton>
+              {" "}
+              <Tooltip title="New conversation" arrow>
+                <IconButton
+                  onClick={() => {
+                    // Close any open panels first
+                    setHistoryOpen(false);
+                    setLikedMessagesOpen(false);
+                    // Create a new conversation via context
+                    if (createNewConversation) {
+                      createNewConversation("");
+                    }
+                  }}
+                  color="primary"
+                  sx={{ mr: 1 }}
+                  size="small"
+                  data-testid="new-conversation-toggle"
+                >
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Conversation history" arrow>
+                <IconButton
+                  onClick={toggleHistory}
+                  color={historyOpen ? "primary" : "default"}
+                  sx={{ mr: 1 }}
+                  size="small"
+                  data-testid="history-toggle"
+                >
+                  <HistoryIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Liked messages" arrow>
+                <IconButton
+                  onClick={toggleLikedMessages}
+                  color={likedMessagesOpen ? "primary" : "default"}
+                  size="small"
+                  data-testid="liked-toggle"
+                >
+                  <FavoriteIcon />
+                </IconButton>
+              </Tooltip>
             </Box>
-
             {/* ChatBox component */}
             <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
               <ChatBox onIsLoadingChange={() => {}} />
@@ -139,6 +202,7 @@ const MainLayout = () => {
 
           {/* Slide-out Liked Messages panel */}
           <Box
+            ref={likedMessagesPanelRef}
             sx={{
               width: likedMessagesOpen ? "300px" : "0px",
               transition: "width 0.3s ease",
