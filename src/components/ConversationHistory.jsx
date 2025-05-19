@@ -120,15 +120,7 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
       const savedConversations = localStorage.getItem("conversations");
       if (savedConversations) {
         const parsedConversations = JSON.parse(savedConversations);
-        // Only keep conversations with assistant messages
-        const filtered = parsedConversations.filter(
-          (conv) =>
-            conv.messages &&
-            conv.messages.some(
-              (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
-            )
-        );
-        setConversations(filtered);
+        setConversations(parsedConversations);
       }
     } catch (error) {
       console.error("Error loading conversations from localStorage:", error);
@@ -222,8 +214,8 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                         activeConversation?.id === conv.id
                           ? alpha(theme.palette.primary.main, 0.08)
                           : theme.palette.mode === "dark"
-                          ? alpha(theme.palette.background.paper, 0.6)
-                          : alpha(theme.palette.background.paper, 0.9),
+                            ? alpha(theme.palette.background.paper, 0.6)
+                            : alpha(theme.palette.background.paper, 0.9),
                       boxShadow: theme.shadows[1],
                       borderRadius: "6px",
                       transition: "all 0.25s ease-in-out",
@@ -235,11 +227,10 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                             ? alpha(theme.palette.primary.main, 0.12)
                             : alpha(theme.palette.action.hover, 0.1),
                       },
-                      border: `1px solid ${
-                        activeConversation?.id === conv.id
-                          ? alpha(theme.palette.primary.main, 0.3)
-                          : alpha(theme.palette.divider, 0.1)
-                      }`,
+                      border: `1px solid ${activeConversation?.id === conv.id
+                        ? alpha(theme.palette.primary.main, 0.3)
+                        : alpha(theme.palette.divider, 0.1)
+                        }`,
                       position: "relative",
                       overflow: "hidden",
                     }}
@@ -286,9 +277,8 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                         }}
                       >
                         {conv.messages && conv.messages.length > 0
-                          ? `${conv.messages[0].content.substring(0, 80)}${
-                              conv.messages[0].content.length > 80 ? "..." : ""
-                            }`
+                          ? `${conv.messages[0].content.substring(0, 80)}${conv.messages[0].content.length > 80 ? "..." : ""
+                          }`
                           : "No messages yet"}
                       </Typography>
                     </CardContent>

@@ -123,7 +123,7 @@ const InventoryStockChart = () => {
       curve: "smooth",
     },
     title: {
-      text: "Inventory Stock Quantity",
+      text: "Average Monthly Inventory Stock Quantity",
       align: "center",
       style: {
         color: designTokens.palette.text.primary,
@@ -131,13 +131,7 @@ const InventoryStockChart = () => {
         fontWeight: 500,
       },
     },
-    subtitle: {
-      text: "Monthly average stock levels",
-      align: "center",
-      style: {
-        color: designTokens.palette.text.primary,
-      },
-    },
+
     grid: {
       borderColor: designTokens.palette.divider,
       row: {
@@ -228,7 +222,7 @@ const InventoryStockChart = () => {
         overflow: "hidden",
       }}
     >
-      <CardContent sx={{ padding: "8px", marginBottom: -4 }}>
+      <CardContent sx={{ padding: "8px", marginBottom: -4, }}>
         <Box
           sx={{
             display: "flex",
@@ -266,7 +260,7 @@ const InventoryStockChart = () => {
           options={chartOptions}
           series={chartSeries}
           type={chartType}
-          height={297}
+          height={325}
         />
       </CardContent>
     </Card>
