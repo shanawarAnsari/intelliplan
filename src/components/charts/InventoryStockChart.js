@@ -114,7 +114,7 @@ const InventoryStockChart = () => {
         },
       },
     },
-    colors: [designTokens.palette.primary.main],
+    colors: [designTokens.palette.secondary.dark],
     dataLabels: {
       enabled: false,
     },
