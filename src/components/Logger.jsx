@@ -1,4 +1,4 @@
-// filepath: d:\Dev\intelliplan\src\components\Logger.jsx
+
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Typography, useTheme, IconButton, Collapse } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -11,7 +11,7 @@ const Logger = ({ logs, isLoading, showCountOnly = false }) => {
   const prevLogsLengthRef = useRef(0);
   const [imageLogCount, setImageLogCount] = useState(0);
 
-  // Track image-related logs separately
+
   useEffect(() => {
     if (logs && logs.length > 0) {
       const imageRelatedLogs = logs.filter(
@@ -22,9 +22,9 @@ const Logger = ({ logs, isLoading, showCountOnly = false }) => {
     }
   }, [logs]);
 
-  // Auto-collapse when logs start appearing
+
   useEffect(() => {
-    // If this is the first log entry, ensure Logger is collapsed
+
     if (logs.length === 1 && prevLogsLengthRef.current === 0) {
       setExpanded(false);
     }
@@ -76,8 +76,8 @@ const Logger = ({ logs, isLoading, showCountOnly = false }) => {
           {expanded
             ? "Logs"
             : showCountOnly
-            ? `${logs.length} logs`
-            : `${logs.length} logs (${imageLogCount} image logs)`}
+              ? `${logs.length} logs`
+              : `${logs.length} logs (${imageLogCount} image logs)`}
         </Typography>
         <IconButton
           size="small"
@@ -116,7 +116,7 @@ const Logger = ({ logs, isLoading, showCountOnly = false }) => {
           ))}
         </Box>
       </Collapse>{" "}
-      {/* When collapsed, don't show any logs */}
+      { }
     </Box>
   );
 };

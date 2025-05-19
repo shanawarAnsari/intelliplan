@@ -48,20 +48,20 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
     createNewConversation("");
   };
   const confirmDeleteConversation = (conversationId, e) => {
-    // Stop event propagation to prevent card click
+
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
 
-    // Find the conversation to delete
+
     const conversation = conversations.find((conv) => conv.id === conversationId);
     if (!conversation) {
       console.error("Conversation not found for deletion:", conversationId);
       return;
     }
 
-    // Set the conversation to delete and open the confirmation dialog
+
     setConversationToDelete(conversation);
     setDeleteDialogOpen(true);
   };
@@ -71,23 +71,23 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
 
       const conversationId = conversationToDelete.id;
 
-      // Filter out the conversation to delete
+
       const updatedConversations = conversations.filter(
         (conv) => conv.id !== conversationId
       );
 
-      // Update state with filtered conversations
+
       setConversations(updatedConversations);
 
-      // Sync with localStorage to persist changes
+
       localStorage.setItem("conversations", JSON.stringify(updatedConversations));
 
-      // If the active conversation was deleted, create a new one
+
       if (activeConversation && activeConversation.id === conversationId) {
         handleNewConversation();
       }
 
-      // Reset dialog state
+
       setDeleteDialogOpen(false);
       setConversationToDelete(null);
 
@@ -96,7 +96,7 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
       console.error("Error deleting conversation:", error);
     }
   };
-  // Format date for display
+
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
     const date = new Date(timestamp);
@@ -105,7 +105,7 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
       day: "numeric",
       year: "numeric",
     });
-  }; // Only include conversations that have at least one assistant message (not thinking message)
+  };
   const validConversations = conversations.filter(
     (conv) =>
       conv.messages &&
@@ -114,7 +114,7 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
       )
   );
 
-  // Force sync from localStorage when component mounts
+
   useEffect(() => {
     try {
       const savedConversations = localStorage.getItem("conversations");
@@ -181,7 +181,7 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
         <Chip
           size="small"
           label={(() => {
-            // Count total messages across all conversations
+
             const totalMessages = validConversations.reduce(
               (total, conv) => total + (conv.messages ? conv.messages.length : 0),
               0

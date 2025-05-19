@@ -55,7 +55,7 @@ const TopNavbar = ({ onToggleHelp }) => {
           color: theme.palette.text.secondary,
         }}
       >
-        {/* Domain Selection Dropdown */}
+        { }
         <FormControl
           variant="outlined"
           size="small"

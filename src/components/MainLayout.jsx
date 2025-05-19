@@ -34,10 +34,10 @@ const MainLayout = () => {
     if (likedMessagesOpen) setHistoryOpen(false);
   };
 
-  // Handle click outside of panels to close them
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if history panel is open and click is outside of it
+
       if (
         historyOpen &&
         historyPanelRef.current &&
@@ -47,7 +47,7 @@ const MainLayout = () => {
         setHistoryOpen(false);
       }
 
-      // Check if liked messages panel is open and click is outside of it
+
       if (
         likedMessagesOpen &&
         likedMessagesPanelRef.current &&
@@ -58,10 +58,10 @@ const MainLayout = () => {
       }
     };
 
-    // Add the event listener
+
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Clean up the event listener
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -110,7 +110,7 @@ const MainLayout = () => {
             position: "relative",
           }}
         >
-          {/* Slide-out History panel */}
+          { }
           <Box
             ref={historyPanelRef}
             sx={{
@@ -134,7 +134,7 @@ const MainLayout = () => {
             )}
           </Box>
 
-          {/* Main ChatBox area */}
+          { }
           <Box
             sx={{
               flexGrow: 1,
@@ -144,7 +144,7 @@ const MainLayout = () => {
             }}
           >
             {" "}
-            {/* Toggle icons for new conversation, history and liked messages */}
+            { }
             <Box
               sx={{
                 display: "flex",
@@ -156,10 +156,10 @@ const MainLayout = () => {
               <Tooltip title="New conversation" arrow>
                 <IconButton
                   onClick={() => {
-                    // Close any open panels first
+
                     setHistoryOpen(false);
                     setLikedMessagesOpen(false);
-                    // Create a new conversation via context
+
                     if (createNewConversation) {
                       createNewConversation("");
                     }
@@ -194,13 +194,13 @@ const MainLayout = () => {
                 </IconButton>
               </Tooltip>
             </Box>
-            {/* ChatBox component */}
+            { }
             <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
-              <ChatBox onIsLoadingChange={() => {}} />
+              <ChatBox onIsLoadingChange={() => { }} />
             </Box>
           </Box>
 
-          {/* Slide-out Liked Messages panel */}
+          { }
           <Box
             ref={likedMessagesPanelRef}
             sx={{

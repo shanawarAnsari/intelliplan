@@ -3,11 +3,11 @@ import { Box, Typography, Divider, CircularProgress, useTheme } from "@mui/mater
 
 const ThinkingIndicator = memo(
   ({
-    text = "Thinking", // Default text
+    text = "Thinking",
     isSticky = false,
     showSpinner = true,
-    lineVariant = "partial", // 'partial' or 'full'
-    isDone = false, // Indicates if the process is complete (for "End of response")
+    lineVariant = "partial",
+    isDone = false,
   }) => {
     const theme = useTheme();
     const [animatedDots, setAnimatedDots] = useState("");
@@ -20,9 +20,9 @@ const ThinkingIndicator = memo(
             if (dots.length >= 3) return "";
             return dots + ".";
           });
-        }, 500); // Animation speed for dots
+        }, 500);
       } else {
-        setAnimatedDots(""); // Clear dots if not thinking or done
+        setAnimatedDots("");
       }
       return () => clearInterval(interval);
     }, [isDone, text, showSpinner]);
@@ -34,26 +34,26 @@ const ThinkingIndicator = memo(
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center", // This centers the content (dividers, spinner, text) within the ThinkingIndicator Box
-          py: isSticky ? 0.75 : 1, // Slightly less padding for sticky
+          justifyContent: "center",
+          py: isSticky ? 0.75 : 1,
           width: "100%",
           position: isSticky ? "sticky" : "relative",
           top: isSticky ? 0 : "auto",
-          zIndex: isSticky ? theme.zIndex.appBar + 1 : "auto", // Ensure sticky is above other content
+          zIndex: isSticky ? theme.zIndex.appBar + 1 : "auto",
           backgroundColor: isSticky
             ? `${theme.palette.background.default}e6`
-            : "transparent", // Slight transparency for sticky
+            : "transparent",
           backdropFilter: isSticky ? "blur(4px)" : "none",
           borderRadius: isSticky ? "0 0 8px 8px" : "4px",
           transition: "background-color 0.3s ease, backdrop-filter 0.3s ease",
-          mt: isSticky ? 0 : 0.5, // Margin top for non-sticky
+          mt: isSticky ? 0 : 0.5,
           mb: 0.5,
         }}
       >
         {lineVariant === "partial" && (
           <Divider
             sx={{
-              width: "25%", // Shorter lines for partial
+              width: "25%",
               mr: 1.5,
               borderColor: isDone
                 ? theme.palette.primary.light
@@ -68,12 +68,12 @@ const ThinkingIndicator = memo(
             size={14}
             sx={{
               mr: 1,
-              color: theme.palette.primary.main, // Use main primary color
+              color: theme.palette.primary.main,
             }}
           />
         )}
 
-        {/* Ensure Typography is a direct child for textAlign to work as expected if not already centered by justify-content */}
+        { }
         <Typography
           variant="caption"
           sx={{
@@ -82,7 +82,7 @@ const ThinkingIndicator = memo(
               : theme.palette.text.secondary,
             fontStyle: isDone ? "normal" : "italic",
             fontWeight: isDone ? "medium" : "normal",
-            textAlign: "left", // Ensures text inside this Typography component is left-aligned
+            textAlign: "left",
           }}
         >
           {displayText}
@@ -91,7 +91,7 @@ const ThinkingIndicator = memo(
         {lineVariant === "partial" && (
           <Divider
             sx={{
-              width: "25%", // Shorter lines for partial
+              width: "25%",
               ml: 1.5,
               borderColor: isDone
                 ? theme.palette.primary.light
@@ -101,19 +101,19 @@ const ThinkingIndicator = memo(
           />
         )}
 
-        {/* Full width line is a single divider centered, typically used for "End of response" */}
+        { }
         {lineVariant === "full" && (
           <Divider
             sx={{
-              width: "80%", // Not full 100% to allow some padding feel
-              position: "absolute", // Positioned to be behind the text if needed, or just as a line
-              left: "10%", // Center it
+              width: "80%",
+              position: "absolute",
+              left: "10%",
               borderColor: isDone
                 ? theme.palette.primary.main
                 : theme.palette.divider,
               opacity: 0.9,
-              zIndex: -1, // Ensure it's behind the text if overlapping
-              display: isDone ? "block" : "none", // Only show full line when done
+              zIndex: -1,
+              display: isDone ? "block" : "none",
             }}
           />
         )}

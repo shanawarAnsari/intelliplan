@@ -1,35 +1,35 @@
 import { createTheme } from "@mui/material";
 
-// Enhanced "Midnight Sapphire" design tokens
+
 export const designTokens = {
   palette: {
     mode: "dark",
     primary: {
-      main: "#0087b9", // Vibrant blue for primary actions
-      light: "#93C5FD", // Lighter shade for hover effects
-      dark: "#0087b9", // Darker shade for active states
-      contrastText: "#FFFFFF", // Pure white text for primary elements
-      hover: "#3B82F6", // Custom hover state
+      main: "#0087b9",
+      light: "#93C5FD",
+      dark: "#0087b9",
+      contrastText: "#FFFFFF",
+      hover: "#3B82F6",
     },
     secondary: {
-      main: "#A78BFA", // Soft purple for secondary actions
-      light: "#C4B5FD", // Light purple
-      dark: "#8B5CF6", // Dark purple
+      main: "#A78BFA",
+      light: "#C4B5FD",
+      dark: "#8B5CF6",
       contrastText: "#FFFFFF",
     },
     background: {
-      default: "#111827", // Very dark blue/gray for main background
-      paper: "#1F2937", // Slightly lighter for surface elements
-      secondary: "#374151", // Mid-tone for secondary surfaces
-      tertiary: "#4B5563", // Lighter surface for highlights
-      accent: "#0F172A", // Dark accent background
+      default: "#111827",
+      paper: "#1F2937",
+      secondary: "#374151",
+      tertiary: "#4B5563",
+      accent: "#0F172A",
     },
     text: {
-      primary: "#F9FAFB", // Almost white for primary text
-      secondary: "#D1D5DB", // Light gray for secondary text
-      hint: "#9CA3AF", // Subtle gray for placeholder text
+      primary: "#F9FAFB",
+      secondary: "#D1D5DB",
+      hint: "#9CA3AF",
     },
-    divider: "rgba(249, 250, 251, 0.08)", // Very subtle divider
+    divider: "rgba(249, 250, 251, 0.08)",
     action: {
       active: "#60A5FA",
       hover: "rgba(96, 165, 250, 0.08)",
@@ -40,7 +40,7 @@ export const designTokens = {
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    fontSize: 12, // Base font size reduced
+    fontSize: 12,
     h1: {
       fontSize: "2.125rem",
       fontWeight: 600,
@@ -111,7 +111,7 @@ export const designTokens = {
     },
   },
   shape: {
-    borderRadius: 8, // Slightly increased border radius
+    borderRadius: 8,
   },
   shadows: [
     "none",

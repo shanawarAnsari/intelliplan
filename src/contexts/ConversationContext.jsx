@@ -31,8 +31,8 @@ export const ConversationProvider = ({ children }) => {
         const savedConversations = localStorage.getItem("conversations");
         let parsedConversations = [];
         if (savedConversations) {
-          parsedConversations = JSON.parse(savedConversations); // Only keep conversations that have at least one assistant message
-          // Filter out thinking messages and conversations with no final answers
+          parsedConversations = JSON.parse(savedConversations);
+
           parsedConversations = parsedConversations.filter(
             (conv) =>
               conv.messages &&
@@ -109,9 +109,9 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
-        // Don't filter conversations, just add the new one to existing ones
+
         setConversations((prev) => {
-          // Keep existing conversations with assistant messages
+
           const validPrevConversations = prev.filter(
             (conv) =>
               conv.messages &&
@@ -120,10 +120,10 @@ export const ConversationProvider = ({ children }) => {
               )
           );
 
-          // Add the new conversation
+
           const updatedConversations = [...validPrevConversations, newConversation];
 
-          // Save to localStorage immediately
+
           localStorage.setItem(
             "conversations",
             JSON.stringify(updatedConversations)
@@ -147,10 +147,10 @@ export const ConversationProvider = ({ children }) => {
           created: new Date(),
         };
 
-        // Don't filter conversations, just add the new one
+
         setConversations((prev) => {
           const updatedConversations = [...prev, fallbackConversation];
-          // Save to localStorage immediately
+
           localStorage.setItem(
             "conversations",
             JSON.stringify(updatedConversations)
@@ -189,12 +189,12 @@ export const ConversationProvider = ({ children }) => {
 
         setActiveConversation(updatedConversation);
         setConversations((prev) => {
-          // Check if conversation already exists
+
           const conversationExists = prev.some(
             (conv) => conv.id === activeConversation.id
           );
 
-          // Create updated conversations array
+
           let updated;
           if (conversationExists) {
             updated = prev.map((conv) =>
@@ -204,7 +204,7 @@ export const ConversationProvider = ({ children }) => {
             updated = [...prev, updatedConversation];
           }
 
-          // Save to localStorage
+
           localStorage.setItem("conversations", JSON.stringify(updated));
           return updated;
         });
@@ -231,14 +231,14 @@ export const ConversationProvider = ({ children }) => {
             messages: finalMessages,
             title:
               updatedConversation.title === "New Conversation" &&
-              finalMessages.length <= 2
+                finalMessages.length <= 2
                 ? MessageProcessor.formatConversationTitle(message)
                 : updatedConversation.title,
           };
 
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-            // Check if conversation exists in the array
+
             const exists = prev.some((conv) => conv.id === activeConversation.id);
             let updated;
 
@@ -307,7 +307,7 @@ export const ConversationProvider = ({ children }) => {
   );
   const updateConversation = useCallback((updatedConv) => {
     setConversations((prevConversations) => {
-      // Check if the conversation has at least one assistant message that is not a thinking message
+
       const hasAssistantMessage =
         updatedConv.messages &&
         updatedConv.messages.some(
@@ -326,8 +326,8 @@ export const ConversationProvider = ({ children }) => {
           updatedConversations = [...prevConversations, updatedConv];
         }
       } else {
-        // If no assistant messages, don't add to stored conversations
-        // But keep existing conversations that have assistant messages
+
+
         updatedConversations = prevConversations.filter(
           (c) =>
             c.id !== updatedConv.id ||

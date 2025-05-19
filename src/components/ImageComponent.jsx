@@ -7,15 +7,15 @@ import {
   IconButton,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
-import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap"; // Add import for expand icon
-import { displayImage } from "../services/ImageService"; // Import displayImage function
+import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
+import { displayImage } from "../services/ImageService";
 
 const ImageComponent = ({ img, index }) => {
   const [imgLoading, setImgLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
   const [imgRetryCount, setImgRetryCount] = useState(0);
 
-  // Debug logging to trace component lifecycle and state
+
   useEffect(() => {
     console.log(`[ImageComponent ${index}] Mounting/Updating:`, {
       fileId: img.fileId,
@@ -29,7 +29,7 @@ const ImageComponent = ({ img, index }) => {
     };
   }, [img.fileId, img.url, imgLoading, imgError, index]);
 
-  // Original useEffect for error handling
+
   useEffect(() => {
     let timerId;
     if (imgError && imgRetryCount < 3) {
@@ -52,14 +52,14 @@ const ImageComponent = ({ img, index }) => {
     document.body.removeChild(a);
   };
 
-  // Handle expanding the image using the displayImage function
+
   const handleExpandImage = () => {
     if (img.url) {
       displayImage(img.url);
     }
   };
 
-  // Add image loading directly from fileId if URL is not available
+
   useEffect(() => {
     if (img.fileId && !img.url) {
       console.log(`[ImageComponent] Loading image from fileId: ${img.fileId}`);
@@ -67,7 +67,7 @@ const ImageComponent = ({ img, index }) => {
 
       const loadImageFromFileId = async () => {
         try {
-          // Import dynamically to avoid circular dependencies
+
           const ImageService = await import("../services/ImageService");
           console.log(`[ImageComponent] Fetching image for fileId: ${img.fileId}`);
           const url = await ImageService.fetchImageFromOpenAI(img.fileId);
@@ -76,9 +76,9 @@ const ImageComponent = ({ img, index }) => {
 
           if (url) {
             console.log(`[ImageComponent] Image loaded successfully: ${img.fileId}`);
-            img.url = url; // Update the URL directly in the parent's state
+            img.url = url;
 
-            // Force a re-render after setting the URL by explicitly updating state
+
             setImgLoading(false);
             setImgError(false);
           } else {
@@ -140,7 +140,7 @@ const ImageComponent = ({ img, index }) => {
               setImgError(false);
               setImgLoading(true);
 
-              // Try loading the image again on retry
+
               if (img.fileId) {
                 const loadRetryImage = async () => {
                   try {
@@ -198,7 +198,7 @@ const ImageComponent = ({ img, index }) => {
 
       {!imgLoading && !imgError && img.url && (
         <>
-          {/* Download button - left corner */}
+          { }
           <IconButton
             onClick={handleDownload}
             sx={{
@@ -220,7 +220,7 @@ const ImageComponent = ({ img, index }) => {
             <DownloadIcon fontSize="small" />
           </IconButton>
 
-          {/* Expand button - right corner */}
+          { }
           <IconButton
             onClick={handleExpandImage}
             sx={{

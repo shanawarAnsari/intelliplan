@@ -7,9 +7,7 @@ import {
 } from "../utils/assistantConstants";
 import MessageProcessor from "../utils/MessageProcessor";
 
-/**
- * React hook for Azure OpenAI interactions
- */
+
 const useAzureOpenAI = () => {
   const [client] = useState(openAIClient);
   const [assistantId, setAssistantId] = useState(COORDINATOR_ASSISTANT_ID);
@@ -19,9 +17,7 @@ const useAzureOpenAI = () => {
   const [error, setError] = useState(null);
   const [messages, setMessages] = useState([]);
 
-  /**
-   * Creates a new thread
-   */
+
   const createThread = useCallback(async () => {
     if (!client) return null;
 
@@ -47,9 +43,7 @@ const useAzureOpenAI = () => {
     }
   }, [client]);
 
-  /**
-   * Main handler for conversation interactions
-   */
+
   const conversationHandler = useCallback(
     async (message, conversationId = null, specificAssistantId = null) => {
       if (!client) {
@@ -64,13 +58,13 @@ const useAzureOpenAI = () => {
       setError(null);
 
       try {
-        // Format thread ID consistently
+
         let useThreadId = conversationId;
         if (useThreadId && !useThreadId.startsWith("thread_")) {
           useThreadId = `thread_${useThreadId}`;
         }
 
-        // Create thread if needed
+
         if (!useThreadId) {
           const newThread = await createThread();
           useThreadId = newThread?.id;
@@ -80,21 +74,21 @@ const useAzureOpenAI = () => {
           }
         }
 
-        // Add the user message to the thread
+
         await client.beta.threads.messages.create(useThreadId, {
           role: "user",
           content: message,
         });
 
-        // Use coordinator by default or specified assistant
+
         const useAssistantId = specificAssistantId || assistantId;
 
-        // Create and execute the run
+
         const run = await client.beta.threads.runs.create(useThreadId, {
           assistant_id: useAssistantId,
         });
 
-        // Wait for completion
+
         let currentRun = run;
 
         while (["queued", "in_progress"].includes(currentRun.status)) {
@@ -104,7 +98,7 @@ const useAzureOpenAI = () => {
             currentRun.id
           );
 
-          // Handle tool calls if needed (simplifying this complex logic here)
+
           if (
             currentRun.status === "requires_action" &&
             currentRun.required_action
@@ -112,12 +106,12 @@ const useAzureOpenAI = () => {
             console.log(
               "Run requires action - this simplified version doesn't handle tool calls"
             );
-            // In a complete implementation, this would handle tool calls for routing to specialized assistants
+
             break;
           }
         }
 
-        // Check for completion
+
         if (currentRun.status === "completed") {
           const messagesResponse = await client.beta.threads.messages.list(
             useThreadId,
@@ -133,7 +127,7 @@ const useAzureOpenAI = () => {
             return {
               answer: answerText,
               conversationId: useThreadId,
-              assistantName: "Assistant", // Simplified - no assistant name handling
+              assistantName: "Assistant",
             };
           }
         }

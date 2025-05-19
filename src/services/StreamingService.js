@@ -359,8 +359,7 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
 
       emitUpdate(
         "status",
-        `Orchestration complete. Duration: ${
-          (Date.now() - orchestrationStartTime) / 1000
+        `Orchestration complete. Duration: ${(Date.now() - orchestrationStartTime) / 1000
         }s`
       );
 

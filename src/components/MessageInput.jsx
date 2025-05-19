@@ -43,14 +43,14 @@ const MessageInput = ({ onSendMessage, disabled, onStopGenerating }) => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
-          // Only submit if not disabled and Enter is pressed without Shift
+
           if (e.key === "Enter" && !e.shiftKey && !disabled) {
             e.preventDefault();
             handleSubmit(e);
           }
         }}
         variant="outlined"
-        // Always allow typing - never disable the input field
+
         disabled={false}
         InputProps={{
           sx: {

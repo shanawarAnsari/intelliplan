@@ -9,7 +9,7 @@ import { orchestrateStreaming } from "../services/StreamingService";
 import { useConversation } from "../contexts/ConversationContext";
 
 const ChatBox = ({ onIsLoadingChange }) => {
-  // State management
+
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progressLogs, setProgressLogs] = useState([]);
@@ -18,24 +18,24 @@ const ChatBox = ({ onIsLoadingChange }) => {
   const [currentThreadId, setCurrentThreadId] = useState(null);
   const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true);
 
-  // Debug function for images
+
   const debugImage = (msg, data) => {
     console.log(`[IMAGE DEBUG] ${msg}`, data);
     setProgressLogs((prev) => [...prev, `[IMAGE] ${msg}: ${JSON.stringify(data)}`]);
   };
 
-  // Refs and context
+
   const messagesEndRef = useRef(null);
   const emitterRef = useRef(null);
   const theme = useTheme();
   const { activeConversation, updateConversation } = useConversation();
 
-  // Notify parent about loading state changes
+
   useEffect(() => {
     if (onIsLoadingChange) {
       onIsLoadingChange(isLoading);
     }
-  }, [isLoading, onIsLoadingChange]); // Sync messages with active conversation
+  }, [isLoading, onIsLoadingChange]);
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
@@ -59,7 +59,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
       }));
       setMessages(formattedMessages);
 
-      // Reset thread ID based on conversation status
+
       const isNewConversation =
         !activeConversation.threadId || activeConversation.isNew;
       if (isNewConversation) {
@@ -77,10 +77,10 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   }, [activeConversation]);
 
-  // Persist conversation to localStorage when needed
+
   useEffect(() => {
     if (activeConversation && activeConversation.id && !activeConversation.isNew) {
-      // Run this after the component has mounted or updated, but not during render
+
       const timeoutId = setTimeout(() => {
         updateConversation(activeConversation);
       }, 0);
@@ -88,14 +88,10 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   }, [activeConversation, updateConversation]);
 
-  // Handle sending a message
+
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
-
-    // Always allow logger display regardless of thread context
     setAllowLoggerDisplay(true);
-
-    // Create the user message
     const userMessage = {
       id: `user-${Date.now()}`,
       text,
@@ -105,16 +101,16 @@ const ChatBox = ({ onIsLoadingChange }) => {
       content: text,
     };
 
-    // Reset state for new message
+
     setIsLoading(true);
     setProgressLogs([]);
     setProgressImages([]);
     setStreamStopped(false);
 
-    // Add user message to chat and update conversation
+
     setMessages((prevMessages) => [...prevMessages, userMessage]);
 
-    // Update the conversation with the user message
+
     if (activeConversation) {
       const updatedConversation = {
         ...activeConversation,
@@ -124,35 +120,34 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
 
     try {
-      // Use streaming approach with thread ID
+
       const threadIdToUse =
         currentThreadId || activeConversation?.threadId || activeConversation?.id;
       const emitter = orchestrateStreaming(text, threadIdToUse);
       emitterRef.current = emitter;
 
-      // Handle streaming updates
+
       emitter.on("update", (update) => {
         const { type, content, handler } = update;
 
         setProgressLogs((prevLogs) => [
           ...prevLogs,
-          `${handler || "System"} (${type}): ${
-            typeof content === "string" ? content : JSON.stringify(content)
+          `${handler || "System"} (${type}): ${typeof content === "string" ? content : JSON.stringify(content)
           }`,
         ]);
 
-        // Handle text chunks and other message types
+
         if (type === "text_chunk") {
-          // Check if the content contains a complete paragraph or meaningful unit
-          // Using moderate thresholds for message bubble size
+
+
           const isSignificantContent =
             content.length > 200 ||
             (content.includes("\n\n") && content.length > 100) ||
             (content.includes(".") && content.includes("\n") && content.length > 80);
 
-          // Update message with streamed content
+
           setMessages((prevMessages) => {
-            // Find the last bot message that's a chunk
+
             const lastChunkIndex = [...prevMessages]
               .reverse()
               .findIndex((m) => m.isBot && m.isChunk);
@@ -164,14 +159,14 @@ const ChatBox = ({ onIsLoadingChange }) => {
             let updatedMessages = [...prevMessages];
             let newMessage;
 
-            // Check if existing chunk is getting too large
+
             const existingChunkIsLarge =
               hasChunk &&
               (updatedMessages[chunkIndex].text.length > 300 ||
                 updatedMessages[chunkIndex].text.split(". ").length > 2);
 
             if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
-              // Update existing chunk if content isn't significant enough for a new bubble
+
               updatedMessages[chunkIndex] = {
                 ...updatedMessages[chunkIndex],
                 text: updatedMessages[chunkIndex].text + content,
@@ -180,7 +175,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
               };
               newMessage = updatedMessages[chunkIndex];
             } else {
-              // Create a new chunk message for significant content or new paragraphs
+
               newMessage = {
                 id: `chunk-${Date.now()}-${Math.random()
                   .toString(36)
@@ -196,14 +191,14 @@ const ChatBox = ({ onIsLoadingChange }) => {
               updatedMessages = [...updatedMessages, newMessage];
             }
 
-            // Update conversation to save thinking messages in history
+
             if (activeConversation) {
               const updatedConversation = {
                 ...activeConversation,
                 messages: [...(activeConversation.messages || [])],
               };
 
-              // Either update the last message or add a new one
+
               if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
                 const lastIndex = updatedConversation.messages.length - 1;
                 if (
@@ -222,11 +217,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
             return updatedMessages;
           });
         } else if (type === "image") {
-          // Enhanced image handling with better logging
+
           debugImage("Received image update", content);
           if (content && content.fileId) {
             setProgressImages((prev) => {
-              // Avoid duplicates by checking fileId
+
               if (!prev.some((img) => img.fileId === content.fileId)) {
                 debugImage("Adding new image to progress images", {
                   fileId: content.fileId,
@@ -241,21 +236,21 @@ const ChatBox = ({ onIsLoadingChange }) => {
         }
       });
 
-      // Handle final answer
+
       emitter.on("finalAnswer", ({ answer, thread, images }) => {
-        // Store thread ID for future messages
+
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
         }
 
-        // Check if there are images in the response
+
         const hasImages = (images && images.length > 0) || progressImages.length > 0;
 
-        // Combine any images from the final answer with progress images
+
         const allImages = [...progressImages];
         if (images && images.length > 0) {
           debugImage(`Final answer has ${images.length} images`, images);
-          // Add any images that aren't already in the progress images array
+
           images.forEach((img) => {
             if (
               !allImages.some((existingImg) => existingImg.fileId === img.fileId)
@@ -267,11 +262,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
         if (allImages.length > 0) {
           debugImage(`Final answer has ${allImages.length} total images`, allImages);
-          // Update the progress images with all images
+
           setProgressImages(allImages);
         }
 
-        // Create the assistant message object (without images)
+
         const assistantMessage = {
           role: "assistant",
           content: answer,
@@ -280,10 +275,10 @@ const ChatBox = ({ onIsLoadingChange }) => {
           routedFrom: null,
           isChunk: false,
           isFinal: true,
-          // No images here - images will be in a separate message
+
         };
 
-        // Generate a title based on the assistant's first response
+
         let newTitle = activeConversation.title;
         if (activeConversation.title === "New Conversation") {
           const firstSentence = answer.split(".")[0].trim();
@@ -294,12 +289,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
           newTitle = newTitle.replace(/[.,;:!?]$/, "");
         }
 
-        // Update conversation with thread ID and final answer
+
         if (activeConversation) {
           const updatedMessages = [
             ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
             assistantMessage,
-          ]; // Add an additional message for images if needed
+          ];
           if (hasImages && allImages.length > 0) {
             const imageMessage = {
               role: "assistant",
@@ -309,8 +304,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
               isImage: true,
               images: allImages,
               isFinal: true,
-              hasImages: true, // Explicitly indicate this is an image message
-              imageFileIds: allImages.map((img) => img.fileId), // Add file IDs for lookup
+              hasImages: true,
+              imageFileIds: allImages.map((img) => img.fileId),
             };
             updatedMessages.push(imageMessage);
             debugImage("Added image message to conversation", {
@@ -329,9 +324,9 @@ const ChatBox = ({ onIsLoadingChange }) => {
           updateConversation(updatedConversation);
         }
 
-        // Update UI messages
+
         setMessages((prevMessages) => {
-          // Keep chunks but mark them as final
+
           const updatedMessages = prevMessages.map((msg) => {
             if (msg.isChunk) {
               return { ...msg, isFinal: true };
@@ -339,7 +334,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
             return msg;
           });
 
-          // Create the final text message (without images)
+
           const finalTextMessage = {
             id: `final-${Date.now()}`,
             text: answer,
@@ -349,7 +344,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
             isFinal: true,
           };
 
-          let newMessages = [...updatedMessages, finalTextMessage]; // Add a separate message for images if present
+          let newMessages = [...updatedMessages, finalTextMessage];
           if (hasImages && allImages.length > 0) {
             const imageMessage = {
               id: `image-${Date.now()}`,
@@ -359,8 +354,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
               images: [...allImages],
               isImage: true,
               isFinal: true,
-              hasImages: true, // Explicitly indicate this is an image message
-              imageFileIds: allImages.map((img) => img.fileId), // Add file IDs for lookup
+              hasImages: true,
+              imageFileIds: allImages.map((img) => img.fileId),
             };
 
             debugImage("Creating separate image message", imageMessage);
@@ -373,7 +368,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         setIsLoading(false);
       });
 
-      // Handle errors
+
       emitter.on("error", ({ message }) => {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -389,7 +384,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         setIsLoading(false);
       });
 
-      // Handle stream stopped
+
       emitter.on("stopped", () => {
         setStreamStopped(true);
         setIsLoading(false);
@@ -397,7 +392,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
     } catch (error) {
       console.error("Error communicating with the assistant:", error);
 
-      // Add error message
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -413,7 +408,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   };
 
-  // Stop generating response
+
   const handleStopGenerating = () => {
     if (emitterRef.current && emitterRef.current.stop) {
       emitterRef.current.stop();
@@ -421,7 +416,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
     setIsLoading(false);
   };
 
-  // Regenerate last response
+
   const handleRegenerate = () => {
     const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
     if (lastUserMsg) {
@@ -429,30 +424,30 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   };
 
-  // Scroll to bottom when messages change
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const isChatEmpty = messages.length === 0;
 
-  // Render all messages with appropriate components
+
   const renderMessages = () => {
     const messageElements = [];
     let lastUserMessageIndex = -1;
 
-    // Find the last user message index
+
     messages.forEach((msg, idx) => {
       if (!msg.isBot) {
         lastUserMessageIndex = idx;
       }
     });
 
-    // Process each message
+
     messages.forEach((message, index) => {
       const isLastMessageInStream = index === messages.length - 1;
 
-      // Add the ChatMessage component
+
       messageElements.push(
         <ChatMessage
           key={message.id || `msg-${index}`}
@@ -474,17 +469,17 @@ const ChatBox = ({ onIsLoadingChange }) => {
           logs={message.logs}
           isLoadingLogs={isLoading && isLastMessageInStream}
         />
-      ); // We don't need dedicated image message bubbles here since we're already creating separate
-      // image messages in the finalAnswer handler and in the conversation update
+      );
 
-      // Show thinking indicator after user message during loading
+
+
       if (!message.isBot && index === lastUserMessageIndex && isLoading) {
         messageElements.push(
           <ThinkingIndicator key="thinking" text="Thinking" showSpinner={true} />
         );
       }
 
-      // Show end of response indicator after final bot message
+
       if (message.isBot && message.isFinal && isLastMessageInStream && !isLoading) {
         messageElements.push(
           <ThinkingIndicator
@@ -513,7 +508,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         position: "relative",
       }}
     >
-      {/* Main scrollable container - only one with overflow */}
+      { }
       <Box
         sx={{
           display: "flex",
@@ -523,12 +518,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
           top: 0,
           left: 0,
           right: 0,
-          bottom: "70px" /* Reserve space for input box */,
-          overflowY: "auto" /* Single scrollbar here */,
+          bottom: "70px",
+          overflowY: "auto",
           overflowX: "hidden",
         }}
       >
-        {/* Fixed Logger that's always visible */}
+        { }
         {allowLoggerDisplay && (
           <Box
             sx={{
@@ -549,7 +544,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            overflow: "visible" /* Ensure no scrollbar here */,
+            overflow: "visible",
           }}
         >
           {isChatEmpty && !isLoading ? (
