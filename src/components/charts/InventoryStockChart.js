@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReactApexChart from "react-apexcharts";
 import {
   Box,
@@ -12,94 +12,62 @@ import {
   ToggleButton,
 } from "@mui/material";
 import { designTokens } from "../../styles/theme";
+import { inventoryData } from "./inventoryData";
 
 const InventoryStockChart = () => {
-  const [timeRange, setTimeRange] = useState("1y");
-  const [chartType, setChartType] = useState("area");
+  const [timeRange, setTimeRange] = useState("all");
+  const [chartType, setChartType] = useState("bar");
+  const [processedData, setProcessedData] = useState(null);
 
-  // Dummy data for inventory stock over time
-  const inventoryData = {
-    "1m": {
-      dates: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
-      stock: {
-        "Product A": Array.from({ length: 30 }, () =>
-          Math.floor(Math.random() * 300 + 700)
-        ),
-        "Product B": Array.from({ length: 30 }, () =>
-          Math.floor(Math.random() * 200 + 500)
-        ),
-        "Product C": Array.from({ length: 30 }, () =>
-          Math.floor(Math.random() * 150 + 300)
-        ),
-      },
-      reorderPoint: Array.from({ length: 30 }, () => 300),
-      maxCapacity: Array.from({ length: 30 }, () => 1200),
-    },
-    "3m": {
-      dates: Array.from({ length: 12 }, (_, i) => `Week ${i + 1}`),
-      stock: {
-        "Product A": Array.from({ length: 12 }, () =>
-          Math.floor(Math.random() * 300 + 700)
-        ),
-        "Product B": Array.from({ length: 12 }, () =>
-          Math.floor(Math.random() * 200 + 500)
-        ),
-        "Product C": Array.from({ length: 12 }, () =>
-          Math.floor(Math.random() * 150 + 300)
-        ),
-      },
-      reorderPoint: Array.from({ length: 12 }, () => 300),
-      maxCapacity: Array.from({ length: 12 }, () => 1200),
-    },
-    "6m": {
-      dates: Array.from({ length: 6 }, (_, i) => `Month ${i + 1}`),
-      stock: {
-        "Product A": Array.from({ length: 6 }, () =>
-          Math.floor(Math.random() * 300 + 700)
-        ),
-        "Product B": Array.from({ length: 6 }, () =>
-          Math.floor(Math.random() * 200 + 500)
-        ),
-        "Product C": Array.from({ length: 6 }, () =>
-          Math.floor(Math.random() * 150 + 300)
-        ),
-      },
-      reorderPoint: Array.from({ length: 6 }, () => 300),
-      maxCapacity: Array.from({ length: 6 }, () => 1200),
-    },
-    "1y": {
-      dates: Array.from({ length: 12 }, (_, i) => {
-        const months = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        return months[i];
-      }),
-      stock: {
-        "Product A": Array.from({ length: 12 }, () =>
-          Math.floor(Math.random() * 300 + 700)
-        ),
-        "Product B": Array.from({ length: 12 }, () =>
-          Math.floor(Math.random() * 200 + 500)
-        ),
-        "Product C": Array.from({ length: 12 }, () =>
-          Math.floor(Math.random() * 150 + 300)
-        ),
-      },
-      reorderPoint: Array.from({ length: 12 }, () => 300),
-      maxCapacity: Array.from({ length: 12 }, () => 1200),
-    },
-  };
+  // Process the inventory data to be used in the chart
+  useEffect(() => {
+    // Sort data by date
+    const sortedData = [...inventoryData].sort(
+      (a, b) => new Date(a.WeekDate) - new Date(b.WeekDate)
+    );
+
+    // Extract dates and stock quantity data
+    const dates = sortedData.map((item) => {
+      const date = new Date(item.WeekDate);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    });
+
+    const stockQuantity = sortedData.map((item) =>
+      item["Sum_Stock_Quantity"] ? parseInt(item["Sum_Stock_Quantity"]) : null
+    );
+
+    // Get unique dates for month-year format
+    const uniqueDates = [...new Set(dates)];
+
+    // Calculate average stock quantity for each month
+    const monthlyStockQuantity = {};
+    const monthlyStockCount = {};
+
+    dates.forEach((date, index) => {
+      if (!monthlyStockQuantity[date]) {
+        monthlyStockQuantity[date] = 0;
+        monthlyStockCount[date] = 0;
+      }
+
+      if (stockQuantity[index]) {
+        monthlyStockQuantity[date] += stockQuantity[index];
+        monthlyStockCount[date]++;
+      }
+    });
+
+    // Convert to arrays based on unique dates
+    const stockData = uniqueDates.map((date) =>
+      monthlyStockCount[date]
+        ? Math.round(monthlyStockQuantity[date] / monthlyStockCount[date])
+        : 0
+    );
+
+    // Store processed data
+    setProcessedData({
+      dates: uniqueDates,
+      stocks: stockData,
+    });
+  }, []);
 
   const handleTimeRangeChange = (event) => {
     setTimeRange(event.target.value);
@@ -110,13 +78,29 @@ const InventoryStockChart = () => {
       setChartType(newType);
     }
   };
+  // Filter data based on selected time range
+  const getFilteredData = () => {
+    if (!processedData) return { dates: [], stocks: [] };
+
+    if (timeRange === "all") return processedData;
+
+    const monthCount =
+      timeRange === "1m" ? 1 : timeRange === "3m" ? 3 : timeRange === "6m" ? 6 : 12;
+    const cutoffIndex = Math.max(0, processedData.dates.length - monthCount);
+
+    return {
+      dates: processedData.dates.slice(cutoffIndex),
+      stocks: processedData.stocks.slice(cutoffIndex),
+    };
+  };
+
+  const filteredData = getFilteredData();
 
   const chartOptions = {
     chart: {
       height: 350,
       type: chartType,
       background: designTokens.palette.background.paper,
-      stacked: chartType === "bar",
       toolbar: {
         show: true,
         tools: {
@@ -130,35 +114,16 @@ const InventoryStockChart = () => {
         },
       },
     },
-    colors: [
-      designTokens.palette.primary.main,
-      designTokens.palette.secondary.main,
-      designTokens.palette.secondary.light,
-      "#EF4444", // Red for reorder point
-      "#A78BFA", // Purple for max capacity
-    ],
+    colors: [designTokens.palette.primary.main],
     dataLabels: {
       enabled: false,
     },
     stroke: {
-      width: chartType === "area" ? 2 : 0,
+      width: 2,
       curve: "smooth",
-      dashArray: [0, 0, 0, 3, 3], // Make reorder point and max capacity lines dashed
-    },
-    fill: {
-      type: chartType === "area" ? "gradient" : "solid",
-      opacity: chartType === "area" ? [0.7, 0.7, 0.7, 0.1, 0.1] : 1,
-      gradient: {
-        shade: "dark",
-        type: "vertical",
-        shadeIntensity: 0.5,
-        opacityFrom: 0.7,
-        opacityTo: 0.9,
-        stops: [0, 90, 100],
-      },
     },
     title: {
-      text: "Inventory Stock Quantities Over Time",
+      text: "Inventory Stock Quantity",
       align: "center",
       style: {
         color: designTokens.palette.text.primary,
@@ -167,7 +132,7 @@ const InventoryStockChart = () => {
       },
     },
     subtitle: {
-      text: "",
+      text: "Monthly average stock levels",
       align: "center",
       style: {
         color: designTokens.palette.text.primary,
@@ -181,25 +146,21 @@ const InventoryStockChart = () => {
       },
     },
     legend: {
-      show: false,
+      show: true,
       position: "top",
       horizontalAlign: "right",
       labels: {
         colors: designTokens.palette.text.primary,
       },
     },
-    markers: {
-      size: 0,
-      hover: {
-        sizeOffset: 6,
-      },
-    },
     xaxis: {
-      categories: inventoryData[timeRange].dates,
+      categories: filteredData.dates,
       labels: {
         style: {
           colors: designTokens.palette.text.secondary,
         },
+        rotate: -45,
+        rotateAlways: true,
       },
       axisBorder: {
         show: true,
@@ -212,7 +173,7 @@ const InventoryStockChart = () => {
     },
     yaxis: {
       title: {
-        text: "Quantity",
+        text: "Stock Quantity",
         style: {
           color: designTokens.palette.text.secondary,
         },
@@ -221,9 +182,10 @@ const InventoryStockChart = () => {
         style: {
           colors: designTokens.palette.text.secondary,
         },
+        formatter: function (val) {
+          return val.toLocaleString();
+        },
       },
-      min: 0,
-      max: 1400,
     },
     tooltip: {
       shared: true,
@@ -231,7 +193,7 @@ const InventoryStockChart = () => {
       theme: designTokens.palette.mode,
       y: {
         formatter: function (val) {
-          return val + " units";
+          return val.toLocaleString() + " units";
         },
       },
     },
@@ -245,63 +207,18 @@ const InventoryStockChart = () => {
         borderRadius: 4,
       },
     },
-    annotations: {
-      yaxis: [
-        {
-          y: 300,
-          borderColor: "#EF4444",
-          label: {
-            borderColor: "#EF4444",
-            style: {
-              color: "#fff",
-              background: "#EF4444",
-            },
-            text: "Reorder Point",
-          },
-        },
-        {
-          y: 1200,
-          borderColor: "#A78BFA",
-          label: {
-            borderColor: "#A78BFA",
-            style: {
-              color: "#fff",
-              background: "#A78BFA",
-            },
-            text: "Max Capacity",
-          },
-        },
-      ],
-    },
   };
 
   const chartSeries = [
     {
-      name: "Product A",
-      data: inventoryData[timeRange].stock["Product A"],
+      name: "Stock Quantity",
+      data: filteredData.stocks,
     },
-    {
-      name: "Product B",
-      data: inventoryData[timeRange].stock["Product B"],
-    },
-    {
-      name: "Product C",
-      data: inventoryData[timeRange].stock["Product C"],
-    },
-    // Only show these threshold lines for line chart
-    ...(chartType !== "bar"
-      ? [
-          {
-            name: "Reorder Point",
-            data: inventoryData[timeRange].reorderPoint,
-          },
-          {
-            name: "Max Capacity",
-            data: inventoryData[timeRange].maxCapacity,
-          },
-        ]
-      : []),
   ];
+
+  if (!processedData) {
+    return <div>Loading chart data...</div>;
+  }
 
   return (
     <Card
@@ -320,24 +237,7 @@ const InventoryStockChart = () => {
           }}
         >
           <Box sx={{ display: "flex", gap: 1, marginBottom: -4, zIndex: 1 }}>
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 80 }}>
-              <Select
-                value={timeRange}
-                onChange={handleTimeRangeChange}
-                sx={{
-                  color: designTokens.palette.text.primary,
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: designTokens.palette.divider,
-                  },
-                }}
-              >
-                <MenuItem value="1m">1 Month</MenuItem>
-                <MenuItem value="3m">3 Months</MenuItem>
-                <MenuItem value="6m">6 Months</MenuItem>
-                <MenuItem value="1y">1 Year</MenuItem>
-              </Select>
-            </FormControl>
-            {/* <ToggleButtonGroup
+            <ToggleButtonGroup
               value={chartType}
               exclusive
               onChange={handleChartTypeChange}
@@ -353,16 +253,13 @@ const InventoryStockChart = () => {
                 },
               }}
             >
-              <ToggleButton value="area" aria-label="area chart">
-                Area
+              <ToggleButton value="bar" aria-label="bar chart">
+                Bar
               </ToggleButton>
               <ToggleButton value="line" aria-label="line chart">
                 Line
               </ToggleButton>
-              <ToggleButton value="bar" aria-label="bar chart">
-                Bar
-              </ToggleButton>
-            </ToggleButtonGroup> */}
+            </ToggleButtonGroup>
           </Box>
         </Box>
         <ReactApexChart

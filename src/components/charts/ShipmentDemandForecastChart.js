@@ -1,54 +1,49 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  FormControl,
-  Select,
-  MenuItem,
-} from "@mui/material";
+import { Box, Card, CardContent } from "@mui/material";
 import { designTokens } from "../../styles/theme";
+import { shipmentData } from "./shipmentData";
 
 const DemandForecastChart = () => {
-  const [timeRange, setTimeRange] = useState("monthly");
+  // Process the shipment data
+  const processedData = useMemo(() => {
+    // Sort data by date
+    const sortedData = [...shipmentData].sort(
+      (a, b) => new Date(a.WeekDate) - new Date(b.WeekDate)
+    );
 
-  // Dummy data for the chart
-  const data = {
-    monthly: {
-      dates: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
-      forecast: [420, 380, 450, 520, 490, 550, 600, 580, 620, 670, 650, 700],
-      actual: [410, 370, 430, 500, 480, 530, 590, 570, 590, 650, 630, 680],
-    },
-    quarterly: {
-      dates: ["Q1", "Q2", "Q3", "Q4"],
-      forecast: [1250, 1560, 1800, 2020],
-      actual: [1210, 1510, 1750, 1960],
-    },
-    yearly: {
-      dates: ["2019", "2020", "2021", "2022", "2023"],
-      forecast: [4500, 4800, 5200, 5800, 6300],
-      actual: [4450, 4700, 5100, 5650, 6150],
-    },
-  };
+    // Extract data
+    const chartData = {
+      dates: [],
+      forecast: [],
+      actual: [],
+    };
 
-  const handleTimeRangeChange = (event) => {
-    setTimeRange(event.target.value);
-  };
+    // Extract data for view
+    sortedData.forEach((item) => {
+      // Format date to be more readable
+      const date = new Date(item.WeekDate);
+      const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+
+      chartData.dates.push(formattedDate);
+
+      // Convert string values to numbers
+      const forecastValue = item["Sum_S&OPWeeklyForecastGSU_Units"]
+        ? parseFloat(item["Sum_S&OPWeeklyForecastGSU_Units"])
+        : null;
+
+      const actualValue = item["Sum_ShipmentActualsGSU_Units"]
+        ? parseFloat(item["Sum_ShipmentActualsGSU_Units"])
+        : null;
+
+      chartData.forecast.push(forecastValue);
+      chartData.actual.push(actualValue);
+    });
+
+    return chartData;
+  }, []);
 
   const chartOptions = {
     chart: {
@@ -75,10 +70,10 @@ const DemandForecastChart = () => {
     stroke: {
       width: [3, 3],
       curve: "smooth",
-      dashArray: [0, 0],
+      dashArray: [5, 0], // Dashed line for forecast, solid line for actual
     },
     title: {
-      text: "Demand Forecast vs Actual",
+      text: "Demand Forecast vs Actual Shipments",
       align: "center",
       style: {
         color: designTokens.palette.text.primary,
@@ -101,17 +96,23 @@ const DemandForecastChart = () => {
       },
     },
     legend: {
-      show: false,
-      tooltipHoverFormatter: function (val, opts) {
-        return (
-          val +
-          " - " +
-          opts.w.globals.series[opts.seriesIndex][opts.dataPointIndex] +
-          " units"
-        );
+      show: true,
+      position: "top",
+      showForSingleSeries: true,
+      showForNullSeries: false,
+      showForZeroSeries: true,
+      formatter: function (seriesName, opts) {
+        // Return just the name without markers or datapoints
+        return seriesName;
       },
       labels: {
         colors: designTokens.palette.text.primary,
+      },
+      markers: {
+        width: 0,
+        height: 0,
+        strokeWidth: 0,
+        offsetX: -8,
       },
     },
     markers: {
@@ -121,11 +122,13 @@ const DemandForecastChart = () => {
       },
     },
     xaxis: {
-      categories: data[timeRange].dates,
+      categories: processedData.dates,
       labels: {
         style: {
           colors: designTokens.palette.text.secondary,
         },
+        rotate: -45,
+        rotateAlways: true,
       },
       axisBorder: {
         show: true,
@@ -146,6 +149,9 @@ const DemandForecastChart = () => {
       labels: {
         style: {
           colors: designTokens.palette.text.secondary,
+        },
+        formatter: function (val) {
+          return val === null || val === undefined ? "0" : val.toFixed(0);
         },
       },
     },
@@ -170,16 +176,21 @@ const DemandForecastChart = () => {
     theme: {
       mode: designTokens.palette.mode,
     },
+    noData: {
+      text: "No data available",
+      align: "center",
+      verticalAlign: "middle",
+    },
   };
 
   const chartSeries = [
     {
       name: "Forecast",
-      data: data[timeRange].forecast,
+      data: processedData.forecast,
     },
     {
       name: "Actual",
-      data: data[timeRange].actual,
+      data: processedData.actual,
     },
   ];
 
@@ -199,32 +210,13 @@ const DemandForecastChart = () => {
             alignItems: "center",
           }}
         >
-          <FormControl
-            variant="outlined"
-            size="small"
-            sx={{ minWidth: 80, marginBottom: -4, zIndex: 1 }}
-          >
-            <Select
-              value={timeRange}
-              onChange={handleTimeRangeChange}
-              sx={{
-                color: designTokens.palette.text.primary,
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: designTokens.palette.divider,
-                },
-              }}
-            >
-              <MenuItem value="monthly">Monthly</MenuItem>
-              <MenuItem value="quarterly">Quarterly</MenuItem>
-              <MenuItem value="yearly">Yearly</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Time range selector removed */}
         </Box>
         <ReactApexChart
           options={chartOptions}
           series={chartSeries}
           type="line"
-          height={297}
+          height={300}
         />
       </CardContent>
     </Card>
