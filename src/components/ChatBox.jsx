@@ -35,9 +35,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
     if (onIsLoadingChange) {
       onIsLoadingChange(isLoading);
     }
-  }, [isLoading, onIsLoadingChange]);
-
-  // Sync messages with active conversation
+  }, [isLoading, onIsLoadingChange]); // Sync messages with active conversation
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
@@ -52,6 +50,9 @@ const ChatBox = ({ onIsLoadingChange }) => {
         isImage: msg.isImage || false,
         imageUrl: msg.imageUrl,
         imageFileId: msg.imageFileId,
+        images: msg.images || [],
+        hasImages: msg.hasImages || (msg.images && msg.images.length > 0),
+        imageFileIds: msg.imageFileIds || [],
         isChunk: msg.isChunk || false,
         isFinal: msg.isFinal || false,
         threadId: msg.threadId,
@@ -69,15 +70,21 @@ const ChatBox = ({ onIsLoadingChange }) => {
           activeConversation.threadId || activeConversation.id || null
         );
       }
-
-      // Force save the conversation to ensure it's in localStorage
-      if (activeConversation.id && !activeConversation.isNew) {
-        updateConversation(activeConversation);
-      }
     } else {
       setMessages([]);
       setCurrentThreadId(null);
       setAllowLoggerDisplay(true);
+    }
+  }, [activeConversation]);
+
+  // Persist conversation to localStorage when needed
+  useEffect(() => {
+    if (activeConversation && activeConversation.id && !activeConversation.isNew) {
+      // Run this after the component has mounted or updated, but not during render
+      const timeoutId = setTimeout(() => {
+        updateConversation(activeConversation);
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [activeConversation, updateConversation]);
 
@@ -292,10 +299,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
           const updatedMessages = [
             ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
             assistantMessage,
-          ];
-
-          // Add an additional message for images if needed
-          if (hasImages) {
+          ]; // Add an additional message for images if needed
+          if (hasImages && allImages.length > 0) {
             const imageMessage = {
               role: "assistant",
               content: "",
@@ -304,8 +309,14 @@ const ChatBox = ({ onIsLoadingChange }) => {
               isImage: true,
               images: allImages,
               isFinal: true,
+              hasImages: true, // Explicitly indicate this is an image message
+              imageFileIds: allImages.map((img) => img.fileId), // Add file IDs for lookup
             };
             updatedMessages.push(imageMessage);
+            debugImage("Added image message to conversation", {
+              imageCount: allImages.length,
+              fileIds: allImages.map((img) => img.fileId),
+            });
           }
 
           const updatedConversation = {
@@ -338,10 +349,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
             isFinal: true,
           };
 
-          let newMessages = [...updatedMessages, finalTextMessage];
-
-          // Add a separate message for images if present
-          if (hasImages) {
+          let newMessages = [...updatedMessages, finalTextMessage]; // Add a separate message for images if present
+          if (hasImages && allImages.length > 0) {
             const imageMessage = {
               id: `image-${Date.now()}`,
               text: "",
@@ -350,6 +359,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
               images: [...allImages],
               isImage: true,
               isFinal: true,
+              hasImages: true, // Explicitly indicate this is an image message
+              imageFileIds: allImages.map((img) => img.fileId), // Add file IDs for lookup
             };
 
             debugImage("Creating separate image message", imageMessage);
@@ -463,24 +474,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
           logs={message.logs}
           isLoadingLogs={isLoading && isLastMessageInStream}
         />
-      );
-
-      // Add dedicated image message bubbles if the message has images
-      if (message.images && message.images.length > 0) {
-        messageElements.push(
-          <ChatMessage
-            key={`${message.id || `msg-${index}`}-images`}
-            id={`${message.id || `msg-${index}`}-images`}
-            message=""
-            isBot={true}
-            timestamp={new Date(message.timestamp.getTime() + 100)} // slightly after
-            images={message.images}
-            isImage={true}
-            isChunk={false}
-            isFinal={true}
-          />
-        );
-      }
+      ); // We don't need dedicated image message bubbles here since we're already creating separate
+      // image messages in the finalAnswer handler and in the conversation update
 
       // Show thinking indicator after user message during loading
       if (!message.isBot && index === lastUserMessageIndex && isLoading) {
