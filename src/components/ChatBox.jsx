@@ -18,6 +18,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
   const [currentThreadId, setCurrentThreadId] = useState(null);
   const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true);
 
+  // Debug function for images
+  const debugImage = (msg, data) => {
+    console.log(`[IMAGE DEBUG] ${msg}`, data);
+    setProgressLogs((prev) => [...prev, `[IMAGE] ${msg}: ${JSON.stringify(data)}`]);
+  };
+
   // Refs and context
   const messagesEndRef = useRef(null);
   const emitterRef = useRef(null);
@@ -205,16 +211,38 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
             return updatedMessages;
           });
-        } else if (type === "image" && content && content.url) {
-          // Handle image updates
-          setProgressImages((prev) => [...prev, content]);
+        } else if (type === "image") {
+          // Enhanced image handling with better logging
+          debugImage("Received image update", content);
+          if (content && content.fileId) {
+            setProgressImages((prev) => {
+              // Avoid duplicates by checking fileId
+              if (!prev.some((img) => img.fileId === content.fileId)) {
+                debugImage("Adding new image to progress images", {
+                  fileId: content.fileId,
+                  url: content.url || null,
+                  count: prev.length + 1,
+                });
+                return [...prev, content];
+              }
+              return prev;
+            });
+          }
         }
       }); // Handle final answer
       emitter.on("finalAnswer", ({ answer, thread }) => {
         // Store thread ID for future messages
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
-        } // Create the assistant message object
+        }
+
+        // Check if there are images in the progress images array
+        const hasImages = progressImages.length > 0;
+        if (hasImages) {
+          debugImage("Final answer has images", progressImages);
+        }
+
+        // Create the assistant message object (without images)
         const assistantMessage = {
           role: "assistant",
           content: answer,
@@ -223,60 +251,90 @@ const ChatBox = ({ onIsLoadingChange }) => {
           routedFrom: null,
           isChunk: false,
           isFinal: true,
+          // No images here - images will be in a separate message
         };
 
         // Generate a title based on the assistant's first response
         let newTitle = activeConversation.title;
         if (activeConversation.title === "New Conversation") {
-          // Extract first sentence or up to 40 chars from the assistant's response
           const firstSentence = answer.split(".")[0].trim();
           newTitle =
             firstSentence.substring(0, 40) +
             (firstSentence.length > 40 ? "..." : "");
-
-          // Make sure title is capitalized and has no trailing punctuation
           newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
           newTitle = newTitle.replace(/[.,;:!?]$/, "");
         }
 
         // Update conversation with thread ID and final answer
         if (activeConversation) {
+          const updatedMessages = [
+            ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
+            assistantMessage,
+          ];
+
+          // Add an additional message for images if needed
+          if (hasImages) {
+            const imageMessage = {
+              role: "assistant",
+              content: "", // Empty content since it's just for images
+              timestamp: new Date(assistantMessage.timestamp.getTime() + 100), // Slightly after
+              assistantName: "Assistant",
+              isImage: true,
+              images: progressImages,
+              isFinal: true,
+            };
+            updatedMessages.push(imageMessage);
+          }
+
           const updatedConversation = {
             ...activeConversation,
             threadId: thread?.id || activeConversation.id,
             id: thread?.id || activeConversation.id,
-            messages: [
-              ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
-              assistantMessage,
-            ],
+            messages: updatedMessages,
             title: newTitle,
           };
           updateConversation(updatedConversation);
-        } // Create final message
+        }
+
+        // Update UI messages
         setMessages((prevMessages) => {
           // Keep chunks but mark them as final
           const updatedMessages = prevMessages.map((msg) => {
             if (msg.isChunk) {
-              return {
-                ...msg,
-                isFinal: true,
-              };
+              return { ...msg, isFinal: true };
             }
             return msg;
           });
 
-          // Create the final message
-          const finalMessage = {
+          // Create the final text message (without images)
+          const finalTextMessage = {
             id: `final-${Date.now()}`,
             text: answer,
             isBot: true,
             timestamp: new Date(),
             assistantName: "Assistant",
             isFinal: true,
-            images: progressImages.length > 0 ? progressImages : undefined,
           };
 
-          return [...updatedMessages, finalMessage];
+          let newMessages = [...updatedMessages, finalTextMessage];
+
+          // Add a separate message for images if present
+          if (hasImages) {
+            const imageMessage = {
+              id: `image-${Date.now()}`,
+              text: "", // Empty text since it's just for images
+              isBot: true,
+              timestamp: new Date(finalTextMessage.timestamp.getTime() + 100), // Just after the text message
+              images: [...progressImages],
+              isImage: true,
+              isFinal: true,
+            };
+
+            debugImage("Creating separate image message", imageMessage);
+            newMessages.push(imageMessage);
+          }
+
+          return newMessages;
         });
 
         setIsLoading(false);
@@ -359,18 +417,19 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
     // Process each message
     messages.forEach((message, index) => {
-      const isLastMessageInStream = index === messages.length - 1; // Add the ChatMessage component
+      const isLastMessageInStream = index === messages.length - 1;
+
+      // Add the ChatMessage component
       messageElements.push(
         <ChatMessage
           key={message.id || `msg-${index}`}
-          id={message.id || `msg-${index}`} // Pass the message id
+          id={message.id || `msg-${index}`}
           message={typeof message === "string" ? message : message.text}
           isBot={message.isBot}
           timestamp={message.timestamp}
-          isImage={message.isFinal && message.isImage}
+          isImage={message.isImage}
           imageUrl={message.imageUrl}
           imageFileId={message.imageFileId}
-          images={message.images}
           isChunk={message.isChunk}
           isFinal={message.isFinal}
           onRegenerateResponse={
@@ -382,6 +441,23 @@ const ChatBox = ({ onIsLoadingChange }) => {
           isLoadingLogs={isLoading && isLastMessageInStream}
         />
       );
+
+      // Add dedicated image message bubbles if the message has images
+      if (message.images && message.images.length > 0) {
+        messageElements.push(
+          <ChatMessage
+            key={`${message.id || `msg-${index}`}-images`}
+            id={`${message.id || `msg-${index}`}-images`}
+            message=""
+            isBot={true}
+            timestamp={new Date(message.timestamp.getTime() + 100)} // slightly after
+            images={message.images}
+            isImage={true}
+            isChunk={false}
+            isFinal={true}
+          />
+        );
+      }
 
       // Show thinking indicator after user message during loading
       if (!message.isBot && index === lastUserMessageIndex && isLoading) {
@@ -402,11 +478,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
           />
         );
       }
-      // Logger is now shown as a fixed element at the top, so we don't need to show it here
     });
 
     return messageElements;
   };
+
   return (
     <Box
       sx={{

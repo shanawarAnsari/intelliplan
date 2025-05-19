@@ -4,11 +4,23 @@ import { Box, Typography, useTheme, IconButton, Collapse } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
-const Logger = ({ logs, isLoading }) => {
+const Logger = ({ logs, isLoading, showCountOnly = false }) => {
   const theme = useTheme();
   const logContainerRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
   const prevLogsLengthRef = useRef(0);
+  const [imageLogCount, setImageLogCount] = useState(0);
+
+  // Track image-related logs separately
+  useEffect(() => {
+    if (logs && logs.length > 0) {
+      const imageRelatedLogs = logs.filter(
+        (log) =>
+          log.includes("[IMAGE]") || log.includes("Image") || log.includes("image")
+      );
+      setImageLogCount(imageRelatedLogs.length);
+    }
+  }, [logs]);
 
   // Auto-collapse when logs start appearing
   useEffect(() => {
@@ -51,6 +63,7 @@ const Logger = ({ logs, isLoading }) => {
           borderBottom: expanded ? `1px solid ${theme.palette.divider}` : "none",
         }}
       >
+        {" "}
         <Typography
           variant="caption"
           sx={{
@@ -60,7 +73,11 @@ const Logger = ({ logs, isLoading }) => {
             ml: 1,
           }}
         >
-          {expanded ? "Logs" : `${logs.length} logs`}
+          {expanded
+            ? "Logs"
+            : showCountOnly
+            ? `${logs.length} logs`
+            : `${logs.length} logs (${imageLogCount} image logs)`}
         </Typography>
         <IconButton
           size="small"

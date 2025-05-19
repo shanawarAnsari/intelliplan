@@ -7,12 +7,12 @@ const useMessageFormatter = () => {
       content: content,
     };
   }, []);
-
   const formatForUI = useCallback((message) => {
     let content = "";
     let isImage = false;
     let imageUrl = null;
     let imageFileId = null;
+    let images = [];
 
     if (message.isImage) {
       isImage = true;
@@ -20,15 +20,34 @@ const useMessageFormatter = () => {
       imageFileId = message.imageFileId;
     }
 
-    if (message.content && Array.isArray(message.content)) {
-      const imageItem = message.content.find((item) => item.type === "image_file");
-      if (imageItem && imageItem.image_file) {
-        isImage = true;
-        imageFileId = imageItem.image_file.file_id;
+    if (message.images && message.images.length > 0) {
+      images = [...message.images];
+    }
 
-        if (imageItem.image_file.url) {
-          imageUrl = imageItem.image_file.url;
-        }
+    if (message.content && Array.isArray(message.content)) {
+      // Look for image files in the content
+      const imageItems = message.content.filter(
+        (item) => item.type === "image_file"
+      );
+      if (imageItems && imageItems.length > 0) {
+        isImage = true;
+        // Add all found images to the images array
+        imageItems.forEach((item) => {
+          if (item.image_file) {
+            images.push({
+              fileId: item.image_file.file_id,
+              url: item.image_file.url || null,
+            });
+
+            // Keep the first one as the main image if we don't have one yet
+            if (!imageFileId) {
+              imageFileId = item.image_file.file_id;
+              if (item.image_file.url) {
+                imageUrl = item.image_file.url;
+              }
+            }
+          }
+        });
       }
 
       content = message.content
@@ -54,6 +73,8 @@ const useMessageFormatter = () => {
       isImage,
       imageUrl,
       imageFileId,
+      images: images.length > 0 ? images : undefined,
+      hasImages: images.length > 0,
     };
   }, []);
 

@@ -151,6 +151,65 @@ const ChatMessage = ({
     };
   }, [isImage, initialImageUrl, imageFileId, message, images]);
 
+  // Enhanced image loading and debugging
+  useEffect(() => {
+    const loadImagesFromFileIds = async () => {
+      if ((!isImage && !images?.length) || !images) return;
+
+      console.log(`[ChatMessage] Attempting to load ${images.length} images`);
+
+      try {
+        const ImageService = await import("../services/ImageService");
+
+        // Wait for all images to load
+        for (const img of images) {
+          if (!img.fileId) continue;
+
+          console.log(`[ChatMessage] Loading image with fileId: ${img.fileId}`);
+          try {
+            const url = await ImageService.fetchImageFromOpenAI(img.fileId);
+            console.log(`[ChatMessage] Image loaded successfully: ${img.fileId}`);
+            // Update the URL directly in the image object
+            img.url = url;
+            // Force a re-render by updating state
+            setImageLoading(false);
+          } catch (error) {
+            console.error(
+              `[ChatMessage] Failed to load image ${img.fileId}:`,
+              error
+            );
+          }
+        }
+      } catch (error) {
+        console.error("[ChatMessage] Error loading ImageService:", error);
+        setImageError(true);
+      } finally {
+        setImageLoading(false);
+      }
+    };
+
+    loadImagesFromFileIds();
+  }, [images, isImage]);
+
+  // Add debug logging for images
+  useEffect(() => {
+    if (isImage) {
+      console.log(`[ChatMessage] Image message detected:`, {
+        id,
+        imageFileId,
+        hasImages: !!images && images.length > 0,
+        imageCount: images ? images.length : 0,
+      });
+    }
+
+    if (images && images.length > 0) {
+      console.log(
+        `[ChatMessage] Message has ${images.length} images:`,
+        images.map((img) => ({ fileId: img.fileId, hasUrl: !!img.url }))
+      );
+    }
+  }, [isImage, images, imageFileId, id]);
+
   return (
     <Box
       sx={{
@@ -304,7 +363,7 @@ const ChatMessage = ({
                   {assistantName && `via ${assistantName}`}
                   {routedFrom && ` (${routedFrom})`}
                 </Typography>
-              )}
+              )}{" "}
               {images && images.length > 0 && (
                 <Box sx={{ mt: 1, mb: 2 }}>
                   <Box

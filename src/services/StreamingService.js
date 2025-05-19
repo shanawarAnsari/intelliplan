@@ -191,15 +191,47 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
         stream.on("runCreated", (run) => {
           emitUpdate("run_created", run, handlerName);
         });
-
         stream.on("messageDelta", (messageDelta, snapshot) => {
           const content = messageDelta.content?.[0];
+          if (!content) return;
+
+          console.log("Message delta content type:", content.type);
+
           if (content?.type === "text" && content.text?.value) {
             accumulatedText += content.text.value;
             processAndEmitSentences(content.text.value);
           } else if (content?.type === "image_file") {
-            if (!accumulatedText.includes(`[IMAGE:${content.image_file.file_id}]`)) {
-              accumulatedText += `[IMAGE:${content.image_file.file_id}]`;
+            console.log("Image file detected in stream:", content.image_file);
+
+            if (!content.image_file || !content.image_file.file_id) {
+              console.error("Invalid image file data received:", content);
+              return;
+            }
+
+            // Emit image updates with more details for debugging
+            const imageData = {
+              fileId: content.image_file.file_id,
+              url: content.image_file.url || null,
+              detectedAt: new Date().toISOString(),
+            };
+
+            console.log("Emitting image event with data:", imageData);
+
+            // Emit with extra debug info
+            emitUpdate("image", imageData, handlerName);
+
+            // Also emit as a debug event for visibility
+            emitUpdate(
+              "debug",
+              `Image detected: fileId=${content.image_file.file_id}`,
+              handlerName
+            );
+
+            // Keep track of images in accumulated text with a special marker
+            const imageMarker = `[IMAGE:${content.image_file.file_id}]`;
+            if (!accumulatedText.includes(imageMarker)) {
+              accumulatedText += imageMarker;
+              console.log(`Added image marker to text: ${imageMarker}`);
             }
           }
         });

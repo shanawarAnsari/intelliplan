@@ -7,16 +7,26 @@ export const fetchImageFromOpenAI = async (fileId) => {
     throw new Error("No file ID provided");
   }
 
+  // Clean up the fileId - remove any possible prefixes and then add the correct one
+  let cleanFileId = fileId;
+  if (cleanFileId.includes(":")) {
+    cleanFileId = cleanFileId.split(":").pop();
+  }
+  if (cleanFileId.startsWith("file-")) {
+    cleanFileId = cleanFileId.substring(5);
+  }
+  if (cleanFileId.startsWith("assistant-")) {
+    cleanFileId = cleanFileId.substring(10);
+  }
+
   // Make sure fileId is properly formatted
-  const formattedFileId = fileId.startsWith("assistant-")
-    ? fileId
-    : `assistant-${fileId}`;
+  const formattedFileId = `assistant-${cleanFileId}`;
 
   try {
     const azureEndpoint = ENDPOINT.endsWith("/") ? ENDPOINT : `${ENDPOINT}/`;
     const url = `${azureEndpoint}openai/files/${formattedFileId}/content?api-version=${API_VERSION}`;
 
-    console.log(`Fetching image from URL (cache miss): ${url}`);
+    console.log(`Fetching image from URL: ${formattedFileId}`);
 
     // Add retry logic for network issues
     let retries = 0;
@@ -30,6 +40,7 @@ export const fetchImageFromOpenAI = async (fileId) => {
             "api-key": API_KEY,
             Accept: "image/*",
             "Cache-Control": "no-cache", // Prevent caching issues
+            Pragma: "no-cache", // Additional no-cache directive
           },
         });
 
@@ -50,7 +61,7 @@ export const fetchImageFromOpenAI = async (fileId) => {
         }
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
-        console.log(`Image fetched for fileId: ${formattedFileId}`);
+        console.log(`Image successfully fetched for fileId: ${formattedFileId}`);
         return blobUrl;
       } catch (fetchError) {
         console.error(`Fetch attempt ${retries + 1} failed:`, fetchError);

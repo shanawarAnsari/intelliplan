@@ -35,6 +35,36 @@ const ImageComponent = ({ img, index }) => {
     a.click();
     document.body.removeChild(a);
   };
+  // Add image loading directly from fileId if URL is not available
+  useEffect(() => {
+    if (img.fileId && !img.url) {
+      console.log(`[ImageComponent] Loading image from fileId: ${img.fileId}`);
+      setImgLoading(true);
+
+      const loadImageFromFileId = async () => {
+        try {
+          const url = await fetchImageFromOpenAI(img.fileId);
+          if (url) {
+            console.log(`[ImageComponent] Image loaded successfully: ${img.fileId}`);
+            img.url = url; // Update the URL directly in the parent's state
+            setImgError(false);
+          } else {
+            console.error(
+              `[ImageComponent] No URL returned for fileId: ${img.fileId}`
+            );
+            setImgError(true);
+          }
+        } catch (error) {
+          console.error(`[ImageComponent] Error loading image from fileId:`, error);
+          setImgError(true);
+        } finally {
+          setImgLoading(false);
+        }
+      };
+
+      loadImageFromFileId();
+    }
+  }, [img.fileId, img.url]);
 
   return (
     <Box key={`img-${index}`} sx={{ position: "relative" }}>
@@ -76,6 +106,27 @@ const ImageComponent = ({ img, index }) => {
               setImgRetryCount((prev) => prev + 1);
               setImgError(false);
               setImgLoading(true);
+
+              // Try loading the image again on retry
+              if (img.fileId) {
+                const loadRetryImage = async () => {
+                  try {
+                    const result = await fetchImageFromOpenAI(img.fileId);
+                    if (result) {
+                      img.url = result;
+                      setImgError(false);
+                    } else {
+                      setImgError(true);
+                    }
+                  } catch (error) {
+                    console.error("Failed to load retry image:", error);
+                    setImgError(true);
+                  } finally {
+                    setImgLoading(false);
+                  }
+                };
+                loadRetryImage();
+              }
             }}
           >
             Retry Loading
@@ -83,46 +134,26 @@ const ImageComponent = ({ img, index }) => {
         </Box>
       )}
 
-      <img
-        src={img.url}
-        alt={`Generated content ${index + 1}`}
-        style={{
-          maxWidth: "100%",
-          maxHeight: "60vh",
-          borderRadius: "8px",
-          display: imgLoading || imgError ? "none" : "block",
-        }}
-        onLoad={() => {
-          console.log(`Image ${index} loaded:`, img.url);
-          setImgLoading(false);
-        }}
-        onError={(e) => {
-          console.error(`Error loading image ${index}:`, e);
-          if (img.fileId) {
-            setImgLoading(true);
-            const loadFallbackImage = async () => {
-              try {
-                const result = await fetchImageFromOpenAI(img.fileId);
-                if (result) {
-                  img.url = result; // Update the URL in the parent's state
-                  setImgError(false);
-                } else {
-                  setImgError(true);
-                }
-              } catch (error) {
-                console.error("Failed to load fallback image:", error);
-                setImgError(true);
-              } finally {
-                setImgLoading(false);
-              }
-            };
-            loadFallbackImage();
-          } else {
+      {img.url && !imgLoading && !imgError && (
+        <img
+          src={img.url}
+          alt={`Generated content ${index + 1}`}
+          style={{
+            maxWidth: "100%",
+            maxHeight: "60vh",
+            borderRadius: "8px",
+          }}
+          onLoad={() => {
+            console.log(`Image ${index} loaded:`, img.url);
+            setImgLoading(false);
+          }}
+          onError={(e) => {
+            console.error(`Error loading image ${index}:`, e);
             setImgError(true);
             setImgLoading(false);
-          }
-        }}
-      />
+          }}
+        />
+      )}
 
       {!imgLoading && !imgError && (
         <IconButton
