@@ -36,6 +36,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
       onIsLoadingChange(isLoading);
     }
   }, [isLoading, onIsLoadingChange]);
+
   // Sync messages with active conversation
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
@@ -78,7 +79,9 @@ const ChatBox = ({ onIsLoadingChange }) => {
       setCurrentThreadId(null);
       setAllowLoggerDisplay(true);
     }
-  }, [activeConversation, updateConversation]); // Handle sending a message
+  }, [activeConversation, updateConversation]);
+
+  // Handle sending a message
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
@@ -229,17 +232,36 @@ const ChatBox = ({ onIsLoadingChange }) => {
             });
           }
         }
-      }); // Handle final answer
-      emitter.on("finalAnswer", ({ answer, thread }) => {
+      });
+
+      // Handle final answer
+      emitter.on("finalAnswer", ({ answer, thread, images }) => {
         // Store thread ID for future messages
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
         }
 
-        // Check if there are images in the progress images array
-        const hasImages = progressImages.length > 0;
-        if (hasImages) {
-          debugImage("Final answer has images", progressImages);
+        // Check if there are images in the response
+        const hasImages = (images && images.length > 0) || progressImages.length > 0;
+
+        // Combine any images from the final answer with progress images
+        const allImages = [...progressImages];
+        if (images && images.length > 0) {
+          debugImage(`Final answer has ${images.length} images`, images);
+          // Add any images that aren't already in the progress images array
+          images.forEach((img) => {
+            if (
+              !allImages.some((existingImg) => existingImg.fileId === img.fileId)
+            ) {
+              allImages.push(img);
+            }
+          });
+        }
+
+        if (allImages.length > 0) {
+          debugImage(`Final answer has ${allImages.length} total images`, allImages);
+          // Update the progress images with all images
+          setProgressImages(allImages);
         }
 
         // Create the assistant message object (without images)
@@ -276,11 +298,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
           if (hasImages) {
             const imageMessage = {
               role: "assistant",
-              content: "", // Empty content since it's just for images
-              timestamp: new Date(assistantMessage.timestamp.getTime() + 100), // Slightly after
+              content: "",
+              timestamp: new Date(assistantMessage.timestamp.getTime() + 100),
               assistantName: "Assistant",
               isImage: true,
-              images: progressImages,
+              images: allImages,
               isFinal: true,
             };
             updatedMessages.push(imageMessage);
@@ -322,10 +344,10 @@ const ChatBox = ({ onIsLoadingChange }) => {
           if (hasImages) {
             const imageMessage = {
               id: `image-${Date.now()}`,
-              text: "", // Empty text since it's just for images
+              text: "",
               isBot: true,
-              timestamp: new Date(finalTextMessage.timestamp.getTime() + 100), // Just after the text message
-              images: [...progressImages],
+              timestamp: new Date(finalTextMessage.timestamp.getTime() + 100),
+              images: [...allImages],
               isImage: true,
               isFinal: true,
             };
@@ -430,6 +452,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           isImage={message.isImage}
           imageUrl={message.imageUrl}
           imageFileId={message.imageFileId}
+          images={message.images}
           isChunk={message.isChunk}
           isFinal={message.isFinal}
           onRegenerateResponse={
@@ -524,7 +547,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           >
             <Logger logs={progressLogs} isLoading={isLoading} showCountOnly={true} />
           </Box>
-        )}{" "}
+        )}
         <Box
           sx={{
             px: 2,
@@ -589,7 +612,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           )}
           <div ref={messagesEndRef} />
         </Box>
-      </Box>{" "}
+      </Box>
       <Box
         sx={{
           p: 1.5,
