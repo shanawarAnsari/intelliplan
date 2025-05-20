@@ -73,45 +73,49 @@ const ImageComponent = ({ img, index }) => {
     if (imgUrl) {
       displayImage(imgUrl);
     }
-  };
-
+  }; // First load attempt
   useEffect(() => {
-    if (img.fileId && !img.url && !imgUrl) {
-      console.log(`[ImageComponent] Loading image from fileId: ${img.fileId}`);
-      setImgLoading(true);
-
-      const loadImageFromFileId = async () => {
-        try {
+    const loadImage = async () => {
+      try {
+        if (img.fileId) {
+          console.log(
+            `[ImageComponent] Loading image ${index} from fileId: ${img.fileId}`
+          );
           const ImageService = await import("../services/ImageService");
-          console.log(`[ImageComponent] Fetching image for fileId: ${img.fileId}`);
           const url = await ImageService.fetchImageFromOpenAI(img.fileId);
 
           if (url) {
-            console.log(`[ImageComponent] Image loaded successfully: ${img.fileId}`);
+            console.log(
+              `[ImageComponent] Successfully loaded image ${index}: ${img.fileId}`
+            );
             setImgUrl(url);
-            img.url = url; // Update the passed object as well
+            img.url = url; // Update the image object directly
             setImgLoading(false);
-            setImgError(false);
           } else {
             console.error(
-              `[ImageComponent] No URL returned for fileId: ${img.fileId}`
+              `[ImageComponent] Failed to get URL for image ${index}: ${img.fileId}`
             );
             setImgError(true);
             setImgLoading(false);
           }
-        } catch (error) {
-          console.error(`[ImageComponent] Error loading image from fileId:`, error);
+        } else if (img.url) {
+          console.log(`[ImageComponent] Using provided URL for image ${index}`);
+          setImgUrl(img.url);
+          setImgLoading(false);
+        } else {
+          console.error(`[ImageComponent] No fileId or URL for image ${index}`);
           setImgError(true);
           setImgLoading(false);
         }
-      };
+      } catch (error) {
+        console.error(`[ImageComponent] Error loading image ${index}:`, error);
+        setImgError(true);
+        setImgLoading(false);
+      }
+    };
 
-      loadImageFromFileId();
-    } else if (img.url && !imgUrl) {
-      setImgUrl(img.url);
-      setImgLoading(false);
-    }
-  }, [img.fileId, img.url, imgUrl]);
+    loadImage();
+  }, [img.fileId, index]);
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -132,7 +136,6 @@ const ImageComponent = ({ img, index }) => {
           </Typography>
         </Box>
       )}
-
       {imgError && (
         <Box
           sx={{
@@ -183,30 +186,31 @@ const ImageComponent = ({ img, index }) => {
             Retry Loading
           </Button>
         </Box>
-      )}
-
-      {imgUrl && !imgLoading && !imgError && (
+      )}{" "}
+      {imgUrl && (
         <img
           src={imgUrl}
           alt={`Generated content ${index + 1}`}
           style={{
-            maxWidth: "100%",
+            width: "100%",
             maxHeight: "60vh",
             borderRadius: "8px",
-            display: imgLoading || imgError ? "none" : "block",
+            display: imgLoading ? "none" : "block",
           }}
           onLoad={() => {
-            console.log(`[ImageComponent] Image ${index} loaded:`, imgUrl);
+            console.log(
+              `[ImageComponent] Image ${index} loaded successfully:`,
+              imgUrl
+            );
             setImgLoading(false);
           }}
           onError={(e) => {
-            console.error(`[ImageComponent] Error loading image ${index}:`, e);
+            console.error(`[ImageComponent] Error displaying image ${index}:`, e);
             setImgError(true);
             setImgLoading(false);
           }}
         />
       )}
-
       {!imgLoading && !imgError && imgUrl && (
         <>
           <IconButton

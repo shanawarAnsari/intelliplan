@@ -257,6 +257,16 @@ const ChatBox = ({ onIsLoadingChange }) => {
           allAvailableImages.length
         );
 
+        // Add debugging for each image in allAvailableImages
+        allAvailableImages.forEach((img, idx) => {
+          console.log(`[finalAnswer] Image ${idx} details:`, {
+            fileId: img.fileId,
+            hasUrl: !!img.url,
+            threadId: img.threadId,
+            messageId: img.messageId || "unknown",
+          });
+        });
+
         // Make sure we have no duplicate images
         const uniqueImages = [];
         allAvailableImages.forEach((img) => {

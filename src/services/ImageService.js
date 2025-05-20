@@ -76,6 +76,9 @@ export const fetchImageFromOpenAI = async (fileId) => {
     console.error("[ImageService] No file ID provided");
     throw new Error("No file ID provided");
   }
+
+  console.log(`[ImageService] Starting fetch for fileId: ${fileId}`);
+
   // Check cache first
   if (imageCache.has(fileId)) {
     console.log(`[ImageService] Using cached image for ${fileId}`);
@@ -86,15 +89,19 @@ export const fetchImageFromOpenAI = async (fileId) => {
 
   try {
     const azureEndpoint = ENDPOINT.endsWith("/") ? ENDPOINT : `${ENDPOINT}/`;
-    const url = `${azureEndpoint}openai/files/${fileId}/content?api-version=${API_VERSION}`;
+    // Add a timestamp to prevent browser caching
+    const url = `${azureEndpoint}openai/files/${fileId}/content?api-version=${API_VERSION}&t=${Date.now()}`;
 
-    console.log(`[ImageService] Fetching image for fileId: ${fileId}`);
+    console.log(`[ImageService] Fetching image from URL: ${url}`);
 
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "api-key": API_KEY,
         Accept: "image/*",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
 

@@ -151,16 +151,22 @@ const ChatMessage = ({
       isMounted = false;
     };
   }, [isImage, initialImageUrl, imageFileId, message, images]);
-
   useEffect(() => {
-    // Only process images if they exist
+    // Process images when they change
     if (images && images.length > 0) {
       console.log(
         `[ChatMessage ${id}] Processing ${images.length} images for message`
       );
 
-      // Set message images immediately without filtering
-      setMessageImages(images);
+      // Set message images directly to ensure they display
+      setMessageImages([...images]); // Create a new array to trigger re-render
+
+      // Force refresh of images if they don't have URLs
+      images.forEach((img) => {
+        if (img.fileId && !img.url) {
+          console.log(`[ChatMessage ${id}] Image ${img.fileId} needs URL loading`);
+        }
+      });
     }
   }, [images, id, threadId]);
 
