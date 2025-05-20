@@ -9,7 +9,6 @@ import { orchestrateStreaming } from "../services/StreamingService";
 import { useConversation } from "../contexts/ConversationContext";
 
 const ChatBox = ({ onIsLoadingChange }) => {
-
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progressLogs, setProgressLogs] = useState([]);
@@ -18,18 +17,15 @@ const ChatBox = ({ onIsLoadingChange }) => {
   const [currentThreadId, setCurrentThreadId] = useState(null);
   const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true);
 
-
   const debugImage = (msg, data) => {
     console.log(`[IMAGE DEBUG] ${msg}`, data);
     setProgressLogs((prev) => [...prev, `[IMAGE] ${msg}: ${JSON.stringify(data)}`]);
   };
 
-
   const messagesEndRef = useRef(null);
   const emitterRef = useRef(null);
   const theme = useTheme();
   const { activeConversation, updateConversation } = useConversation();
-
 
   useEffect(() => {
     if (onIsLoadingChange) {
@@ -59,7 +55,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
       }));
       setMessages(formattedMessages);
 
-
       const isNewConversation =
         !activeConversation.threadId || activeConversation.isNew;
       if (isNewConversation) {
@@ -77,17 +72,14 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   }, [activeConversation]);
 
-
   useEffect(() => {
     if (activeConversation && activeConversation.id && !activeConversation.isNew) {
-
       const timeoutId = setTimeout(() => {
         updateConversation(activeConversation);
       }, 0);
       return () => clearTimeout(timeoutId);
     }
   }, [activeConversation, updateConversation]);
-
 
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
@@ -101,15 +93,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
       content: text,
     };
 
-
     setIsLoading(true);
     setProgressLogs([]);
     setProgressImages([]);
     setStreamStopped(false);
 
-
     setMessages((prevMessages) => [...prevMessages, userMessage]);
-
 
     if (activeConversation) {
       const updatedConversation = {
@@ -120,34 +109,28 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
 
     try {
-
       const threadIdToUse =
         currentThreadId || activeConversation?.threadId || activeConversation?.id;
       const emitter = orchestrateStreaming(text, threadIdToUse);
       emitterRef.current = emitter;
-
 
       emitter.on("update", (update) => {
         const { type, content, handler } = update;
 
         setProgressLogs((prevLogs) => [
           ...prevLogs,
-          `${handler || "System"} (${type}): ${typeof content === "string" ? content : JSON.stringify(content)
+          `${handler || "System"} (${type}): ${
+            typeof content === "string" ? content : JSON.stringify(content)
           }`,
         ]);
 
-
         if (type === "text_chunk") {
-
-
           const isSignificantContent =
             content.length > 200 ||
             (content.includes("\n\n") && content.length > 100) ||
             (content.includes(".") && content.includes("\n") && content.length > 80);
 
-
           setMessages((prevMessages) => {
-
             const lastChunkIndex = [...prevMessages]
               .reverse()
               .findIndex((m) => m.isBot && m.isChunk);
@@ -159,14 +142,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
             let updatedMessages = [...prevMessages];
             let newMessage;
 
-
             const existingChunkIsLarge =
               hasChunk &&
               (updatedMessages[chunkIndex].text.length > 300 ||
                 updatedMessages[chunkIndex].text.split(". ").length > 2);
 
             if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
-
               updatedMessages[chunkIndex] = {
                 ...updatedMessages[chunkIndex],
                 text: updatedMessages[chunkIndex].text + content,
@@ -175,7 +156,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
               };
               newMessage = updatedMessages[chunkIndex];
             } else {
-
               newMessage = {
                 id: `chunk-${Date.now()}-${Math.random()
                   .toString(36)
@@ -191,13 +171,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
               updatedMessages = [...updatedMessages, newMessage];
             }
 
-
             if (activeConversation) {
               const updatedConversation = {
                 ...activeConversation,
                 messages: [...(activeConversation.messages || [])],
               };
-
 
               if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
                 const lastIndex = updatedConversation.messages.length - 1;
@@ -217,11 +195,9 @@ const ChatBox = ({ onIsLoadingChange }) => {
             return updatedMessages;
           });
         } else if (type === "image") {
-
           debugImage("Received image update", content);
           if (content && content.fileId) {
             setProgressImages((prev) => {
-
               if (!prev.some((img) => img.fileId === content.fileId)) {
                 debugImage("Adding new image to progress images", {
                   fileId: content.fileId,
@@ -235,18 +211,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
         }
       });
-
-
       emitter.on("finalAnswer", ({ answer, thread, images }) => {
-
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
         }
 
-
-        const hasImages = (images && images.length > 0) || progressImages.length > 0;
-
-
+        // Process images - attach them directly to the message rather than creating a separate message
         const allImages = [...progressImages];
         if (images && images.length > 0) {
           debugImage(`Final answer has ${images.length} images`, images);
@@ -260,13 +230,14 @@ const ChatBox = ({ onIsLoadingChange }) => {
           });
         }
 
-        if (allImages.length > 0) {
-          debugImage(`Final answer has ${allImages.length} total images`, allImages);
+        const hasImages = allImages.length > 0;
 
+        if (hasImages) {
+          debugImage(`Final answer has ${allImages.length} total images`, allImages);
           setProgressImages(allImages);
         }
 
-
+        // Create a single assistant message with both text and images
         const assistantMessage = {
           role: "assistant",
           content: answer,
@@ -275,9 +246,13 @@ const ChatBox = ({ onIsLoadingChange }) => {
           routedFrom: null,
           isChunk: false,
           isFinal: true,
-
+          // Attach images directly to the message if they exist
+          ...(hasImages && {
+            hasImages: true,
+            images: allImages,
+            imageFileIds: allImages.map((img) => img.fileId),
+          }),
         };
-
 
         let newTitle = activeConversation.title;
         if (activeConversation.title === "New Conversation") {
@@ -289,30 +264,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
           newTitle = newTitle.replace(/[.,;:!?]$/, "");
         }
 
-
         if (activeConversation) {
+          // Store just one message with both text and images in conversation context
           const updatedMessages = [
             ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
             assistantMessage,
           ];
-          if (hasImages && allImages.length > 0) {
-            const imageMessage = {
-              role: "assistant",
-              content: "",
-              timestamp: new Date(assistantMessage.timestamp.getTime() + 100),
-              assistantName: "Assistant",
-              isImage: true,
-              images: allImages,
-              isFinal: true,
-              hasImages: true,
-              imageFileIds: allImages.map((img) => img.fileId),
-            };
-            updatedMessages.push(imageMessage);
-            debugImage("Added image message to conversation", {
-              imageCount: allImages.length,
-              fileIds: allImages.map((img) => img.fileId),
-            });
-          }
 
           const updatedConversation = {
             ...activeConversation,
@@ -324,9 +281,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
           updateConversation(updatedConversation);
         }
 
-
+        // Update UI messages
         setMessages((prevMessages) => {
-
           const updatedMessages = prevMessages.map((msg) => {
             if (msg.isChunk) {
               return { ...msg, isFinal: true };
@@ -334,40 +290,27 @@ const ChatBox = ({ onIsLoadingChange }) => {
             return msg;
           });
 
-
-          const finalTextMessage = {
+          // Create a single message for UI display with both text and images
+          const finalMessage = {
             id: `final-${Date.now()}`,
             text: answer,
             isBot: true,
             timestamp: new Date(),
             assistantName: "Assistant",
             isFinal: true,
+            // Attach images directly if they exist
+            ...(hasImages && {
+              hasImages: true,
+              images: [...allImages],
+              imageFileIds: allImages.map((img) => img.fileId),
+            }),
           };
 
-          let newMessages = [...updatedMessages, finalTextMessage];
-          if (hasImages && allImages.length > 0) {
-            const imageMessage = {
-              id: `image-${Date.now()}`,
-              text: "",
-              isBot: true,
-              timestamp: new Date(finalTextMessage.timestamp.getTime() + 100),
-              images: [...allImages],
-              isImage: true,
-              isFinal: true,
-              hasImages: true,
-              imageFileIds: allImages.map((img) => img.fileId),
-            };
-
-            debugImage("Creating separate image message", imageMessage);
-            newMessages.push(imageMessage);
-          }
-
-          return newMessages;
+          return [...updatedMessages, finalMessage];
         });
 
         setIsLoading(false);
       });
-
 
       emitter.on("error", ({ message }) => {
         setMessages((prevMessages) => [
@@ -384,14 +327,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
         setIsLoading(false);
       });
 
-
       emitter.on("stopped", () => {
         setStreamStopped(true);
         setIsLoading(false);
       });
     } catch (error) {
       console.error("Error communicating with the assistant:", error);
-
 
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -408,14 +349,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   };
 
-
   const handleStopGenerating = () => {
     if (emitterRef.current && emitterRef.current.stop) {
       emitterRef.current.stop();
     }
     setIsLoading(false);
   };
-
 
   const handleRegenerate = () => {
     const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
@@ -424,18 +363,15 @@ const ChatBox = ({ onIsLoadingChange }) => {
     }
   };
 
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const isChatEmpty = messages.length === 0;
 
-
   const renderMessages = () => {
     const messageElements = [];
     let lastUserMessageIndex = -1;
-
 
     messages.forEach((msg, idx) => {
       if (!msg.isBot) {
@@ -443,10 +379,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
       }
     });
 
-
     messages.forEach((message, index) => {
       const isLastMessageInStream = index === messages.length - 1;
-
 
       messageElements.push(
         <ChatMessage
@@ -471,14 +405,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
         />
       );
 
-
-
       if (!message.isBot && index === lastUserMessageIndex && isLoading) {
         messageElements.push(
           <ThinkingIndicator key="thinking" text="Thinking" showSpinner={true} />
         );
       }
-
 
       if (message.isBot && message.isFinal && isLastMessageInStream && !isLoading) {
         messageElements.push(
@@ -508,7 +439,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         position: "relative",
       }}
     >
-      { }
+      {}
       <Box
         sx={{
           display: "flex",
@@ -523,7 +454,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           overflowX: "hidden",
         }}
       >
-        { }
+        {}
         {allowLoggerDisplay && (
           <Box
             sx={{
