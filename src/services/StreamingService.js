@@ -4,6 +4,7 @@ import {
   COORDINATOR_ASSISTANT_ID,
   SALES_ASSISTANT_ID,
   FORECAST_ASSISTANT_ID,
+  REPORTGEN_ASSISTANT_ID
 } from "../utils/assistantConstants";
 
 export function orchestrateStreaming(userPrompt, threadId = null) {
@@ -270,10 +271,17 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
             }
 
             const finalSubPrompt = args?.prompt?.trim() ? args.prompt : userPrompt;
-            const assistantId =
-              fnName === "get_sales_data"
-                ? SALES_ASSISTANT_ID
-                : FORECAST_ASSISTANT_ID;
+            const assistantId = null;
+            debugger;
+            if (fnName === "forecast") {
+              assistantId = FORECAST_ASSISTANT_ID;
+            }
+            else if (fnName === "report") {
+              assistantId = REPORTGEN_ASSISTANT_ID;
+            }
+            else {
+              assistantId = SALES_ASSISTANT_ID;
+            }
 
             const subThread = await client.beta.threads.create();
             if (stopped) return;
