@@ -33,7 +33,7 @@ const InventoryStockChart = () => {
     });
 
     const stockQuantity = sortedData.map((item) =>
-      item["Sum_Stock_Quantity"] ? parseInt(item["Sum_Stock_Quantity"]) : null
+      item["Sum_StockQuantity_GSU_Units"] ? parseInt(item["Sum_StockQuantity_GSU_Units"]) : null
     );
 
     // Get unique dates for month-year format
