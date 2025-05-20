@@ -8,8 +8,9 @@ import HelpFAQ from "./HelpFAQ";
 import { DemandForecastChart, InventoryStockChart } from "./charts";
 import HistoryIcon from "@mui/icons-material/History";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import AddIcon from "@mui/icons-material/Add";
+
 import { useConversation } from "../contexts/ConversationContext";
+import { AddCircleOutline } from "@mui/icons-material";
 
 const MainLayout = () => {
   const theme = useTheme();
@@ -34,10 +35,8 @@ const MainLayout = () => {
     if (likedMessagesOpen) setHistoryOpen(false);
   };
 
-
   useEffect(() => {
     const handleClickOutside = (event) => {
-
       if (
         historyOpen &&
         historyPanelRef.current &&
@@ -46,7 +45,6 @@ const MainLayout = () => {
       ) {
         setHistoryOpen(false);
       }
-
 
       if (
         likedMessagesOpen &&
@@ -58,9 +56,7 @@ const MainLayout = () => {
       }
     };
 
-
     document.addEventListener("mousedown", handleClickOutside);
-
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -110,7 +106,7 @@ const MainLayout = () => {
             position: "relative",
           }}
         >
-          { }
+          {}
           <Box
             ref={historyPanelRef}
             sx={{
@@ -134,7 +130,7 @@ const MainLayout = () => {
             )}
           </Box>
 
-          { }
+          {}
           <Box
             sx={{
               flexGrow: 1,
@@ -144,7 +140,7 @@ const MainLayout = () => {
             }}
           >
             {" "}
-            { }
+            {}
             <Box
               sx={{
                 display: "flex",
@@ -156,7 +152,6 @@ const MainLayout = () => {
               <Tooltip title="New conversation" arrow>
                 <IconButton
                   onClick={() => {
-
                     setHistoryOpen(false);
                     setLikedMessagesOpen(false);
 
@@ -164,12 +159,11 @@ const MainLayout = () => {
                       createNewConversation("");
                     }
                   }}
-                  color="primary"
                   sx={{ mr: 1 }}
                   size="small"
                   data-testid="new-conversation-toggle"
                 >
-                  <AddIcon />
+                  <AddCircleOutline />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Conversation history" arrow>
@@ -194,13 +188,13 @@ const MainLayout = () => {
                 </IconButton>
               </Tooltip>
             </Box>
-            { }
+            {}
             <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
-              <ChatBox onIsLoadingChange={() => { }} />
+              <ChatBox onIsLoadingChange={() => {}} />
             </Box>
           </Box>
 
-          { }
+          {}
           <Box
             ref={likedMessagesPanelRef}
             sx={{
