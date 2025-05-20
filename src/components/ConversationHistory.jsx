@@ -29,7 +29,6 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import kimberlyClarkLogo from "../assets/KC_logo_for_dark.png";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
-const drawerWidth = "100%";
 
 const ConversationHistory = ({ isChatBoxLoading }) => {
   const theme = useTheme();

@@ -180,6 +180,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
                 timestamp: new Date(),
                 isChunk: true,
                 isFinal: false,
+                threadId: threadIdToUse,
               };
               updatedMessages = [...updatedMessages, newMessage];
             }
@@ -479,16 +480,28 @@ const ChatBox = ({ onIsLoadingChange }) => {
   const isChatEmpty = messages.length === 0;
   const renderMessages = () => {
     const messageElements = [];
-    let lastUserMessageIndex = -1;
 
-    messages.forEach((msg, idx) => {
+    // Sort messages by timestamp to ensure chronological order
+    const sortedMessages = [...messages].sort((a, b) => {
+      // Compare by timestamp first
+      const timeCompare = new Date(a.timestamp) - new Date(b.timestamp);
+      // If timestamps are equal (which can happen with quick succession messages)
+      // Use the sequence in the array as a tiebreaker
+      return timeCompare !== 0
+        ? timeCompare
+        : messages.indexOf(a) - messages.indexOf(b);
+    });
+
+    // Find the last user message index
+    let lastUserMessageIndex = -1;
+    sortedMessages.forEach((msg, idx) => {
       if (!msg.isBot) {
         lastUserMessageIndex = idx;
       }
     });
 
-    messages.forEach((message, index) => {
-      const isLastMessageInStream = index === messages.length - 1;
+    sortedMessages.forEach((message, index) => {
+      const isLastMessageInStream = index === sortedMessages.length - 1;
       messageElements.push(
         <ChatMessage
           key={message.id || `msg-${index}`}
@@ -516,24 +529,31 @@ const ChatBox = ({ onIsLoadingChange }) => {
         />
       );
 
+      // Only add thinking indicator after the last user message
       if (!message.isBot && index === lastUserMessageIndex && isLoading) {
         messageElements.push(
-          <ThinkingIndicator key="thinking" text="Thinking" showSpinner={true} />
-        );
-      }
-
-      if (message.isBot && message.isFinal && isLastMessageInStream && !isLoading) {
-        messageElements.push(
           <ThinkingIndicator
-            key="end-response"
-            text="End of response"
-            showSpinner={false}
-            lineVariant="full"
-            isDone={true}
+            key={`thinking-after-${message.id}`}
+            text="Thinking"
+            showSpinner={true}
           />
         );
       }
     });
+
+    // Add the end of response indicator only at the very end
+    const lastMessage = sortedMessages[sortedMessages.length - 1];
+    if (lastMessage && lastMessage.isBot && lastMessage.isFinal && !isLoading) {
+      messageElements.push(
+        <ThinkingIndicator
+          key="end-response"
+          text="End of response"
+          showSpinner={false}
+          lineVariant="full"
+          isDone={true}
+        />
+      );
+    }
 
     return messageElements;
   };

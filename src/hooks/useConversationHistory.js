@@ -38,8 +38,17 @@ export const filterValidConversations = (conversations) => {
 
 // Filter conversations for display (without thinking or chunk messages)
 export const filterDisplayableConversations = (conversations) => {
-  // Return all conversations that have at least one message
-  return conversations.filter((conv) => conv.messages && conv.messages.length > 0);
+  // Return all conversations that have at least one message that is not thinking or chunk
+  return conversations
+    .map((conv) => ({
+      ...conv,
+      messages: conv.messages
+        ? conv.messages.filter(
+            (msg) => msg.type !== "thinking" && msg.type !== "chunk"
+          )
+        : [],
+    }))
+    .filter((conv) => conv.messages && conv.messages.length > 0);
 };
 
 // Add or update a conversation in the conversations array
@@ -63,7 +72,8 @@ export const updateConversationInList = (conversations, conversation) => {
     const mergedMessages = [...existingMessages, ...messagesToAdd];
     updatedConversations[index] = {
       ...conversation,
-      messages: mergedMessages,
+      id: conversation.id, // keep original id
+      messages: mergedMessages, // store all messages
     };
 
     return updatedConversations;
@@ -73,6 +83,7 @@ export const updateConversationInList = (conversations, conversation) => {
       ...conversations,
       {
         ...conversation,
+        id: conversation.id, // keep original id
         messages: conversation.messages || [],
       },
     ];
@@ -97,6 +108,22 @@ export const processConversationUpdate = (updatedConv, prevConversations) => {
   return updatedConversations;
 };
 
+// Separate final answer from thinking chunks in messages
+export const separateThinkingFromAnswer = (messages) => {
+  if (!messages || messages.length === 0) return { thinking: [], answers: [] };
+
+  // Filter messages into thinking and answers without modifying original IDs
+  const thinking = messages.filter(
+    (msg) => msg.type === "thinking" || msg.type === "chunk"
+  );
+  const answers = messages.filter(
+    (msg) => msg.type !== "thinking" && msg.type !== "chunk"
+  );
+
+  // Return the separated messages without modifying their IDs
+  return { thinking, answers };
+};
+
 export const useConversationHistory = () => {
   return {
     saveConversations,
@@ -105,5 +132,6 @@ export const useConversationHistory = () => {
     filterDisplayableConversations,
     updateConversationInList,
     processConversationUpdate,
+    separateThinkingFromAnswer,
   };
 };
