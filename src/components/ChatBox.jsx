@@ -197,44 +197,78 @@ const ChatBox = ({ onIsLoadingChange }) => {
         } else if (type === "image") {
           debugImage("Received image update", content);
           if (content && content.fileId) {
+            // Store the image temporarily in progressImages for this specific conversation and thread
             setProgressImages((prev) => {
+              // Only add the image if it's not already in progressImages
               if (!prev.some((img) => img.fileId === content.fileId)) {
+                const currentThreadIdentifier =
+                  currentThreadId ||
+                  activeConversation?.threadId ||
+                  activeConversation?.id;
                 debugImage("Adding new image to progress images", {
                   fileId: content.fileId,
                   url: content.url || null,
+                  threadId: currentThreadIdentifier,
                   count: prev.length + 1,
                 });
-                return [...prev, content];
+                return [
+                  ...prev,
+                  {
+                    ...content,
+                    // Add message ID and thread ID to track image context
+                    threadId: currentThreadIdentifier,
+                    messageId: `msg-${Date.now()}`,
+                    timestamp: new Date(),
+                  },
+                ];
               }
               return prev;
             });
           }
         }
       });
+
       emitter.on("finalAnswer", ({ answer, thread, images }) => {
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
         }
 
-        // Process images - attach them directly to the message rather than creating a separate message
-        const allImages = [...progressImages];
-        if (images && images.length > 0) {
-          debugImage(`Final answer has ${images.length} images`, images);
+        const threadIdentifier =
+          thread?.id ||
+          currentThreadId ||
+          activeConversation?.threadId ||
+          activeConversation?.id;
 
-          images.forEach((img) => {
-            if (
-              !allImages.some((existingImg) => existingImg.fileId === img.fileId)
-            ) {
-              allImages.push(img);
-            }
-          });
-        }
+        // Filter images to only use ones from this specific thread and response
+        const currentThreadImages = images
+          ? images.filter(
+              (img) => !img.threadId || img.threadId === threadIdentifier
+            )
+          : [];
 
-        const hasImages = allImages.length > 0;
+        // Make sure we have no duplicate images
+        const uniqueImages = [];
+        currentThreadImages.forEach((img) => {
+          if (
+            !uniqueImages.some((existingImg) => existingImg.fileId === img.fileId)
+          ) {
+            uniqueImages.push({
+              ...img,
+              threadId: threadIdentifier,
+              messageId: `msg-final-${Date.now()}`,
+            });
+          }
+        });
+
+        const hasImages = uniqueImages.length > 0;
 
         if (hasImages) {
-          debugImage(`Final answer has ${allImages.length} total images`, allImages);
-          setProgressImages(allImages);
+          debugImage(
+            `Final answer has ${uniqueImages.length} unique images for this response`,
+            uniqueImages
+          );
+          // Reset progressImages for next message
+          setProgressImages([]);
         }
 
         // Create a single assistant message with both text and images
@@ -246,11 +280,13 @@ const ChatBox = ({ onIsLoadingChange }) => {
           routedFrom: null,
           isChunk: false,
           isFinal: true,
+          threadId: threadIdentifier,
+          id: `msg-final-${Date.now()}`,
           // Attach images directly to the message if they exist
           ...(hasImages && {
             hasImages: true,
-            images: allImages,
-            imageFileIds: allImages.map((img) => img.fileId),
+            images: uniqueImages,
+            imageFileIds: uniqueImages.map((img) => img.fileId),
           }),
         };
 
@@ -273,8 +309,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
           const updatedConversation = {
             ...activeConversation,
-            threadId: thread?.id || activeConversation.id,
-            id: thread?.id || activeConversation.id,
+            threadId: threadIdentifier,
+            id: threadIdentifier,
             messages: updatedMessages,
             title: newTitle,
           };
@@ -292,17 +328,18 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
           // Create a single message for UI display with both text and images
           const finalMessage = {
-            id: `final-${Date.now()}`,
+            id: assistantMessage.id,
             text: answer,
             isBot: true,
+            threadId: threadIdentifier,
             timestamp: new Date(),
             assistantName: "Assistant",
             isFinal: true,
             // Attach images directly if they exist
             ...(hasImages && {
               hasImages: true,
-              images: [...allImages],
-              imageFileIds: allImages.map((img) => img.fileId),
+              images: [...uniqueImages],
+              imageFileIds: uniqueImages.map((img) => img.fileId),
             }),
           };
 

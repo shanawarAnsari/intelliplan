@@ -35,6 +35,7 @@ const ChatMessage = ({
   isChunk = false,
   isFinal = false,
   id,
+  threadId,
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -42,7 +43,7 @@ const ChatMessage = ({
   const [imageError, setImageError] = useState(false);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [isLoggerExpanded, setIsLoggerExpanded] = useState(false);
-
+  const [messageImages, setMessageImages] = useState(images || []);
 
   useEffect(() => {
     const likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
@@ -57,7 +58,6 @@ const ChatMessage = ({
 
     let likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
     if (currentLikedStatus) {
-
       const messageToLike = {
         id,
         text: message,
@@ -66,7 +66,6 @@ const ChatMessage = ({
       };
       likedMessages.push(messageToLike);
     } else {
-
       likedMessages = likedMessages.filter((likedMsg) => likedMsg.id !== id);
     }
     localStorage.setItem("likedMessages", JSON.stringify(likedMessages));
@@ -93,24 +92,19 @@ const ChatMessage = ({
     let isMounted = true;
 
     const loadImage = async (fileId) => {
-
-      if (hasLoadedImageRef.current && imageUrl) {
-        console.log("Image already loaded, skipping fetch");
-        return;
-      }
+      if (hasLoadedImageRef.current && imageUrl) return;
 
       try {
-        setImageLoading(true);
         const ImageService = await import("../services/ImageService");
         const url = await ImageService.fetchImageFromOpenAI(fileId);
+
         if (isMounted) {
           setImageUrl(url);
           setImageLoading(false);
-
           hasLoadedImageRef.current = true;
         }
       } catch (error) {
-        console.error("Failed to load image:", error);
+        console.error("Error loading image:", error);
         if (isMounted) {
           setImageError(true);
           setImageLoading(false);
@@ -120,77 +114,69 @@ const ChatMessage = ({
 
     const parseMessageForImages = () => {
       if (!message) return null;
-      const regex = /!\[(.*?)\]\(attachment:\/\/(.*?)\)/g;
-      const matches = Array.from(message.matchAll(regex));
 
-      if (matches && matches.length > 0) {
-        const firstMatch = matches[0];
-        return firstMatch[2];
+      const regex = /!\[(.*?)\]\(attachment:\/\/(.*?)\)/g;
+      let match;
+      let fileId = null;
+
+      while ((match = regex.exec(message)) !== null) {
+        fileId = match[2];
+        break;
       }
-      return null;
+
+      return fileId;
     };
 
     const extractedFileId = parseMessageForImages();
     const fileIdToUse = imageFileId || extractedFileId;
 
-
     if (fileIdToUse && (!imageUrl || !hasLoadedImageRef.current)) {
       loadImage(fileIdToUse);
-    } else if (isImage && images && images.length > 0) {
-      setImageLoading(false);
-    } else if (isImage && !initialImageUrl && !images) {
-      setImageError(true);
+    } else if (isImage && !imageUrl) {
       setImageLoading(false);
     }
 
     return () => {
       isMounted = false;
-      if (imageUrl && imageUrl.startsWith("blob:") && !initialImageUrl) {
-        URL.revokeObjectURL(imageUrl);
-      }
     };
   }, [isImage, initialImageUrl, imageFileId, message, images]);
 
-
   useEffect(() => {
     const loadImagesFromFileIds = async () => {
-      if ((!isImage && !images?.length) || !images) return;
+      if (!images || images.length === 0) return;
 
-      console.log(`[ChatMessage] Attempting to load ${images.length} images`);
+      const filteredImages = images.filter(
+        (img) =>
+          !img.messageId ||
+          img.messageId === id ||
+          !img.threadId ||
+          img.threadId === threadId
+      );
 
-      try {
-        const ImageService = await import("../services/ImageService");
-
-
-        for (const img of images) {
-          if (!img.fileId) continue;
-
-          console.log(`[ChatMessage] Loading image with fileId: ${img.fileId}`);
-          try {
-            const url = await ImageService.fetchImageFromOpenAI(img.fileId);
-            console.log(`[ChatMessage] Image loaded successfully: ${img.fileId}`);
-
-            img.url = url;
-
-            setImageLoading(false);
-          } catch (error) {
-            console.error(
-              `[ChatMessage] Failed to load image ${img.fileId}:`,
-              error
-            );
-          }
-        }
-      } catch (error) {
-        console.error("[ChatMessage] Error loading ImageService:", error);
-        setImageError(true);
-      } finally {
-        setImageLoading(false);
-      }
+      setMessageImages(filteredImages);
     };
 
     loadImagesFromFileIds();
-  }, [images, isImage]);
+  }, [images, isImage, id, threadId]);
 
+  useEffect(() => {
+    if (isImage) {
+      setImageLoading(true);
+      hasLoadedImageRef.current = false;
+    }
+
+    if (images && images.length > 0) {
+      const relevantImages = images.filter(
+        (img) =>
+          !img.messageId ||
+          img.messageId === id ||
+          !img.threadId ||
+          img.threadId === threadId
+      );
+
+      setMessageImages(relevantImages);
+    }
+  }, [isImage, images, imageFileId, id, threadId]);
 
   useEffect(() => {
     if (isImage) {
@@ -253,10 +239,10 @@ const ChatMessage = ({
               ? isChunk
                 ? "rgba(37, 37, 37, 0.65)"
                 : isFinal
-                  ? "rgba(25, 118, 210, 0.12)"
-                  : isRoutingMessage
-                    ? "rgba(25, 118, 210, 0.08)"
-                    : theme.palette.background.secondary
+                ? "rgba(25, 118, 210, 0.12)"
+                : isRoutingMessage
+                ? "rgba(25, 118, 210, 0.08)"
+                : theme.palette.background.secondary
               : theme.palette.primary.main,
             color: isBot
               ? theme.palette.text.primary
@@ -270,10 +256,10 @@ const ChatMessage = ({
             borderLeft: isFinal
               ? `4px solid ${theme.palette.primary.main}`
               : isChunk
-                ? `2px solid rgba(180, 180, 180, 0.6)`
-                : isRoutingMessage
-                  ? `3px solid ${theme.palette.primary.main}`
-                  : `4px solid transparent`,
+              ? `2px solid rgba(180, 180, 180, 0.6)`
+              : isRoutingMessage
+              ? `3px solid ${theme.palette.primary.main}`
+              : `4px solid transparent`,
             opacity: isChunk ? 0.98 : 1,
             transition: "opacity 0.3s ease, background-color 0.3s ease",
           }}
@@ -364,7 +350,7 @@ const ChatMessage = ({
                   {routedFrom && ` (${routedFrom})`}
                 </Typography>
               )}{" "}
-              {images && images.length > 0 && (
+              {messageImages && messageImages.length > 0 && (
                 <Box sx={{ mt: 1, mb: 2 }}>
                   <Box
                     sx={{
@@ -373,8 +359,12 @@ const ChatMessage = ({
                       gap: 2,
                     }}
                   >
-                    {images.map((img, index) => (
-                      <ImageComponent key={`img-${index}`} img={img} index={index} />
+                    {messageImages.map((img, index) => (
+                      <ImageComponent
+                        key={`img-${img.fileId || index}`}
+                        img={img}
+                        index={index}
+                      />
                     ))}
                   </Box>
                 </Box>
