@@ -202,12 +202,12 @@ const DemandForecastChart = () => {
         overflow: "hidden",
       }}
     >
-      <CardContent sx={{ padding: "8px", marginBottom: -4, }}>
+      <CardContent sx={{ padding: "8px", marginBottom: -4 }}>
         <ReactApexChart
           options={chartOptions}
           series={chartSeries}
           type="line"
-          height={325}
+          height={300}
         />
       </CardContent>
     </Card>

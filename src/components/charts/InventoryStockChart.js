@@ -33,7 +33,9 @@ const InventoryStockChart = () => {
     });
 
     const stockQuantity = sortedData.map((item) =>
-      item["Sum_StockQuantity_GSU_Units"] ? parseInt(item["Sum_StockQuantity_GSU_Units"]) : null
+      item["Sum_StockQuantity_GSU_Units"]
+        ? parseInt(item["Sum_StockQuantity_GSU_Units"])
+        : null
     );
 
     // Get unique dates for month-year format
@@ -222,7 +224,7 @@ const InventoryStockChart = () => {
         overflow: "hidden",
       }}
     >
-      <CardContent sx={{ padding: "8px", marginBottom: -4, }}>
+      <CardContent sx={{ padding: "8px", marginBottom: -4 }}>
         <Box
           sx={{
             display: "flex",
@@ -260,7 +262,7 @@ const InventoryStockChart = () => {
           options={chartOptions}
           series={chartSeries}
           type={chartType}
-          height={325}
+          height={295}
         />
       </CardContent>
     </Card>
