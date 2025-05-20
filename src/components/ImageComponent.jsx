@@ -14,6 +14,15 @@ const ImageComponent = ({ img, index }) => {
   const [imgLoading, setImgLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
   const [imgRetryCount, setImgRetryCount] = useState(0);
+  const [imgUrl, setImgUrl] = useState(img.url || null);
+
+  console.log(`[ImageComponent] Rendering image ${index}:`, {
+    fileId: img.fileId,
+    hasUrl: !!img.url,
+    imgUrl: !!imgUrl,
+    threadId: img.threadId,
+    messageId: img.messageId,
+  });
 
   useEffect(() => {
     console.log(`[ImageComponent ${index}] Mounting/Updating:`, {
@@ -53,7 +62,7 @@ const ImageComponent = ({ img, index }) => {
 
   const handleDownload = () => {
     const a = document.createElement("a");
-    a.href = img.url;
+    a.href = imgUrl;
     a.download = `image-${Date.now()}-${index}.png`;
     document.body.appendChild(a);
     a.click();
@@ -61,36 +70,26 @@ const ImageComponent = ({ img, index }) => {
   };
 
   const handleExpandImage = () => {
-    if (img.url) {
-      displayImage(img.url);
+    if (imgUrl) {
+      displayImage(imgUrl);
     }
   };
 
   useEffect(() => {
-    if (img.fileId && !img.url) {
+    if (img.fileId && !img.url && !imgUrl) {
       console.log(`[ImageComponent] Loading image from fileId: ${img.fileId}`);
       setImgLoading(true);
 
       const loadImageFromFileId = async () => {
         try {
           const ImageService = await import("../services/ImageService");
-          console.log(
-            `[ImageComponent] Fetching image for fileId: ${img.fileId} (threadId: ${
-              img.threadId
-            }, messageId: ${img.messageId || "unknown"})`
-          );
+          console.log(`[ImageComponent] Fetching image for fileId: ${img.fileId}`);
           const url = await ImageService.fetchImageFromOpenAI(img.fileId);
-
-          console.log(`[ImageComponent] Fetch result:`, {
-            url,
-            fileId: img.fileId,
-            threadId: img.threadId,
-            messageId: img.messageId,
-          });
 
           if (url) {
             console.log(`[ImageComponent] Image loaded successfully: ${img.fileId}`);
-            img.url = url;
+            setImgUrl(url);
+            img.url = url; // Update the passed object as well
             setImgLoading(false);
             setImgError(false);
           } else {
@@ -108,11 +107,14 @@ const ImageComponent = ({ img, index }) => {
       };
 
       loadImageFromFileId();
+    } else if (img.url && !imgUrl) {
+      setImgUrl(img.url);
+      setImgLoading(false);
     }
-  }, [img.fileId, img.url, img.threadId, img.messageId]);
+  }, [img.fileId, img.url, imgUrl]);
 
   return (
-    <Box key={`img-${index}`} sx={{ position: "relative" }}>
+    <Box sx={{ position: "relative" }}>
       {imgLoading && (
         <Box
           sx={{
@@ -125,6 +127,9 @@ const ImageComponent = ({ img, index }) => {
           }}
         >
           <CircularProgress size={30} />
+          <Typography variant="caption" sx={{ ml: 1 }}>
+            Loading image...
+          </Typography>
         </Box>
       )}
 
@@ -153,30 +158,25 @@ const ImageComponent = ({ img, index }) => {
               setImgLoading(true);
 
               if (img.fileId) {
-                const loadRetryImage = async () => {
+                const loadImage = async () => {
                   try {
                     const ImageService = await import("../services/ImageService");
-                    const result = await ImageService.fetchImageFromOpenAI(
-                      img.fileId
-                    );
-                    if (result) {
-                      img.url = result;
+                    const url = await ImageService.fetchImageFromOpenAI(img.fileId);
+                    if (url) {
+                      setImgUrl(url);
+                      img.url = url;
                       setImgLoading(false);
-                      setImgError(false);
-                      console.log(
-                        `[ImageComponent] Retry successful for ${img.fileId}`
-                      );
                     } else {
                       setImgError(true);
                       setImgLoading(false);
                     }
                   } catch (error) {
-                    console.error("Failed to load retry image:", error);
+                    console.error("Error reloading image:", error);
                     setImgError(true);
                     setImgLoading(false);
                   }
                 };
-                loadRetryImage();
+                loadImage();
               }
             }}
           >
@@ -185,9 +185,9 @@ const ImageComponent = ({ img, index }) => {
         </Box>
       )}
 
-      {img.url && (
+      {imgUrl && !imgLoading && !imgError && (
         <img
-          src={img.url}
+          src={imgUrl}
           alt={`Generated content ${index + 1}`}
           style={{
             maxWidth: "100%",
@@ -196,7 +196,7 @@ const ImageComponent = ({ img, index }) => {
             display: imgLoading || imgError ? "none" : "block",
           }}
           onLoad={() => {
-            console.log(`[ImageComponent] Image ${index} loaded:`, img.url);
+            console.log(`[ImageComponent] Image ${index} loaded:`, imgUrl);
             setImgLoading(false);
           }}
           onError={(e) => {
@@ -207,7 +207,7 @@ const ImageComponent = ({ img, index }) => {
         />
       )}
 
-      {!imgLoading && !imgError && img.url && (
+      {!imgLoading && !imgError && imgUrl && (
         <>
           <IconButton
             onClick={handleDownload}

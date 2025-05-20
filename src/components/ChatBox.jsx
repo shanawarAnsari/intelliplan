@@ -227,7 +227,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
         }
       });
-
       emitter.on("finalAnswer", ({ answer, thread, images }) => {
         if (thread && thread.id) {
           setCurrentThreadId(thread.id);
@@ -239,16 +238,28 @@ const ChatBox = ({ onIsLoadingChange }) => {
           activeConversation?.threadId ||
           activeConversation?.id;
 
-        // Filter images to only use ones from this specific thread and response
-        const currentThreadImages = images
-          ? images.filter(
-              (img) => !img.threadId || img.threadId === threadIdentifier
-            )
-          : [];
+        console.log(`[finalAnswer] Processing images:`, {
+          responseImagesCount: images?.length || 0,
+          progressImagesCount: progressImages?.length || 0,
+          threadId: threadIdentifier,
+        });
+
+        // Combine images from the response with any progress images
+        const allAvailableImages = [
+          ...(images || []),
+          ...(progressImages || []).filter(
+            (img) => img.threadId === threadIdentifier
+          ),
+        ];
+
+        console.log(
+          `[finalAnswer] Total images available:`,
+          allAvailableImages.length
+        );
 
         // Make sure we have no duplicate images
         const uniqueImages = [];
-        currentThreadImages.forEach((img) => {
+        allAvailableImages.forEach((img) => {
           if (
             !uniqueImages.some((existingImg) => existingImg.fileId === img.fileId)
           ) {
@@ -260,6 +271,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
         });
 
+        console.log(`[finalAnswer] Final unique images:`, uniqueImages.length);
         const hasImages = uniqueImages.length > 0;
 
         if (hasImages) {
@@ -418,7 +430,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
     messages.forEach((message, index) => {
       const isLastMessageInStream = index === messages.length - 1;
-
       messageElements.push(
         <ChatMessage
           key={message.id || `msg-${index}`}
@@ -430,8 +441,12 @@ const ChatBox = ({ onIsLoadingChange }) => {
           imageUrl={message.imageUrl}
           imageFileId={message.imageFileId}
           images={message.images}
+          hasImages={
+            message.hasImages || (message.images && message.images.length > 0)
+          }
           isChunk={message.isChunk}
           isFinal={message.isFinal}
+          threadId={message.threadId}
           onRegenerateResponse={
             message.isBot && isLastMessageInStream && message.isFinal
               ? handleRegenerate

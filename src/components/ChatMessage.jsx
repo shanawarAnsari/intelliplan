@@ -36,6 +36,7 @@ const ChatMessage = ({
   isFinal = false,
   id,
   threadId,
+  hasImages,
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -44,6 +45,16 @@ const ChatMessage = ({
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [isLoggerExpanded, setIsLoggerExpanded] = useState(false);
   const [messageImages, setMessageImages] = useState(images || []);
+
+  console.log(`[ChatMessage] Rendering message:`, {
+    id,
+    hasImages,
+    isImage,
+    images: images?.length,
+    messageImages: messageImages?.length,
+    isFinal,
+    threadId,
+  });
 
   useEffect(() => {
     const likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
@@ -142,22 +153,29 @@ const ChatMessage = ({
   }, [isImage, initialImageUrl, imageFileId, message, images]);
 
   useEffect(() => {
-    const loadImagesFromFileIds = async () => {
-      if (!images || images.length === 0) return;
-
-      const filteredImages = images.filter(
-        (img) =>
-          !img.messageId ||
-          img.messageId === id ||
-          !img.threadId ||
-          img.threadId === threadId
+    // Only process images if they exist
+    if (images && images.length > 0) {
+      console.log(
+        `[ChatMessage ${id}] Processing ${images.length} images for message`
       );
 
-      setMessageImages(filteredImages);
-    };
+      // Set message images immediately without filtering
+      setMessageImages(images);
+    }
+  }, [images, id, threadId]);
 
-    loadImagesFromFileIds();
-  }, [images, isImage, id, threadId]);
+  useEffect(() => {
+    if (messageImages && messageImages.length > 0) {
+      console.log(
+        `[ChatMessage ${id}] Ready to render ${messageImages.length} images:`,
+        messageImages.map((img) => ({
+          fileId: img.fileId,
+          hasUrl: !!img.url,
+          threadId: img.threadId,
+        }))
+      );
+    }
+  }, [messageImages, id]);
 
   useEffect(() => {
     if (isImage) {
@@ -351,7 +369,13 @@ const ChatMessage = ({
                 </Typography>
               )}{" "}
               {messageImages && messageImages.length > 0 && (
-                <Box sx={{ mt: 1, mb: 2 }}>
+                <Box sx={{ mt: 2, mb: 3 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ mb: 1, display: "block", color: "text.secondary" }}
+                  >
+                    Generated images ({messageImages.length}):
+                  </Typography>
                   <Box
                     sx={{
                       display: "flex",
