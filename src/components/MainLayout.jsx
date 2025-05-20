@@ -8,7 +8,6 @@ import HelpFAQ from "./HelpFAQ";
 import { DemandForecastChart, InventoryStockChart } from "./charts";
 import HistoryIcon from "@mui/icons-material/History";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-
 import { useConversation } from "../contexts/ConversationContext";
 import { AddCircleOutline } from "@mui/icons-material";
 
