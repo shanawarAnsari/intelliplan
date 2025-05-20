@@ -7,6 +7,7 @@ import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
 import { orchestrateStreaming } from "../services/StreamingService";
 import { useConversation } from "../contexts/ConversationContext";
+import { useConversationHistory } from "../hooks/useConversationHistory";
 
 const ChatBox = ({ onIsLoadingChange }) => {
   const [messages, setMessages] = useState([]);
@@ -18,7 +19,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
   const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true);
 
   const debugImage = (msg, data) => {
-    console.log(`[IMAGE DEBUG] ${msg}`, data);
     setProgressLogs((prev) => [...prev, `[IMAGE] ${msg}: ${JSON.stringify(data)}`]);
   };
 
@@ -26,7 +26,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
   const emitterRef = useRef(null);
   const theme = useTheme();
   const { activeConversation, updateConversation } = useConversation();
-
+  const { processConversationUpdate } = useConversationHistory();
   useEffect(() => {
     if (onIsLoadingChange) {
       onIsLoadingChange(isLoading);
@@ -52,6 +52,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
         isChunk: msg.isChunk || false,
         isFinal: msg.isFinal || false,
         threadId: msg.threadId,
+        role: msg.role || (msg.isBot ? "assistant" : "user"),
+        content: msg.content || msg.text,
       }));
       setMessages(formattedMessages);
 
@@ -71,13 +73,15 @@ const ChatBox = ({ onIsLoadingChange }) => {
       setAllowLoggerDisplay(true);
     }
   }, [activeConversation]);
-
   useEffect(() => {
     if (activeConversation && activeConversation.id && !activeConversation.isNew) {
-      const timeoutId = setTimeout(() => {
-        updateConversation(activeConversation);
-      }, 0);
-      return () => clearTimeout(timeoutId);
+      // Only update conversations that have messages
+      if (activeConversation.messages && activeConversation.messages.length > 0) {
+        const timeoutId = setTimeout(() => {
+          updateConversation(activeConversation);
+        }, 0);
+        return () => clearTimeout(timeoutId);
+      }
     }
   }, [activeConversation, updateConversation]);
 
@@ -99,13 +103,22 @@ const ChatBox = ({ onIsLoadingChange }) => {
     setStreamStopped(false);
 
     setMessages((prevMessages) => [...prevMessages, userMessage]);
-
     if (activeConversation) {
       const updatedConversation = {
         ...activeConversation,
         messages: [...(activeConversation.messages || []), userMessage],
       };
       updateConversation(updatedConversation);
+
+      // Save to localStorage in real-time
+      const conversations = JSON.parse(
+        localStorage.getItem("conversations") || "[]"
+      );
+      const updatedConversations = processConversationUpdate(
+        updatedConversation,
+        conversations
+      );
+      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
     }
 
     try {
@@ -170,13 +183,11 @@ const ChatBox = ({ onIsLoadingChange }) => {
               };
               updatedMessages = [...updatedMessages, newMessage];
             }
-
             if (activeConversation) {
               const updatedConversation = {
                 ...activeConversation,
                 messages: [...(activeConversation.messages || [])],
               };
-
               if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
                 const lastIndex = updatedConversation.messages.length - 1;
                 if (
@@ -190,6 +201,19 @@ const ChatBox = ({ onIsLoadingChange }) => {
               }
 
               updateConversation(updatedConversation);
+
+              // Save chunk messages to localStorage in real-time
+              const conversations = JSON.parse(
+                localStorage.getItem("conversations") || "[]"
+              );
+              const updatedConversations = processConversationUpdate(
+                updatedConversation,
+                conversations
+              );
+              localStorage.setItem(
+                "conversations",
+                JSON.stringify(updatedConversations)
+              );
             }
 
             return updatedMessages;
@@ -238,12 +262,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
           activeConversation?.threadId ||
           activeConversation?.id;
 
-        console.log(`[finalAnswer] Processing images:`, {
-          responseImagesCount: images?.length || 0,
-          progressImagesCount: progressImages?.length || 0,
-          threadId: threadIdentifier,
-        });
-
         // Combine images from the response with any progress images
         const allAvailableImages = [
           ...(images || []),
@@ -251,21 +269,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
             (img) => img.threadId === threadIdentifier
           ),
         ];
-
-        console.log(
-          `[finalAnswer] Total images available:`,
-          allAvailableImages.length
-        );
-
-        // Add debugging for each image in allAvailableImages
-        allAvailableImages.forEach((img, idx) => {
-          console.log(`[finalAnswer] Image ${idx} details:`, {
-            fileId: img.fileId,
-            hasUrl: !!img.url,
-            threadId: img.threadId,
-            messageId: img.messageId || "unknown",
-          });
-        });
 
         // Make sure we have no duplicate images
         const uniqueImages = [];
@@ -281,7 +284,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
         });
 
-        console.log(`[finalAnswer] Final unique images:`, uniqueImages.length);
         const hasImages = uniqueImages.length > 0;
 
         if (hasImages) {
@@ -321,13 +323,13 @@ const ChatBox = ({ onIsLoadingChange }) => {
           newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
           newTitle = newTitle.replace(/[.,;:!?]$/, "");
         }
-
         if (activeConversation) {
-          // Store just one message with both text and images in conversation context
-          const updatedMessages = [
-            ...(activeConversation.messages || []).filter((msg) => !msg.isChunk),
-            assistantMessage,
-          ];
+          // Keep ALL existing messages and simply append the final message without any filtering
+          // Do not remove or filter any messages, just keep adding to the array
+          const existingMessages = activeConversation.messages || [];
+
+          // Simply add the new message to the array without filtering anything
+          const updatedMessages = [...existingMessages, assistantMessage];
 
           const updatedConversation = {
             ...activeConversation,
@@ -336,19 +338,22 @@ const ChatBox = ({ onIsLoadingChange }) => {
             messages: updatedMessages,
             title: newTitle,
           };
-          updateConversation(updatedConversation);
-        }
-
-        // Update UI messages
+          updateConversation(updatedConversation); // Save final conversation to localStorage
+          const conversations = JSON.parse(
+            localStorage.getItem("conversations") || "[]"
+          );
+          const updatedConversations = processConversationUpdate(
+            updatedConversation,
+            conversations
+          );
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+        } // Update UI messages
         setMessages((prevMessages) => {
-          const updatedMessages = prevMessages.map((msg) => {
-            if (msg.isChunk) {
-              return { ...msg, isFinal: true };
-            }
-            return msg;
-          });
-
-          // Create a single message for UI display with both text and images
+          // Preserve all existing messages without modifying their properties
+          // Just add the final message to display
           const finalMessage = {
             id: assistantMessage.id,
             text: answer,
@@ -357,6 +362,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
             timestamp: new Date(),
             assistantName: "Assistant",
             isFinal: true,
+            role: "assistant",
+            content: answer,
             // Attach images directly if they exist
             ...(hasImages && {
               hasImages: true,
@@ -365,23 +372,46 @@ const ChatBox = ({ onIsLoadingChange }) => {
             }),
           };
 
-          return [...updatedMessages, finalMessage];
+          return [...prevMessages, finalMessage];
         });
 
         setIsLoading(false);
       });
-
       emitter.on("error", ({ message }) => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: `error-${Date.now()}`,
-            text: `Sorry, there was an error: ${message}`,
-            isBot: true,
-            timestamp: new Date(),
-            isError: true,
-          },
-        ]);
+        const errorMessage = {
+          id: `error-${Date.now()}`,
+          text: `Sorry, there was an error: ${message}`,
+          content: `Sorry, there was an error: ${message}`,
+          isBot: true,
+          role: "assistant",
+          timestamp: new Date(),
+          isError: true,
+        };
+
+        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+        // Save error message to conversation history
+        if (activeConversation) {
+          const updatedConversation = {
+            ...activeConversation,
+            messages: [...(activeConversation.messages || []), errorMessage],
+          };
+
+          updateConversation(updatedConversation);
+
+          // Save to localStorage
+          const conversations = JSON.parse(
+            localStorage.getItem("conversations") || "[]"
+          );
+          const updatedConversations = processConversationUpdate(
+            updatedConversation,
+            conversations
+          );
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+        }
 
         setIsLoading(false);
       });
@@ -391,18 +421,38 @@ const ChatBox = ({ onIsLoadingChange }) => {
         setIsLoading(false);
       });
     } catch (error) {
-      console.error("Error communicating with the assistant:", error);
+      const errorMessage = {
+        id: `error-${Date.now()}`,
+        text: "Sorry, there was an error processing your request. Please try again.",
+        content:
+          "Sorry, there was an error processing your request. Please try again.",
+        isBot: true,
+        role: "assistant",
+        timestamp: new Date(),
+        isError: true,
+      };
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: `error-${Date.now()}`,
-          text: "Sorry, there was an error processing your request. Please try again.",
-          isBot: true,
-          timestamp: new Date(),
-          isError: true,
-        },
-      ]);
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+      // Save error message to conversation history
+      if (activeConversation) {
+        const updatedConversation = {
+          ...activeConversation,
+          messages: [...(activeConversation.messages || []), errorMessage],
+        };
+
+        updateConversation(updatedConversation);
+
+        // Save to localStorage
+        const conversations = JSON.parse(
+          localStorage.getItem("conversations") || "[]"
+        );
+        const updatedConversations = processConversationUpdate(
+          updatedConversation,
+          conversations
+        );
+        localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+      }
 
       setIsLoading(false);
     }
@@ -427,7 +477,6 @@ const ChatBox = ({ onIsLoadingChange }) => {
   }, [messages]);
 
   const isChatEmpty = messages.length === 0;
-
   const renderMessages = () => {
     const messageElements = [];
     let lastUserMessageIndex = -1;

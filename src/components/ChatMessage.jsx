@@ -46,16 +46,6 @@ const ChatMessage = ({
   const [isLoggerExpanded, setIsLoggerExpanded] = useState(false);
   const [messageImages, setMessageImages] = useState(images || []);
 
-  console.log(`[ChatMessage] Rendering message:`, {
-    id,
-    hasImages,
-    isImage,
-    images: images?.length,
-    messageImages: messageImages?.length,
-    isFinal,
-    threadId,
-  });
-
   useEffect(() => {
     const likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
     if (likedMessages.some((likedMsg) => likedMsg.id === id)) {

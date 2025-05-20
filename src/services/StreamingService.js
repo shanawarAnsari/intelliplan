@@ -4,7 +4,7 @@ import {
   COORDINATOR_ASSISTANT_ID,
   SALES_ASSISTANT_ID,
   FORECAST_ASSISTANT_ID,
-  REPORTGEN_ASSISTANT_ID
+  REPORTGEN_ASSISTANT_ID,
 } from "../utils/assistantConstants";
 
 export function orchestrateStreaming(userPrompt, threadId = null) {
@@ -271,15 +271,13 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
             }
 
             const finalSubPrompt = args?.prompt?.trim() ? args.prompt : userPrompt;
-            const assistantId = null;
-            debugger;
+            let assistantId = null;
+
             if (fnName === "forecast") {
               assistantId = FORECAST_ASSISTANT_ID;
-            }
-            else if (fnName === "report") {
+            } else if (fnName === "report") {
               assistantId = REPORTGEN_ASSISTANT_ID;
-            }
-            else {
+            } else {
               assistantId = SALES_ASSISTANT_ID;
             }
 
@@ -367,7 +365,8 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
 
       emitUpdate(
         "status",
-        `Orchestration complete. Duration: ${(Date.now() - orchestrationStartTime) / 1000
+        `Orchestration complete. Duration: ${
+          (Date.now() - orchestrationStartTime) / 1000
         }s`
       );
 

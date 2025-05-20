@@ -9,6 +9,12 @@ import { v4 as uuidv4 } from "uuid";
 import useAzureOpenAI from "../hooks/useAzureOpenAI";
 import useThreadValidator from "../hooks/useThreadValidator";
 import MessageProcessor from "../utils/MessageProcessor";
+import {
+  saveConversations,
+  loadConversations,
+  filterDisplayableConversations,
+  processConversationUpdate,
+} from "../hooks/useConversationHistory";
 
 const ConversationContext = createContext();
 
@@ -28,20 +34,15 @@ export const ConversationProvider = ({ children }) => {
   useEffect(() => {
     const loadSavedConversations = async () => {
       try {
-        const savedConversations = localStorage.getItem("conversations");
-        let parsedConversations = [];
-        if (savedConversations) {
-          parsedConversations = JSON.parse(savedConversations);
+        // Load conversations from localStorage using the utility
+        const loadedConversations = loadConversations();
 
-          parsedConversations = parsedConversations.filter(
-            (conv) =>
-              conv.messages &&
-              conv.messages.some(
-                (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
-              )
-          );
-          setConversations(parsedConversations);
-        }
+        // Get all valid conversations but only display those with complete assistant messages
+        const validConversations =
+          filterDisplayableConversations(loadedConversations);
+        setConversations(validConversations);
+
+        // Create a new thread and set it as active conversation
         const thread = await createThread();
         if (thread) {
           const newConversation = {
@@ -81,12 +82,11 @@ export const ConversationProvider = ({ children }) => {
 
             setActiveConversation(updatedConversation);
             setThreadId(thread.id);
-
             setConversations((prev) => {
               const updated = prev.map((conv) =>
                 conv.id === conversationId ? updatedConversation : conv
               );
-              localStorage.setItem("conversations", JSON.stringify(updated));
+              saveConversations(updated);
               return updated;
             });
           }
@@ -108,26 +108,11 @@ export const ConversationProvider = ({ children }) => {
           messages: [],
           created: new Date(),
         };
-
-
         setConversations((prev) => {
-
-          const validPrevConversations = prev.filter(
-            (conv) =>
-              conv.messages &&
-              conv.messages.some(
-                (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
-              )
-          );
-
-
+          const validPrevConversations = filterDisplayableConversations(prev);
           const updatedConversations = [...validPrevConversations, newConversation];
 
-
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
+          saveConversations(updatedConversations);
           return updatedConversations;
         });
 
@@ -146,15 +131,9 @@ export const ConversationProvider = ({ children }) => {
           messages: [],
           created: new Date(),
         };
-
-
         setConversations((prev) => {
           const updatedConversations = [...prev, fallbackConversation];
-
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
+          saveConversations(updatedConversations);
           return updatedConversations;
         });
 
@@ -189,12 +168,9 @@ export const ConversationProvider = ({ children }) => {
 
         setActiveConversation(updatedConversation);
         setConversations((prev) => {
-
           const conversationExists = prev.some(
             (conv) => conv.id === activeConversation.id
           );
-
-
           let updated;
           if (conversationExists) {
             updated = prev.map((conv) =>
@@ -204,8 +180,7 @@ export const ConversationProvider = ({ children }) => {
             updated = [...prev, updatedConversation];
           }
 
-
-          localStorage.setItem("conversations", JSON.stringify(updated));
+          saveConversations(updated);
           return updated;
         });
 
@@ -231,14 +206,13 @@ export const ConversationProvider = ({ children }) => {
             messages: finalMessages,
             title:
               updatedConversation.title === "New Conversation" &&
-                finalMessages.length <= 2
+              finalMessages.length <= 2
                 ? MessageProcessor.formatConversationTitle(message)
                 : updatedConversation.title,
           };
 
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-
             const exists = prev.some((conv) => conv.id === activeConversation.id);
             let updated;
 
@@ -250,7 +224,7 @@ export const ConversationProvider = ({ children }) => {
               updated = [...prev, finalConversation];
             }
 
-            localStorage.setItem("conversations", JSON.stringify(updated));
+            saveConversations(updated);
             return updated;
           });
         }
@@ -297,7 +271,7 @@ export const ConversationProvider = ({ children }) => {
           updated = [...prev, updatedConversation];
         }
 
-        localStorage.setItem("conversations", JSON.stringify(updated));
+        saveConversations(updated);
         return updated;
       });
 
@@ -307,39 +281,7 @@ export const ConversationProvider = ({ children }) => {
   );
   const updateConversation = useCallback((updatedConv) => {
     setConversations((prevConversations) => {
-
-      const hasAssistantMessage =
-        updatedConv.messages &&
-        updatedConv.messages.some(
-          (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
-        );
-
-      let updatedConversations;
-
-      if (hasAssistantMessage) {
-        const index = prevConversations.findIndex((c) => c.id === updatedConv.id);
-
-        if (index !== -1) {
-          updatedConversations = [...prevConversations];
-          updatedConversations[index] = updatedConv;
-        } else {
-          updatedConversations = [...prevConversations, updatedConv];
-        }
-      } else {
-
-
-        updatedConversations = prevConversations.filter(
-          (c) =>
-            c.id !== updatedConv.id ||
-            (c.messages &&
-              c.messages.some(
-                (msg) => msg.role === "assistant" && !msg.isThinking && !msg.isChunk
-              ))
-        );
-      }
-
-      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
-      return updatedConversations;
+      return processConversationUpdate(updatedConv, prevConversations);
     });
   }, []);
 
