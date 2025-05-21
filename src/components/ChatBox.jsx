@@ -54,6 +54,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         threadId: msg.threadId,
         role: msg.role || (msg.isBot ? "assistant" : "user"),
         content: msg.content || msg.text,
+        fileAttachmentId: msg.fileAttachmentId,
       }));
       setMessages(formattedMessages);
 
@@ -537,6 +538,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
           logs={message.logs}
           isLoadingLogs={isLoading && isLastMessageInStream}
+          fileAttachmentId={message.fileAttachmentId}
         />
       );
 
