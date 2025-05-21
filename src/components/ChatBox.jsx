@@ -271,6 +271,13 @@ const ChatBox = ({ onIsLoadingChange }) => {
           ),
         ];
 
+        // Extract file_citation fileId from finalRun if available
+        let fileCitation = null;
+        if (thread && thread.id && images && images.length > 0) {
+          fileCitation = images.find((img) => img.type === "file_citation");
+          console.log(fileCitation);
+        }
+
         // Make sure we have no duplicate images
         const uniqueImages = [];
         allAvailableImages.forEach((img) => {
@@ -313,6 +320,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
             images: uniqueImages,
             imageFileIds: uniqueImages.map((img) => img.fileId),
           }),
+          // Attach fileCitation if available
+          ...(fileCitation && { fileCitation }),
         };
 
         let newTitle = activeConversation.title;
@@ -371,6 +380,8 @@ const ChatBox = ({ onIsLoadingChange }) => {
               images: [...uniqueImages],
               imageFileIds: uniqueImages.map((img) => img.fileId),
             }),
+            // Attach fileCitation if available
+            ...(fileCitation && { fileCitation }),
           };
 
           return [...prevMessages, finalMessage];

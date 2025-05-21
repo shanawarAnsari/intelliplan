@@ -216,7 +216,6 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
       runOrchestration.allDetectedImages = [];
       let allDetectedImages = runOrchestration.allDetectedImages;
 
-      // Create or reuse thread
       let thread = threadId ? { id: threadId } : await client.beta.threads.create();
       if (stopped) return;
       emitUpdate(
@@ -226,14 +225,12 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
 
       await checkForActiveRuns(thread.id);
 
-      // Send user prompt
       await client.beta.threads.messages.create(thread.id, {
         role: "user",
         content: userPrompt,
       });
       if (stopped) return;
 
-      // Run coordinator
       emitUpdate("status", "Streaming Coordinator...", "Coordinator");
       let { accumulatedText: coordinatorText, finalRun: currentRun } =
         await processStreamAndGetFinals(
@@ -247,7 +244,6 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
 
       let finalAnswerText = coordinatorText;
 
-      // Handle tool calls if needed
       if (
         currentRun.status === "requires_action" &&
         currentRun.required_action?.type === "submit_tool_outputs"
@@ -273,7 +269,7 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
             const finalSubPrompt = args?.prompt?.trim() ? args.prompt : userPrompt;
             let assistantId = null;
 
-            if (fnName === "forecast") {
+            if (fnName === "predict") {
               assistantId = FORECAST_ASSISTANT_ID;
             } else if (fnName === "report") {
               assistantId = REPORTGEN_ASSISTANT_ID;
@@ -306,7 +302,40 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
                 limit: 1,
               });
 
-              if (msgs.data[0].content.some((c) => c.type === "image_file")) {
+              if (
+                fnName === "report" &&
+                msgs.data.length > 0 &&
+                msgs.data[0].content
+              ) {
+                for (const contentItem of msgs.data[0].content) {
+                  debugger;
+                  let fileIdToLog = null;
+                  let fileTypeForLog = contentItem.type;
+
+                  if (
+                    contentItem.type === "image_file" &&
+                    contentItem.image_file?.file_id
+                  ) {
+                    fileIdToLog = contentItem.image_file.file_id;
+                  } else if (
+                    contentItem.type === "file_citation" &&
+                    contentItem.file_citation?.file_id
+                  ) {
+                    fileIdToLog = contentItem.file_citation.file_id;
+                  }
+
+                  if (fileIdToLog) {
+                    console.log(
+                      `File detected from '${fnName}' assistant. File ID: ${fileIdToLog}, Type: ${fileTypeForLog}`
+                    );
+                  }
+                }
+              }
+
+              if (
+                msgs.data.length > 0 &&
+                msgs.data[0].content.some((c) => c.type === "image_file")
+              ) {
                 toolOutputs.push({
                   tool_call_id: call.id,
                   output: JSON.stringify({
@@ -363,6 +392,28 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
         }
       }
 
+      // Extract file_id from attachments for file download
+      let fileAttachmentId = null;
+      if (
+        Array.isArray(currentRun) === false &&
+        currentRun &&
+        currentRun.status === "completed"
+      ) {
+        // Try to get the last message in the thread
+        const msgs = await client.beta.threads.messages.list(thread.id, {
+          order: "desc",
+          limit: 1,
+        });
+        if (
+          msgs.data &&
+          msgs.data.length > 0 &&
+          msgs.data[0].attachments &&
+          msgs.data[0].attachments.length > 0
+        ) {
+          fileAttachmentId = msgs.data[0].attachments[0].file_id;
+        }
+      }
+
       emitUpdate(
         "status",
         `Orchestration complete. Duration: ${
@@ -374,6 +425,7 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
         answer: finalAnswerText,
         thread: thread,
         images: allDetectedImages,
+        fileAttachmentId, // <-- pass file id for file download
       });
     } catch (error) {
       console.error("Orchestration error:", error);

@@ -8,6 +8,7 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -17,6 +18,7 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import DownloadIcon from "@mui/icons-material/Download";
 import Logger from "./Logger";
 import ImageComponent from "./ImageComponent";
+import FileService from "../services/FileService";
 
 const ChatMessage = ({
   message,
@@ -37,6 +39,7 @@ const ChatMessage = ({
   id,
   threadId,
   hasImages,
+  fileAttachmentId,
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
@@ -45,6 +48,10 @@ const ChatMessage = ({
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [isLoggerExpanded, setIsLoggerExpanded] = useState(false);
   const [messageImages, setMessageImages] = useState(images || []);
+  const [fileDownloadUrl, setFileDownloadUrl] = useState(null);
+  const [fileDownloadName, setFileDownloadName] = useState(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState(null);
 
   useEffect(() => {
     const likedMessages = JSON.parse(localStorage.getItem("likedMessages") || "[]");
@@ -85,6 +92,118 @@ const ChatMessage = ({
   const handleImageError = () => {
     setImageLoading(false);
     setImageError(true);
+  };
+
+  const handleFileDownload = async (fileId) => {
+    setFileLoading(true);
+    setFileError(null);
+    try {
+      const { blobUrl, filename } = await FileService.fetchFileFromOpenAI(fileId);
+      setFileDownloadUrl(blobUrl);
+      setFileDownloadName(filename);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      setFileError("Failed to download file");
+    } finally {
+      setFileLoading(false);
+    }
+  };
+
+  const renderMarkdownLinks = (text) => {
+    const regex = /\[Download ([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    let key = 0;
+    while ((match = regex.exec(text)) !== null) {
+      const before = text.slice(lastIndex, match.index);
+      if (before) parts.push(before);
+      const filename = match[1];
+      // Always use fileAttachmentId if present for download
+      parts.push(
+        <Button
+          key={`download-link-${key++}`}
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={async () => {
+            if (!fileAttachmentId) return; // No file to download
+            setFileLoading(true);
+            setFileError(null);
+            try {
+              const { blobUrl } = await FileService.fetchFileFromOpenAI(
+                fileAttachmentId
+              );
+              const link = document.createElement("a");
+              link.href = blobUrl;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } catch (err) {
+              setFileError("Failed to download file");
+            } finally {
+              setFileLoading(false);
+            }
+          }}
+          disabled={fileLoading || !fileAttachmentId}
+          sx={{ mr: 1, mb: 1 }}
+        >
+          {filename}
+        </Button>
+      );
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    return parts;
+  };
+
+  const renderFileAttachmentDownload = () => {
+    if (!isFinal || !fileAttachmentId) return null;
+    return (
+      <Box sx={{ mt: 1, mb: 1 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={async () => {
+            setFileLoading(true);
+            setFileError(null);
+            try {
+              const { blobUrl } = await FileService.fetchFileFromOpenAI(
+                fileAttachmentId
+              );
+              const link = document.createElement("a");
+              link.href = blobUrl;
+              link.download = "FinalReport.pptx";
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } catch (err) {
+              setFileError("Failed to download file");
+            } finally {
+              setFileLoading(false);
+            }
+          }}
+          disabled={fileLoading}
+          sx={{ mr: 1, mb: 1 }}
+        >
+          Download FinalReport.pptx
+        </Button>
+        {fileError && (
+          <Typography color="error" variant="caption">
+            {fileError}
+          </Typography>
+        )}
+      </Box>
+    );
   };
 
   const hasLoadedImageRef = useRef(false);
@@ -142,16 +261,13 @@ const ChatMessage = ({
     };
   }, [isImage, initialImageUrl, imageFileId, message, images]);
   useEffect(() => {
-    // Process images when they change
     if (images && images.length > 0) {
       console.log(
         `[ChatMessage ${id}] Processing ${images.length} images for message`
       );
 
-      // Set message images directly to ensure they display
-      setMessageImages([...images]); // Create a new array to trigger re-render
+      setMessageImages([...images]);
 
-      // Force refresh of images if they don't have URLs
       images.forEach((img) => {
         if (img.fileId && !img.url) {
           console.log(`[ChatMessage ${id}] Image ${img.fileId} needs URL loading`);
@@ -209,6 +325,11 @@ const ChatMessage = ({
       );
     }
   }, [isImage, images, imageFileId, id]);
+
+  let fileLinks = [];
+  if (images && images.length > 0) {
+    fileLinks = images.filter((img) => img.fileId && img.type === "file_citation");
+  }
 
   return (
     <Box
@@ -407,10 +528,14 @@ const ChatMessage = ({
                   }}
                 >
                   {typeof message === "string"
-                    ? message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")
+                    ? renderMarkdownLinks(
+                        message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")
+                      )
                     : ""}
                 </Typography>
               )}
+              {/* Always render download button for fileAttachmentId if present and isFinal */}
+              {isFinal && fileAttachmentId && renderFileAttachmentDownload()}
             </Box>
           ) : (
             <Typography

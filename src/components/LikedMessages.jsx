@@ -27,7 +27,6 @@ const LikedMessages = () => {
   const [likedMessages, setLikedMessages] = useState([]);
 
   useEffect(() => {
-
     const storedLikedMessages = localStorage.getItem("likedMessages");
     if (storedLikedMessages) {
       setLikedMessages(JSON.parse(storedLikedMessages));
@@ -47,7 +46,6 @@ const LikedMessages = () => {
     setLikedMessages(newLikedMessages);
     localStorage.setItem("likedMessages", JSON.stringify(newLikedMessages));
   };
-
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -69,13 +67,13 @@ const LikedMessages = () => {
         background:
           theme.palette.mode === "dark"
             ? `linear-gradient(${alpha(
-              theme.palette.background.default,
-              0.97
-            )}, ${alpha(theme.palette.background.default, 0.95)})`
+                theme.palette.background.default,
+                0.97
+              )}, ${alpha(theme.palette.background.default, 0.95)})`
             : `linear-gradient(${alpha(
-              theme.palette.background.paper,
-              0.95
-            )}, ${alpha(theme.palette.background.default, 0.85)})`,
+                theme.palette.background.paper,
+                0.95
+              )}, ${alpha(theme.palette.background.default, 0.85)})`,
         borderRadius: "6px",
         boxShadow: theme.shadows[1],
         backdropFilter: "blur(8px)",
@@ -277,7 +275,7 @@ const LikedMessages = () => {
                     >
                       {msg.text
                         ? msg.text.substring(0, 50) +
-                        (msg.text.length > 50 ? "..." : "")
+                          (msg.text.length > 50 ? "..." : "")
                         : "Liked Content"}
                     </Typography>
                   </Box>
