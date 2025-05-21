@@ -106,7 +106,7 @@ export async function orchestrate(userPrompt, onProgressUpdate) {
       const aid =
         fnName === "get_sales_data"
           ? SALES_ID
-          : fnName === "forecast"
+          : fnName === "predict"
             ? SALES_ID
             : FORECAST_ID;
 

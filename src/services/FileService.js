@@ -41,15 +41,27 @@ export const fetchFileFromOpenAI = async (fileId) => {
         `Failed to fetch file: ${response.status} ${response.statusText} - ${errorText}`
       );
     }
-
     const disposition = response.headers.get("content-disposition");
-    let filename = "downloaded-file";
+    const contentType = response.headers.get("content-type");
+
+    // Always use a PPTX filename for reports
+    let filename = "FinalReport.pptx";
+
+    // Try to get filename from content-disposition header
     if (disposition && disposition.includes("filename=")) {
       filename = disposition.split("filename=")[1].replace(/['"]/g, "").trim();
+      // Always ensure PPTX extension
+      if (!filename.toLowerCase().endsWith(".pptx")) {
+        filename = filename + ".pptx";
+      }
     }
 
+    // Create the blob with the PPTX content type
     const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    const blobWithType = new Blob([blob], {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+    const blobUrl = URL.createObjectURL(blobWithType);
     const result = { blobUrl, filename };
     fileCache.set(fileId, result);
     return result;

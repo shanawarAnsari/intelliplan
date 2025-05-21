@@ -113,58 +113,37 @@ const ChatMessage = ({
       setFileLoading(false);
     }
   };
-
   const renderMarkdownLinks = (text) => {
     const regex = /\[Download ([^\]]+)\]\(([^)]+)\)/g;
     const parts = [];
     let lastIndex = 0;
     let match;
     let key = 0;
+
+    // Don't add download buttons in the markdown - we'll use our dedicated button below
     while ((match = regex.exec(text)) !== null) {
       const before = text.slice(lastIndex, match.index);
       if (before) parts.push(before);
-      const filename = match[1];
-      // Always use fileAttachmentId if present for download
-      parts.push(
-        <Button
-          key={`download-link-${key++}`}
-          variant="outlined"
-          size="small"
-          startIcon={<DownloadIcon />}
-          onClick={async () => {
-            if (!fileAttachmentId) return; // No file to download
-            setFileLoading(true);
-            setFileError(null);
-            try {
-              const { blobUrl } = await FileService.fetchFileFromOpenAI(
-                fileAttachmentId
-              );
-              const link = document.createElement("a");
-              link.href = blobUrl;
-              link.download = filename;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            } catch (err) {
-              setFileError("Failed to download file");
-            } finally {
-              setFileLoading(false);
-            }
-          }}
-          disabled={fileLoading || !fileAttachmentId}
-          sx={{ mr: 1, mb: 1 }}
-        >
-          {filename}
-        </Button>
-      );
+
+      // Instead of rendering a button here, just add text indicating a file is available
+      if (fileAttachmentId) {
+        parts.push(
+          <span key={`download-note-${key++}`}>
+            File is available for download below.
+          </span>
+        );
+      } else {
+        parts.push(match[0]);
+      }
+
       lastIndex = regex.lastIndex;
     }
+
     if (lastIndex < text.length) {
       parts.push(text.slice(lastIndex));
     }
     return parts;
   };
-
   const renderFileAttachmentDownload = () => {
     if (!isFinal || !fileAttachmentId) return null;
     return (
@@ -177,16 +156,29 @@ const ChatMessage = ({
             setFileLoading(true);
             setFileError(null);
             try {
-              const { blobUrl } = await FileService.fetchFileFromOpenAI(
+              // Clear any existing cache for this file
+              const FileService = await import("../services/FileService");
+              await FileService.revokeFileUrl(fileDownloadUrl);
+
+              const { blobUrl, filename } = await FileService.fetchFileFromOpenAI(
                 fileAttachmentId
               );
+              setFileDownloadUrl(blobUrl);
+              setFileDownloadName(filename);
+
               const link = document.createElement("a");
               link.href = blobUrl;
-              link.download = "FinalReport.pptx";
+              link.download = filename || "FinalReport.pptx";
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
+
+              // Don't revoke immediately to allow download to complete
+              // setTimeout(() => {
+              //   FileService.revokeFileUrl(blobUrl);
+              // }, 3000);
             } catch (err) {
+              console.error("Download error:", err);
               setFileError("Failed to download file");
             } finally {
               setFileLoading(false);
@@ -195,7 +187,7 @@ const ChatMessage = ({
           disabled={fileLoading}
           sx={{ mr: 1, mb: 1 }}
         >
-          Download FinalReport.pptx
+          Download PowerPoint Report
         </Button>
         {fileError && (
           <Typography color="error" variant="caption">
@@ -509,7 +501,7 @@ const ChatMessage = ({
                     ))}
                   </Box>
                 </Box>
-              )}
+              )}{" "}
               {message && (
                 <Typography
                   variant="body1"

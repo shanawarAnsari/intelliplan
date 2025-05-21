@@ -214,7 +214,9 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
       emitUpdate("status", "Orchestration started.");
       const orchestrationStartTime = Date.now();
       runOrchestration.allDetectedImages = [];
+      runOrchestration.allDetectedFiles = []; // New array for file attachments
       let allDetectedImages = runOrchestration.allDetectedImages;
+      let allDetectedFiles = runOrchestration.allDetectedFiles; // Files for download (pptx etc)
 
       let thread = threadId ? { id: threadId } : await client.beta.threads.create();
       if (stopped) return;
@@ -307,8 +309,30 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
                 msgs.data.length > 0 &&
                 msgs.data[0].content
               ) {
+                // First check for attachments (pptx files)
+                if (
+                  msgs.data[0].attachments &&
+                  msgs.data[0].attachments.length > 0
+                ) {
+                  const fileId = msgs.data[0].attachments[0].file_id;
+                  const fileType = "file_citation";
+                  if (fileId) {
+                    console.log(
+                      `File attachment detected from '${fnName}' assistant. File ID: ${fileId}, Type: ${fileType}`
+                    );
+                    // Add to allDetectedFiles for download
+                    allDetectedFiles.push({
+                      fileId: fileId,
+                      type: fileType,
+                      filename: "FinalReport.pptx",
+                      contentType:
+                        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    });
+                  }
+                }
+
+                // Then process content items (images, etc.)
                 for (const contentItem of msgs.data[0].content) {
-                  debugger;
                   let fileIdToLog = null;
                   let fileTypeForLog = contentItem.type;
 
@@ -420,12 +444,12 @@ export function orchestrateStreaming(userPrompt, threadId = null) {
           (Date.now() - orchestrationStartTime) / 1000
         }s`
       );
-
       emitter.emit("finalAnswer", {
         answer: finalAnswerText,
         thread: thread,
         images: allDetectedImages,
-        fileAttachmentId, // <-- pass file id for file download
+        files: allDetectedFiles,
+        fileAttachmentId: allDetectedFiles[0]?.fileId || fileAttachmentId, // Use file from allDetectedFiles if available
       });
     } catch (error) {
       console.error("Orchestration error:", error);

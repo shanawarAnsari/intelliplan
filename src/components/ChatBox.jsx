@@ -54,6 +54,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         threadId: msg.threadId,
         role: msg.role || (msg.isBot ? "assistant" : "user"),
         content: msg.content || msg.text,
+        fileAttachmentId: msg.fileAttachmentId,
       }));
       setMessages(formattedMessages);
 
@@ -252,143 +253,137 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
         }
       });
-      emitter.on("finalAnswer", ({ answer, thread, images }) => {
-        if (thread && thread.id) {
-          setCurrentThreadId(thread.id);
-        }
-
-        const threadIdentifier =
-          thread?.id ||
-          currentThreadId ||
-          activeConversation?.threadId ||
-          activeConversation?.id;
-
-        // Combine images from the response with any progress images
-        const allAvailableImages = [
-          ...(images || []),
-          ...(progressImages || []).filter(
-            (img) => img.threadId === threadIdentifier
-          ),
-        ];
-
-        // Extract file_citation fileId from finalRun if available
-        let fileCitation = null;
-        if (thread && thread.id && images && images.length > 0) {
-          fileCitation = images.find((img) => img.type === "file_citation");
-          console.log(fileCitation);
-        }
-
-        // Make sure we have no duplicate images
-        const uniqueImages = [];
-        allAvailableImages.forEach((img) => {
-          if (
-            !uniqueImages.some((existingImg) => existingImg.fileId === img.fileId)
-          ) {
-            uniqueImages.push({
-              ...img,
-              threadId: threadIdentifier,
-              messageId: `msg-final-${Date.now()}`,
-            });
+      emitter.on(
+        "finalAnswer",
+        ({ answer, thread, images, files, fileAttachmentId }) => {
+          if (thread && thread.id) {
+            setCurrentThreadId(thread.id);
           }
-        });
 
-        const hasImages = uniqueImages.length > 0;
+          const threadIdentifier =
+            thread?.id ||
+            currentThreadId ||
+            activeConversation?.threadId ||
+            activeConversation?.id;
 
-        if (hasImages) {
-          debugImage(
-            `Final answer has ${uniqueImages.length} unique images for this response`,
-            uniqueImages
-          );
-          // Reset progressImages for next message
-          setProgressImages([]);
-        }
+          // Combine images from the response with any progress images
+          const allAvailableImages = [
+            ...(images || []),
+            ...(progressImages || []).filter(
+              (img) => img.threadId === threadIdentifier
+            ),
+          ];
 
-        // Create a single assistant message with both text and images
-        const assistantMessage = {
-          role: "assistant",
-          content: answer,
-          timestamp: new Date(),
-          assistantName: "Assistant",
-          routedFrom: null,
-          isChunk: false,
-          isFinal: true,
-          threadId: threadIdentifier,
-          id: `msg-final-${Date.now()}`,
-          // Attach images directly to the message if they exist
-          ...(hasImages && {
-            hasImages: true,
-            images: uniqueImages,
-            imageFileIds: uniqueImages.map((img) => img.fileId),
-          }),
-          // Attach fileCitation if available
-          ...(fileCitation && { fileCitation }),
-        };
+          // Make sure we have no duplicate images
+          const uniqueImages = [];
+          allAvailableImages.forEach((img) => {
+            if (
+              !uniqueImages.some((existingImg) => existingImg.fileId === img.fileId)
+            ) {
+              uniqueImages.push({
+                ...img,
+                threadId: threadIdentifier,
+                messageId: `msg-final-${Date.now()}`,
+              });
+            }
+          });
 
-        let newTitle = activeConversation.title;
-        if (activeConversation.title === "New Conversation") {
-          const firstSentence = answer.split(".")[0].trim();
-          newTitle =
-            firstSentence.substring(0, 40) +
-            (firstSentence.length > 40 ? "..." : "");
-          newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
-          newTitle = newTitle.replace(/[.,;:!?]$/, "");
-        }
-        if (activeConversation) {
-          // Keep ALL existing messages and simply append the final message without any filtering
-          // Do not remove or filter any messages, just keep adding to the array
-          const existingMessages = activeConversation.messages || [];
+          const hasImages = uniqueImages.length > 0;
 
-          // Simply add the new message to the array without filtering anything
-          const updatedMessages = [...existingMessages, assistantMessage];
+          if (hasImages) {
+            debugImage(
+              `Final answer has ${uniqueImages.length} unique images for this response`,
+              uniqueImages
+            );
+            // Reset progressImages for next message
+            setProgressImages([]);
+          }
 
-          const updatedConversation = {
-            ...activeConversation,
-            threadId: threadIdentifier,
-            id: threadIdentifier,
-            messages: updatedMessages,
-            title: newTitle,
-          };
-          updateConversation(updatedConversation); // Save final conversation to localStorage
-          const conversations = JSON.parse(
-            localStorage.getItem("conversations") || "[]"
-          );
-          const updatedConversations = processConversationUpdate(
-            updatedConversation,
-            conversations
-          );
-          localStorage.setItem(
-            "conversations",
-            JSON.stringify(updatedConversations)
-          );
-        } // Update UI messages
-        setMessages((prevMessages) => {
-          // Preserve all existing messages without modifying their properties
-          // Just add the final message to display
-          const finalMessage = {
-            id: assistantMessage.id,
-            text: answer,
-            isBot: true,
-            threadId: threadIdentifier,
-            timestamp: new Date(),
-            assistantName: "Assistant",
-            isFinal: true,
+          // Create a single assistant message with both text and images
+          const assistantMessage = {
             role: "assistant",
             content: answer,
-            // Attach images directly if they exist
+            timestamp: new Date(),
+            assistantName: "Assistant",
+            routedFrom: null,
+            isChunk: false,
+            isFinal: true,
+            threadId: threadIdentifier,
+            id: `msg-final-${Date.now()}`,
+            fileAttachmentId, // Use fileAttachmentId from StreamingService
+            // Attach images directly to the message if they exist
             ...(hasImages && {
               hasImages: true,
-              images: [...uniqueImages],
+              images: uniqueImages,
               imageFileIds: uniqueImages.map((img) => img.fileId),
             }),
-            // Attach fileCitation if available
-            ...(fileCitation && { fileCitation }),
           };
 
-          return [...prevMessages, finalMessage];
-        });
+          let newTitle = activeConversation.title;
+          if (activeConversation.title === "New Conversation") {
+            const firstSentence = answer.split(".")[0].trim();
+            newTitle =
+              firstSentence.substring(0, 40) +
+              (firstSentence.length > 40 ? "..." : "");
+            newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
+            newTitle = newTitle.replace(/[.,;:!?]$/, "");
+          }
+          if (activeConversation) {
+            // Keep ALL existing messages and simply append the final message without any filtering
+            // Do not remove or filter any messages, just keep adding to the array
+            const existingMessages = activeConversation.messages || [];
 
-        setIsLoading(false);
-      });
+            // Simply add the new message to the array without filtering anything
+            const updatedMessages = [...existingMessages, assistantMessage];
+
+            const updatedConversation = {
+              ...activeConversation,
+              threadId: threadIdentifier,
+              id: threadIdentifier,
+              messages: updatedMessages,
+              title: newTitle,
+            };
+            updateConversation(updatedConversation); // Save final conversation to localStorage
+            const conversations = JSON.parse(
+              localStorage.getItem("conversations") || "[]"
+            );
+            const updatedConversations = processConversationUpdate(
+              updatedConversation,
+              conversations
+            );
+            localStorage.setItem(
+              "conversations",
+              JSON.stringify(updatedConversations)
+            );
+          } // Update UI messages
+          setMessages((prevMessages) => {
+            // Preserve all existing messages without modifying their properties
+            // Just add the final message to display
+            const finalMessage = {
+              id: assistantMessage.id,
+              text: answer,
+              isBot: true,
+              threadId: threadIdentifier,
+              timestamp: new Date(),
+              assistantName: "Assistant",
+              isFinal: true,
+              role: "assistant",
+              content: answer,
+              fileAttachmentId, // Include fileAttachmentId in the UI message
+              // Attach images directly if they exist
+              ...(hasImages && {
+                hasImages: true,
+                images: [...uniqueImages],
+                imageFileIds: uniqueImages.map((img) => img.fileId),
+              }),
+            };
+
+            return [...prevMessages, finalMessage];
+          });
+
+          setIsLoading(false);
+        }
+      );
       emitter.on("error", ({ message }) => {
         const errorMessage = {
           id: `error-${Date.now()}`,
@@ -537,6 +532,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           }
           logs={message.logs}
           isLoadingLogs={isLoading && isLastMessageInStream}
+          fileAttachmentId={message.fileAttachmentId}
         />
       );
 
