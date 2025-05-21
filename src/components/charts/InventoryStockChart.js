@@ -125,7 +125,7 @@ const InventoryStockChart = () => {
       curve: "smooth",
     },
     title: {
-      text: "Average Monthly Inventory Stock Quantity",
+      text: "Average Monthly Inventory in GSU",
       align: "center",
       style: {
         color: designTokens.palette.text.primary,
