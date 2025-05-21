@@ -159,41 +159,7 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
           }}
         >
           History
-        </Typography>{" "}
-        <Tooltip
-          title={
-            isChatBoxLoading
-              ? "Please wait until generation completes"
-              : "Create new conversation"
-          }
-        >
-          <span>
-            <IconButton
-              onClick={handleNewConversation}
-              disabled={isChatBoxLoading}
-              sx={{
-                color: theme.palette.primary.main,
-                backgroundColor:
-                  theme.palette.mode === "dark"
-                    ? alpha(theme.palette.primary.main, 0.1)
-                    : alpha(theme.palette.primary.main, 0.05),
-                mr: 1,
-                "&:hover": {
-                  backgroundColor:
-                    theme.palette.mode === "dark"
-                      ? alpha(theme.palette.primary.main, 0.2)
-                      : alpha(theme.palette.primary.main, 0.1),
-                },
-                "&.Mui-disabled": {
-                  color: theme.palette.action.disabled,
-                  backgroundColor: theme.palette.action.disabledBackground,
-                },
-              }}
-            >
-              <AddIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
+        </Typography>
         <Chip
           size="small"
           label={(() => {
@@ -421,6 +387,11 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                 borderRadius: theme.shape.borderRadius * 2,
                 textTransform: "none",
                 px: 3,
+                "&.Mui-disabled": {
+                  opacity: 0.6,
+                  backgroundColor: theme.palette.action.disabledBackground,
+                  color: theme.palette.action.disabled,
+                },
               }}
             >
               New Conversation

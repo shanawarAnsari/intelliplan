@@ -16,6 +16,7 @@ const MainLayout = () => {
   const [helpDrawerOpen, setHelpDrawerOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [likedMessagesOpen, setLikedMessagesOpen] = React.useState(false);
+  const [isChatBoxLoading, setIsChatBoxLoading] = React.useState(false);
   const historyPanelRef = useRef(null);
   const likedMessagesPanelRef = useRef(null);
   const { createNewConversation } = useConversation();
@@ -148,22 +149,37 @@ const MainLayout = () => {
               }}
             >
               {" "}
-              <Tooltip title="New conversation" arrow>
-                <IconButton
-                  onClick={() => {
-                    setHistoryOpen(false);
-                    setLikedMessagesOpen(false);
+              <Tooltip
+                title={
+                  isChatBoxLoading
+                    ? "Please wait until generation completes"
+                    : "New conversation"
+                }
+                arrow
+              >
+                <span>
+                  <IconButton
+                    onClick={() => {
+                      setHistoryOpen(false);
+                      setLikedMessagesOpen(false);
 
-                    if (createNewConversation) {
-                      createNewConversation("");
-                    }
-                  }}
-                  sx={{ mr: 1 }}
-                  size="small"
-                  data-testid="new-conversation-toggle"
-                >
-                  <AddCircleOutline />
-                </IconButton>
+                      if (createNewConversation) {
+                        createNewConversation("");
+                      }
+                    }}
+                    sx={{
+                      mr: 1,
+                      "&.Mui-disabled": {
+                        opacity: 0.6,
+                      },
+                    }}
+                    size="small"
+                    data-testid="new-conversation-toggle"
+                    disabled={isChatBoxLoading}
+                  >
+                    <AddCircleOutline />
+                  </IconButton>
+                </span>
               </Tooltip>
               <Tooltip title="Conversation history" arrow>
                 <IconButton
@@ -187,9 +203,9 @@ const MainLayout = () => {
                 </IconButton>
               </Tooltip>
             </Box>
-            {}
+            {}{" "}
             <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
-              <ChatBox onIsLoadingChange={() => {}} />
+              <ChatBox onIsLoadingChange={setIsChatBoxLoading} />
             </Box>
           </Box>
 
