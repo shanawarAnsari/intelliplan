@@ -14,6 +14,8 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import ThumbDownAltOutlinedIcon from "@mui/icons-material/ThumbDownAltOutlined";
+import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import DownloadIcon from "@mui/icons-material/Download";
 import Logger from "./Logger";
@@ -43,6 +45,7 @@ const ChatMessage = ({
 }) => {
   const theme = useTheme();
   const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
   const [imageLoading, setImageLoading] = useState(isImage);
   const [imageError, setImageError] = useState(false);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
@@ -77,6 +80,29 @@ const ChatMessage = ({
       likedMessages = likedMessages.filter((likedMsg) => likedMsg.id !== id);
     }
     localStorage.setItem("likedMessages", JSON.stringify(likedMessages));
+  };
+
+  const handleDislike = () => {
+    const currentDislikedStatus = !isDisliked;
+    setIsDisliked(currentDislikedStatus);
+
+    let dislikedMessages = JSON.parse(
+      localStorage.getItem("dislikedMessages") || "[]"
+    );
+    if (currentDislikedStatus) {
+      const messageToDislike = {
+        id,
+        text: message,
+        timestamp: timestamp,
+        isBot: isBot,
+      };
+      dislikedMessages.push(messageToDislike);
+    } else {
+      dislikedMessages = dislikedMessages.filter(
+        (dislikedMsg) => dislikedMsg.id !== id
+      );
+    }
+    localStorage.setItem("dislikedMessages", JSON.stringify(dislikedMessages));
   };
 
   const handleRegenerate = () => {
@@ -581,6 +607,26 @@ const ChatMessage = ({
                 <ThumbUpIcon fontSize="small" />
               ) : (
                 <ThumbUpAltOutlinedIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={isDisliked ? "Remove Dislike" : "Dislike"}>
+            <IconButton
+              size="small"
+              onClick={handleDislike}
+              sx={{
+                p: 0.5,
+                mr: 1,
+                color: isDisliked ? "error.main" : "text.secondary",
+                "&:hover": {
+                  color: isDisliked ? "error.light" : "error.main",
+                },
+              }}
+            >
+              {isDisliked ? (
+                <ThumbDownIcon fontSize="small" />
+              ) : (
+                <ThumbDownAltOutlinedIcon fontSize="small" />
               )}
             </IconButton>
           </Tooltip>
