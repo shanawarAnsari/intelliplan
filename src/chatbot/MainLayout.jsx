@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from "react";
 import { Box, useTheme, Typography, IconButton, Tooltip } from "@mui/material";
-import TopNavbar from "./TopNavbar";
 import ConversationHistory from "./ConversationHistory";
 import ChatBox from "./ChatBox";
 import LikedMessages from "./LikedMessages";
@@ -65,7 +64,6 @@ const MainLayout = () => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <TopNavbar onToggleHelp={toggleHelpDrawer} />
       <HelpFAQ open={helpDrawerOpen} onClose={toggleHelpDrawer} />
 
       <Box sx={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>

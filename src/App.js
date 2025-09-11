@@ -2,7 +2,11 @@ import React from "react";
 import { ThemeProviderWrapper } from "./contexts/ThemeContext";
 import { ConversationProvider } from "./contexts/ConversationContext";
 // import ChatBox from "./components/ChatBox"; // Replaced by MainLayout
-import MainLayout from "./components/MainLayout"; // Import the new MainLayout
+import MainLayout from "./chatbot/MainLayout"; // Import the new MainLayout
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import TopNavbar from "./navbar/TopNavbar";
+
+import RunRatePage from "./runrate/RunRatePage";
 import "./styles/global.css";
 
 function App() {
@@ -11,9 +15,14 @@ function App() {
   return (
     <ThemeProviderWrapper>
       <ConversationProvider>
-        {/* Replace ChatBox with MainLayout */}
-        {/* <ChatBox onIsLoadingChange={setIsChatBoxLoading} /> */}
-        <MainLayout />
+        <Router>
+          <TopNavbar />
+          <Routes>
+            <Route path="/chatbot" element={<MainLayout />} />
+            <Route path="/runrate" element={<RunRatePage />} />
+            <Route path="*" element={<MainLayout />} />
+          </Routes>
+        </Router>
       </ConversationProvider>
     </ThemeProviderWrapper>
   );

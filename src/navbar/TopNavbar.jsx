@@ -15,6 +15,7 @@ import {
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Logo from "../assets/Intelliplan-logo.png";
+import { Link } from "react-router-dom";
 
 const domains = [
   { id: "demand", title: "Demand Planning" },
@@ -28,34 +29,80 @@ const TopNavbar = ({ onToggleHelp }) => {
   return (
     <Box
       sx={{
-        p: "8px 12px",
+        p: "8px 24px",
         borderBottom: `1px solid ${theme.palette.divider}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         backgroundColor: theme.palette.background.paper,
-        boxShadow: "0px 1px 3px rgba(0,0,0,0.1)",
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.07)",
         width: "100%",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
         <img
           src={Logo}
           alt="InteliPlan Logo"
-          height="35"
-          style={{ marginRight: theme.spacing(2) }}
+          height="38"
+          style={{ marginRight: theme.spacing(2), borderRadius: 8 }}
           className="hover-lift"
         />
+        <Box sx={{ flex: 1 }} />
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0,
+            mr: 8,
+          }}
+        >
+          <Link
+            to="/chatbot"
+            style={{
+              textDecoration: "none",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "1rem",
+              padding: "6px 18px",
+              borderRadius: "6px",
+              transition: "color 0.2s",
+            }}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.color = theme.palette.primary.light)
+            }
+            onMouseOut={(e) => (e.currentTarget.style.color = "#fff")}
+          >
+            Chatbot
+          </Link>
+          <Link
+            to="/runrate"
+            style={{
+              textDecoration: "none",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "1rem",
+              padding: "6px 18px",
+              borderRadius: "6px",
+              transition: "color 0.2s",
+            }}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.color = theme.palette.primary.light)
+            }
+            onMouseOut={(e) => (e.currentTarget.style.color = "#fff")}
+          >
+            Run Rate
+          </Link>
+        </Box>
       </Box>
 
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
+          gap: 2,
           color: theme.palette.text.secondary,
         }}
       >
-        { }
         <FormControl
           variant="outlined"
           size="small"
