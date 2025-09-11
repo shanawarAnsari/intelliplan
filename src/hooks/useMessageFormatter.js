@@ -1,27 +1,55 @@
 import { useCallback } from "react";
 
-/**
- * Custom hook for formatting messages
- */
 const useMessageFormatter = () => {
-  /**
-   * Format message from the UI for sending to Azure OpenAI
-   */
   const formatForAzure = useCallback((content, role = "user") => {
     return {
       role: role,
       content: content,
     };
   }, []);
-
-  /**
-   * Format message from Azure OpenAI for the UI
-   */
   const formatForUI = useCallback((message) => {
-    // Handle different message content formats
     let content = "";
+    let isImage = false;
+    let imageUrl = null;
+    let imageFileId = null;
+    let images = [];
+
+    if (message.isImage) {
+      isImage = true;
+      imageUrl = message.imageUrl;
+      imageFileId = message.imageFileId;
+    }
+
+    if (message.images && message.images.length > 0) {
+      images = [...message.images];
+    }
 
     if (message.content && Array.isArray(message.content)) {
+      // Look for image files in the content
+      const imageItems = message.content.filter(
+        (item) => item.type === "image_file"
+      );
+      if (imageItems && imageItems.length > 0) {
+        isImage = true;
+        // Add all found images to the images array
+        imageItems.forEach((item) => {
+          if (item.image_file) {
+            images.push({
+              fileId: item.image_file.file_id,
+              url: item.image_file.url || null,
+            });
+
+            // Keep the first one as the main image if we don't have one yet
+            if (!imageFileId) {
+              imageFileId = item.image_file.file_id;
+              if (item.image_file.url) {
+                imageUrl = item.image_file.url;
+              }
+            }
+          }
+        });
+      }
+
       content = message.content
         .map((item) => {
           if (item.type === "text") {
@@ -29,7 +57,8 @@ const useMessageFormatter = () => {
           }
           return "";
         })
-        .join("\n");
+        .join("\n")
+        .trim();
     } else if (typeof message.content === "string") {
       content = message.content;
     }
@@ -41,12 +70,14 @@ const useMessageFormatter = () => {
         ? new Date(message.created_at * 1000)
         : new Date(),
       id: message.id || `msg-${Date.now()}`,
+      isImage,
+      imageUrl,
+      imageFileId,
+      images: images.length > 0 ? images : undefined,
+      hasImages: images.length > 0,
     };
   }, []);
 
-  /**
-   * Format a list of messages from Azure OpenAI for the UI
-   */
   const formatMessagesForUI = useCallback(
     (messages) => {
       if (!Array.isArray(messages)) {
@@ -58,9 +89,6 @@ const useMessageFormatter = () => {
     [formatForUI]
   );
 
-  /**
-   * Extract text content from complex message formats
-   */
   const extractTextContent = useCallback((content) => {
     if (!content) return "";
 

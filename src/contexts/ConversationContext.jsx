@@ -6,15 +6,18 @@ import React, {
   useEffect,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
-import useAzureOpenAI from "../services/useAzureOpenAI";
+import useAzureOpenAI from "../hooks/useAzureOpenAI";
 import useThreadValidator from "../hooks/useThreadValidator";
+import MessageProcessor from "../utils/MessageProcessor";
+import {
+  saveConversations,
+  loadConversations,
+  filterDisplayableConversations,
+  processConversationUpdate,
+} from "../hooks/useConversationHistory";
 
-// Create context
 const ConversationContext = createContext();
 
-/**
- * Provider component for conversation management
- */
 export const ConversationProvider = ({ children }) => {
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -27,37 +30,27 @@ export const ConversationProvider = ({ children }) => {
     error: aiError,
     createThread,
   } = useAzureOpenAI();
-
-  const { validateThread, formatThreadId } = useThreadValidator(); // Initialize by loading saved conversations from localStorage and creating an initial conversation
+  const { validateThread, formatThreadId } = useThreadValidator();
   useEffect(() => {
     const loadSavedConversations = async () => {
       try {
-        // Load any existing conversations from localStorage
-        const savedConversations = localStorage.getItem("conversations");
-        let parsedConversations = [];
-        if (savedConversations) {
-          parsedConversations = JSON.parse(savedConversations);
-          // Only include conversations that have messages
-          parsedConversations = parsedConversations.filter(
-            (conv) => conv.messages && conv.messages.length > 0
-          );
-          setConversations(parsedConversations);
-        }
+        // Load conversations from localStorage using the utility
+        const loadedConversations = loadConversations();
 
-        // Always create a new thread for a new conversation
+        // Get all valid conversations but only display those with complete assistant messages
+        const validConversations =
+          filterDisplayableConversations(loadedConversations);
+        setConversations(validConversations);
+
+        // Create a new thread and set it as active conversation
         const thread = await createThread();
         if (thread) {
-          // This will be the active conversation when the app starts
           const newConversation = {
             id: thread.id,
             title: "New Conversation",
             messages: [],
             created: new Date(),
           };
-
-          // Only set conversations from localStorage, don't add the new empty one to history yet
-          setConversations(parsedConversations);
-
           setActiveConversation(newConversation);
           setThreadId(thread.id);
         }
@@ -69,27 +62,19 @@ export const ConversationProvider = ({ children }) => {
     loadSavedConversations();
   }, [createThread, setThreadId]);
 
-  /**
-   * Select a conversation by ID
-   */
   const selectConversation = useCallback(
     async (conversationId) => {
       try {
         const selected = conversations.find((conv) => conv.id === conversationId);
         if (!selected) return;
-
-        // First check if the thread exists/is valid
         const isValid = await validateThread(selected.id);
 
         if (isValid) {
-          // Thread is valid, use it
           setActiveConversation(selected);
           setThreadId(formatThreadId(selected.id));
         } else {
-          // Thread doesn't exist, create a new one
           const thread = await createThread();
           if (thread) {
-            // Update conversation with new thread ID
             const updatedConversation = {
               ...selected,
               id: thread.id,
@@ -97,13 +82,13 @@ export const ConversationProvider = ({ children }) => {
 
             setActiveConversation(updatedConversation);
             setThreadId(thread.id);
-
-            // Update in the conversations list
-            setConversations((prev) =>
-              prev.map((conv) =>
+            setConversations((prev) => {
+              const updated = prev.map((conv) =>
                 conv.id === conversationId ? updatedConversation : conv
-              )
-            );
+              );
+              saveConversations(updated);
+              return updated;
+            });
           }
         }
       } catch (error) {
@@ -112,13 +97,9 @@ export const ConversationProvider = ({ children }) => {
     },
     [conversations, setThreadId, validateThread, formatThreadId, createThread]
   );
-  /**
-   * Create a new conversation
-   */
   const createNewConversation = useCallback(
     async (title) => {
       try {
-        // Always create a new thread
         const thread = await createThread();
         const threadId = thread?.id || uuidv4();
         const newConversation = {
@@ -127,11 +108,12 @@ export const ConversationProvider = ({ children }) => {
           messages: [],
           created: new Date(),
         };
-
-        // Don't add the new empty conversation to the history list
-        // Only include conversations that have messages in the existing list
         setConversations((prev) => {
-          return prev.filter((conv) => conv.messages && conv.messages.length > 0);
+          const validPrevConversations = filterDisplayableConversations(prev);
+          const updatedConversations = [...validPrevConversations, newConversation];
+
+          saveConversations(updatedConversations);
+          return updatedConversations;
         });
 
         setActiveConversation(newConversation);
@@ -143,16 +125,16 @@ export const ConversationProvider = ({ children }) => {
       } catch (error) {
         console.error("Error creating new conversation:", error);
 
-        // Fallback to UUID if thread creation fails
         const fallbackConversation = {
           id: uuidv4(),
           title: title || `New Conversation`,
           messages: [],
           created: new Date(),
-        }; // Update conversations in state with fallback
-        // But don't add the empty conversation to history
+        };
         setConversations((prev) => {
-          return prev.filter((conv) => conv.messages && conv.messages.length > 0);
+          const updatedConversations = [...prev, fallbackConversation];
+          saveConversations(updatedConversations);
+          return updatedConversations;
         });
 
         setActiveConversation(fallbackConversation);
@@ -162,9 +144,7 @@ export const ConversationProvider = ({ children }) => {
     },
     [createThread, setThreadId]
   );
-  /**
-   * Send a message in the active conversation
-   */
+
   const sendMessage = useCallback(
     async (message) => {
       if (!activeConversation) {
@@ -174,7 +154,6 @@ export const ConversationProvider = ({ children }) => {
       setIsLoading(true);
 
       try {
-        // Add user message to the conversation
         const userMessage = {
           role: "user",
           content: message,
@@ -185,148 +164,68 @@ export const ConversationProvider = ({ children }) => {
         let updatedConversation = {
           ...activeConversation,
           messages: updatedMessages,
-        }; // Generate or update title based on the conversation progress
-        const shouldGenerateTitle =
-          // First message case
-          (activeConversation.messages.length === 0 &&
-            activeConversation.title === "New Conversation") ||
-          // Every 3rd message case (starting from 1st)
-          (activeConversation.messages.length > 0 &&
-            activeConversation.messages.length % 3 === 0 &&
-            activeConversation.messages.filter((msg) => msg.role === "user").length >
-              0);
+        };
 
-        if (shouldGenerateTitle) {
-          try {
-            console.log("Generating title for conversation...");
-            // Create a new thread to generate a title
-            const titleThread = await createThread();
-            if (titleThread) {
-              // Use all conversation context for better titles after the first message
-              const contextPrompt =
-                activeConversation.messages.length > 0
-                  ? `Here's a conversation so far:\n${activeConversation.messages
-                      .map(
-                        (m) =>
-                          `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`
-                      )
-                      .join(
-                        "\n"
-                      )}\n\nNew message: "${message}"\n\nPlease generate a brief, descriptive title (4-5 words max) that summarizes this conversation.`
-                  : `Please generate a brief, descriptive title (4-5 words max) for a conversation that starts with this message: "${message}"`;
-
-              const titleResponse = await conversationHandler(
-                contextPrompt,
-                titleThread.id
-              );
-
-              if (titleResponse && titleResponse.answer) {
-                // Clean up the answer to ensure it's just the title
-                const generatedTitle = titleResponse.answer
-                  .replace(/^["']|["']$/g, "") // Remove quotes if present
-                  .trim();
-
-                updatedConversation = {
-                  ...updatedConversation,
-                  title: generatedTitle,
-                };
-
-                console.log("Generated new title:", generatedTitle);
-              }
-            }
-          } catch (titleError) {
-            console.error("Error generating title:", titleError);
-            // Continue with default title if title generation fails
-          }
-        } // Update conversations state        setActiveConversation(updatedConversation);
-        // Don't add to conversations list yet - wait for the bot to respond
+        setActiveConversation(updatedConversation);
         setConversations((prev) => {
-          // If conversation already exists in list, update it
-          if (prev.some((conv) => conv.id === activeConversation.id)) {
-            const updatedConversations = prev.map((conv) =>
+          const conversationExists = prev.some(
+            (conv) => conv.id === activeConversation.id
+          );
+          let updated;
+          if (conversationExists) {
+            updated = prev.map((conv) =>
               conv.id === activeConversation.id ? updatedConversation : conv
             );
-            // Save to localStorage
-            localStorage.setItem(
-              "conversations",
-              JSON.stringify(updatedConversations)
-            );
-            return updatedConversations;
+          } else {
+            updated = [...prev, updatedConversation];
           }
-          // If it's a new conversation, don't add it yet
-          return prev;
+
+          saveConversations(updated);
+          return updated;
         });
 
-        // Send message to Azure OpenAI
-        let response;
-        try {
-          response = await conversationHandler(message, activeConversation.id);
-        } catch (error) {
-          // If API call failed, might need a new thread
-          const thread = await createThread();
-          if (thread) {
-            // Update conversation with new thread ID
-            const reconversation = {
-              ...updatedConversation,
-              id: thread.id,
-            };
+        const response = await conversationHandler(
+          message,
+          activeConversation.id,
+          "asst_6VsHLyDwxFQhoxZakELHag4x"
+        );
 
-            setActiveConversation(reconversation);
-            setConversations((prev) => {
-              return prev.map((conv) =>
-                conv.id === activeConversation.id ? reconversation : conv
-              );
-            });
-
-            // Try again with new thread
-            response = await conversationHandler(message, thread.id);
-          } else {
-            throw error;
-          }
-        } // Add assistant message to the conversation
-        if (response && response.answer) {
+        if (response) {
           const assistantMessage = {
             role: "assistant",
-            content: response.answer,
+            content: response.answer || "",
             timestamp: new Date(),
+            assistantName: response.assistantName || "Assistant",
+            routedFrom: response.routedFrom || null,
           };
 
           const finalMessages = [...updatedMessages, assistantMessage];
+
           const finalConversation = {
-            ...updatedConversation, // Use updatedConversation to preserve the generated title
+            ...updatedConversation,
             messages: finalMessages,
-            // Update ID if response contains a new conversationId
-            id: response.conversationId || activeConversation.id,
+            title:
+              updatedConversation.title === "New Conversation" &&
+              finalMessages.length <= 2
+                ? MessageProcessor.formatConversationTitle(message)
+                : updatedConversation.title,
           };
+
           setActiveConversation(finalConversation);
           setConversations((prev) => {
-            // Check if this conversation is already in the list
-            const existingConvIndex = prev.findIndex(
-              (conv) => conv.id === activeConversation.id
-            );
+            const exists = prev.some((conv) => conv.id === activeConversation.id);
+            let updated;
 
-            let updatedConversations;
-            if (existingConvIndex >= 0) {
-              // Update existing conversation
-              updatedConversations = prev.map((conv) =>
+            if (exists) {
+              updated = prev.map((conv) =>
                 conv.id === activeConversation.id ? finalConversation : conv
               );
             } else {
-              // This is a new conversation with both a question and answer, add it to history
-              updatedConversations = [finalConversation, ...prev];
+              updated = [...prev, finalConversation];
             }
 
-            // Make sure all conversations have messages
-            updatedConversations = updatedConversations.filter(
-              (conv) => conv.messages && conv.messages.length >= 2
-            );
-
-            // Save updated conversations to localStorage
-            localStorage.setItem(
-              "conversations",
-              JSON.stringify(updatedConversations)
-            );
-            return updatedConversations;
+            saveConversations(updated);
+            return updated;
           });
         }
 
@@ -338,8 +237,54 @@ export const ConversationProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    [activeConversation, conversationHandler, createThread, setThreadId]
+    [activeConversation, conversationHandler]
   );
+
+  const addAssistantMessageToConversation = useCallback(
+    (content, assistantName, routedFrom) => {
+      if (!activeConversation) return;
+
+      const assistantMessage = {
+        role: "assistant",
+        content: content,
+        timestamp: new Date(),
+        assistantName: assistantName || "Assistant",
+        routedFrom: routedFrom,
+      };
+
+      const updatedMessages = [...activeConversation.messages, assistantMessage];
+      const updatedConversation = {
+        ...activeConversation,
+        messages: updatedMessages,
+      };
+
+      setActiveConversation(updatedConversation);
+      setConversations((prev) => {
+        const exists = prev.some((conv) => conv.id === activeConversation.id);
+        let updated;
+
+        if (exists) {
+          updated = prev.map((conv) =>
+            conv.id === activeConversation.id ? updatedConversation : conv
+          );
+        } else {
+          updated = [...prev, updatedConversation];
+        }
+
+        saveConversations(updated);
+        return updated;
+      });
+
+      return assistantMessage;
+    },
+    [activeConversation]
+  );
+  const updateConversation = useCallback((updatedConv) => {
+    setConversations((prevConversations) => {
+      return processConversationUpdate(updatedConv, prevConversations);
+    });
+  }, []);
+
   const value = {
     conversations,
     activeConversation,
@@ -348,7 +293,9 @@ export const ConversationProvider = ({ children }) => {
     selectConversation,
     createNewConversation,
     sendMessage,
+    addAssistantMessageToConversation,
     setConversations,
+    updateConversation,
   };
 
   return (
@@ -358,9 +305,6 @@ export const ConversationProvider = ({ children }) => {
   );
 };
 
-/**
- * Hook to use the conversation context
- */
 export const useConversation = () => {
   const context = useContext(ConversationContext);
   if (!context) {

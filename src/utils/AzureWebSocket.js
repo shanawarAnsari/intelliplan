@@ -1,4 +1,3 @@
-// AzureWebSocket.js - Utility for handling WebSocket connections to Azure services
 class AzureWebSocket {
   constructor(url) {
     this.url = url;
@@ -15,17 +14,12 @@ class AzureWebSocket {
     };
   }
 
-  /**
-   * Connect to the WebSocket
-   * @returns {Promise} Resolves when connected, rejects on error
-   */
   connect() {
     return new Promise((resolve, reject) => {
       try {
         this.socket = new WebSocket(this.url);
 
         this.socket.onopen = (event) => {
-          console.log("WebSocket connection established");
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionHandlers.onOpen.forEach((handler) => handler(event));
@@ -33,7 +27,6 @@ class AzureWebSocket {
         };
 
         this.socket.onclose = (event) => {
-          console.log("WebSocket connection closed");
           this.isConnected = false;
           this.connectionHandlers.onClose.forEach((handler) => handler(event));
           this.attemptReconnect();
@@ -55,16 +48,9 @@ class AzureWebSocket {
     });
   }
 
-  /**
-   * Attempt to reconnect to the WebSocket
-   * @private
-   */
   attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(
-        `Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
-      );
 
       setTimeout(() => {
         this.connect().catch((error) => {
@@ -76,11 +62,6 @@ class AzureWebSocket {
     }
   }
 
-  /**
-   * Handle incoming messages
-   * @param {MessageEvent} event - The message event
-   * @private
-   */
   handleMessage(event) {
     try {
       const data = JSON.parse(event.data);
@@ -95,11 +76,6 @@ class AzureWebSocket {
     }
   }
 
-  /**
-   * Send a message through the WebSocket
-   * @param {object|string} message - The message to send
-   * @returns {boolean} True if sent, false if not connected
-   */
   send(message) {
     if (!this.isConnected) {
       console.error("WebSocket is not connected");
@@ -118,11 +94,6 @@ class AzureWebSocket {
     }
   }
 
-  /**
-   * Register a message handler
-   * @param {string} messageType - The type of message to handle
-   * @param {function} handler - The handler function
-   */
   on(messageType, handler) {
     if (!this.messageHandlers.has(messageType)) {
       this.messageHandlers.set(messageType, []);
@@ -131,20 +102,12 @@ class AzureWebSocket {
     this.messageHandlers.get(messageType).push(handler);
   }
 
-  /**
-   * Register a connection event handler
-   * @param {string} event - The event type (open, close, error)
-   * @param {function} handler - The handler function
-   */
   onConnection(event, handler) {
     if (this.connectionHandlers[event]) {
       this.connectionHandlers[event].push(handler);
     }
   }
 
-  /**
-   * Disconnect from the WebSocket
-   */
   disconnect() {
     if (this.socket && this.isConnected) {
       this.socket.close();
@@ -153,5 +116,4 @@ class AzureWebSocket {
   }
 }
 
-// Export the class
 export default AzureWebSocket;

@@ -1,97 +1,482 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  IconButton,
-  Tooltip,
-  Avatar,
-  CircularProgress,
-  useTheme,
-  Drawer,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Fade,
-} from "@mui/material";
-import { useConversation } from "../contexts/ConversationContext";
-import MenuIcon from "@mui/icons-material/Menu";
+import React, { useState, useEffect, useRef } from "react";
+import { Box, useTheme, Button, Fade, Typography } from "@mui/material";
+import Logger from "./Logger";
+import ThinkingIndicator from "./ThinkingIndicator";
+import Logo from "../assets/Intelliplan-logo.png";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import Logo from "../assets/InteliPlan.jpg";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CloseIcon from "@mui/icons-material/Close";
-import { alpha } from "@mui/material/styles";
+import { orchestrateStreaming } from "../services/StreamingService";
+import { useConversation } from "../contexts/ConversationContext";
+import { useConversationHistory } from "../hooks/useConversationHistory";
 
-const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
+const ChatBox = ({ onIsLoadingChange }) => {
   const [messages, setMessages] = useState([]);
-  const messagesEndRef = useRef(null);
-  const [helpDrawerOpen, setHelpDrawerOpen] = useState(false);
-  const theme = useTheme();
-  const {
-    activeConversation,
-    isLoading: isBotResponding,
-    sendMessage,
-    createNewConversation,
-  } = useConversation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [progressLogs, setProgressLogs] = useState([]);
+  const [progressImages, setProgressImages] = useState([]);
+  const [streamStopped, setStreamStopped] = useState(false);
+  const [currentThreadId, setCurrentThreadId] = useState(null);
+  const [allowLoggerDisplay, setAllowLoggerDisplay] = useState(true);
 
-  // FAQ data for the help drawer
-  const faqItems = [
-    {
-      question: "What can this chatbot do?",
-      answer:
-        "This AI assistant can help with data analysis, generate insights from your sales data, create forecasts, and answer questions about market trends and performance metrics.",
-    },
-    {
-      question: "How do I start a new conversation?",
-      answer:
-        "Click on the 'New Conversation' button in the sidebar or simply start typing your question in the message box below.",
-    },
-    {
-      question: "Can I save my conversations?",
-      answer:
-        "Yes, all conversations are automatically saved in the sidebar. You can access them anytime by clicking on the conversation title.",
-    },
-    {
-      question: "What type of data can I analyze?",
-      answer:
-        "You can analyze sales data, market trends, customer behavior patterns, product performance, and regional metrics. Simply ask a question about the data you're interested in.",
-    },
-    {
-      question: "How accurate are the forecasts?",
-      answer:
-        "Forecasts are based on historical data patterns and use advanced predictive models. Accuracy depends on data quality and market stability, but predictions typically include confidence intervals.",
-    },
-    {
-      question: "Can I export the analysis results?",
-      answer:
-        "Yes, you can ask the assistant to prepare data for export. You'll receive downloadable files with your analysis results when available.",
-    },
-  ];
-
-  const toggleHelpDrawer = () => {
-    setHelpDrawerOpen(!helpDrawerOpen);
+  const debugImage = (msg, data) => {
+    setProgressLogs((prev) => [...prev, `[IMAGE] ${msg}: ${JSON.stringify(data)}`]);
   };
 
+  const messagesEndRef = useRef(null);
+  const emitterRef = useRef(null);
+  const theme = useTheme();
+  const { activeConversation, updateConversation } = useConversation();
+  const { processConversationUpdate } = useConversationHistory();
+  useEffect(() => {
+    if (onIsLoadingChange) {
+      onIsLoadingChange(isLoading);
+    }
+  }, [isLoading, onIsLoadingChange]);
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg) => ({
+        id:
+          msg.id ||
+          `restored-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         text: msg.content,
         isBot: msg.role === "assistant",
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        timestamp: new Date(msg.timestamp) || new Date(),
+        assistantName: msg.assistantName,
+        routedFrom: msg.routedFrom,
+        isImage: msg.isImage || false,
+        imageUrl: msg.imageUrl,
+        imageFileId: msg.imageFileId,
+        images: msg.images || [],
+        hasImages: msg.hasImages || (msg.images && msg.images.length > 0),
+        imageFileIds: msg.imageFileIds || [],
+        isChunk: msg.isChunk || false,
+        isFinal: msg.isFinal || false,
+        threadId: msg.threadId,
+        role: msg.role || (msg.isBot ? "assistant" : "user"),
+        content: msg.content || msg.text,
+        fileAttachmentId: msg.fileAttachmentId,
       }));
       setMessages(formattedMessages);
+
+      const isNewConversation =
+        !activeConversation.threadId || activeConversation.isNew;
+      if (isNewConversation) {
+        setCurrentThreadId(null);
+        setAllowLoggerDisplay(true);
+      } else {
+        setCurrentThreadId(
+          activeConversation.threadId || activeConversation.id || null
+        );
+      }
     } else {
       setMessages([]);
+      setCurrentThreadId(null);
+      setAllowLoggerDisplay(true);
     }
   }, [activeConversation]);
+  useEffect(() => {
+    if (activeConversation && activeConversation.id && !activeConversation.isNew) {
+      // Only update conversations that have messages
+      if (activeConversation.messages && activeConversation.messages.length > 0) {
+        const timeoutId = setTimeout(() => {
+          updateConversation(activeConversation);
+        }, 0);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [activeConversation, updateConversation]);
 
   const handleSendMessage = async (text) => {
-    const userMessage = { text, isBot: false, timestamp: new Date() };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    if (!text.trim()) return;
+    setAllowLoggerDisplay(true);
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      text,
+      isBot: false,
+      timestamp: new Date(),
+      role: "user",
+      content: text,
+    };
 
-    await sendMessage(text);
+    setIsLoading(true);
+    setProgressLogs([]);
+    setProgressImages([]);
+    setStreamStopped(false);
+
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    if (activeConversation) {
+      const updatedConversation = {
+        ...activeConversation,
+        messages: [...(activeConversation.messages || []), userMessage],
+      };
+      updateConversation(updatedConversation);
+
+      // Save to localStorage in real-time
+      const conversations = JSON.parse(
+        localStorage.getItem("conversations") || "[]"
+      );
+      const updatedConversations = processConversationUpdate(
+        updatedConversation,
+        conversations
+      );
+      localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+    }
+
+    try {
+      const threadIdToUse =
+        currentThreadId || activeConversation?.threadId || activeConversation?.id;
+      const emitter = orchestrateStreaming(text, threadIdToUse);
+      emitterRef.current = emitter;
+
+      emitter.on("update", (update) => {
+        const { type, content, handler } = update;
+
+        setProgressLogs((prevLogs) => [
+          ...prevLogs,
+          `${handler || "System"} (${type}): ${
+            typeof content === "string" ? content : JSON.stringify(content)
+          }`,
+        ]);
+
+        if (type === "text_chunk") {
+          const isSignificantContent =
+            content.length > 200 ||
+            (content.includes("\n\n") && content.length > 100) ||
+            (content.includes(".") && content.includes("\n") && content.length > 80);
+
+          setMessages((prevMessages) => {
+            const lastChunkIndex = [...prevMessages]
+              .reverse()
+              .findIndex((m) => m.isBot && m.isChunk);
+            const hasChunk = lastChunkIndex !== -1;
+            const chunkIndex = hasChunk
+              ? prevMessages.length - 1 - lastChunkIndex
+              : -1;
+
+            let updatedMessages = [...prevMessages];
+            let newMessage;
+
+            const existingChunkIsLarge =
+              hasChunk &&
+              (updatedMessages[chunkIndex].text.length > 300 ||
+                updatedMessages[chunkIndex].text.split(". ").length > 2);
+
+            if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
+              updatedMessages[chunkIndex] = {
+                ...updatedMessages[chunkIndex],
+                text: updatedMessages[chunkIndex].text + content,
+                content: updatedMessages[chunkIndex].text + content,
+                role: "assistant",
+              };
+              newMessage = updatedMessages[chunkIndex];
+            } else {
+              newMessage = {
+                id: `chunk-${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`,
+                text: content,
+                content: content,
+                isBot: true,
+                role: "assistant",
+                timestamp: new Date(),
+                isChunk: true,
+                isFinal: false,
+                threadId: threadIdToUse,
+              };
+              updatedMessages = [...updatedMessages, newMessage];
+            }
+            if (activeConversation) {
+              const updatedConversation = {
+                ...activeConversation,
+                messages: [...(activeConversation.messages || [])],
+              };
+              if (hasChunk && !isSignificantContent && !existingChunkIsLarge) {
+                const lastIndex = updatedConversation.messages.length - 1;
+                if (
+                  lastIndex >= 0 &&
+                  updatedConversation.messages[lastIndex].isChunk
+                ) {
+                  updatedConversation.messages[lastIndex] = newMessage;
+                }
+              } else {
+                updatedConversation.messages.push(newMessage);
+              }
+
+              updateConversation(updatedConversation);
+
+              // Save chunk messages to localStorage in real-time
+              const conversations = JSON.parse(
+                localStorage.getItem("conversations") || "[]"
+              );
+              const updatedConversations = processConversationUpdate(
+                updatedConversation,
+                conversations
+              );
+              localStorage.setItem(
+                "conversations",
+                JSON.stringify(updatedConversations)
+              );
+            }
+
+            return updatedMessages;
+          });
+        } else if (type === "image") {
+          debugImage("Received image update", content);
+          if (content && content.fileId) {
+            // Store the image temporarily in progressImages for this specific conversation and thread
+            setProgressImages((prev) => {
+              // Only add the image if it's not already in progressImages
+              if (!prev.some((img) => img.fileId === content.fileId)) {
+                const currentThreadIdentifier =
+                  currentThreadId ||
+                  activeConversation?.threadId ||
+                  activeConversation?.id;
+                debugImage("Adding new image to progress images", {
+                  fileId: content.fileId,
+                  url: content.url || null,
+                  threadId: currentThreadIdentifier,
+                  count: prev.length + 1,
+                });
+                return [
+                  ...prev,
+                  {
+                    ...content,
+                    // Add message ID and thread ID to track image context
+                    threadId: currentThreadIdentifier,
+                    messageId: `msg-${Date.now()}`,
+                    timestamp: new Date(),
+                  },
+                ];
+              }
+              return prev;
+            });
+          }
+        }
+      });
+      emitter.on(
+        "finalAnswer",
+        ({ answer, thread, images, files, fileAttachmentId }) => {
+          if (thread && thread.id) {
+            setCurrentThreadId(thread.id);
+          }
+
+          const threadIdentifier =
+            thread?.id ||
+            currentThreadId ||
+            activeConversation?.threadId ||
+            activeConversation?.id;
+
+          // Combine images from the response with any progress images
+          const allAvailableImages = [
+            ...(images || []),
+            ...(progressImages || []).filter(
+              (img) => img.threadId === threadIdentifier
+            ),
+          ];
+
+          // Make sure we have no duplicate images
+          const uniqueImages = [];
+          allAvailableImages.forEach((img) => {
+            if (
+              !uniqueImages.some((existingImg) => existingImg.fileId === img.fileId)
+            ) {
+              uniqueImages.push({
+                ...img,
+                threadId: threadIdentifier,
+                messageId: `msg-final-${Date.now()}`,
+              });
+            }
+          });
+
+          const hasImages = uniqueImages.length > 0;
+
+          if (hasImages) {
+            debugImage(
+              `Final answer has ${uniqueImages.length} unique images for this response`,
+              uniqueImages
+            );
+            // Reset progressImages for next message
+            setProgressImages([]);
+          }
+
+          // Create a single assistant message with both text and images
+          const assistantMessage = {
+            role: "assistant",
+            content: answer,
+            timestamp: new Date(),
+            assistantName: "Assistant",
+            routedFrom: null,
+            isChunk: false,
+            isFinal: true,
+            threadId: threadIdentifier,
+            id: `msg-final-${Date.now()}`,
+            fileAttachmentId, // Use fileAttachmentId from StreamingService
+            // Attach images directly to the message if they exist
+            ...(hasImages && {
+              hasImages: true,
+              images: uniqueImages,
+              imageFileIds: uniqueImages.map((img) => img.fileId),
+            }),
+          };
+
+          let newTitle = activeConversation.title;
+          if (activeConversation.title === "New Conversation") {
+            const firstSentence = answer.split(".")[0].trim();
+            newTitle =
+              firstSentence.substring(0, 40) +
+              (firstSentence.length > 40 ? "..." : "");
+            newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
+            newTitle = newTitle.replace(/[.,;:!?]$/, "");
+          }
+          if (activeConversation) {
+            // Keep ALL existing messages and simply append the final message without any filtering
+            // Do not remove or filter any messages, just keep adding to the array
+            const existingMessages = activeConversation.messages || [];
+
+            // Simply add the new message to the array without filtering anything
+            const updatedMessages = [...existingMessages, assistantMessage];
+
+            const updatedConversation = {
+              ...activeConversation,
+              threadId: threadIdentifier,
+              id: threadIdentifier,
+              messages: updatedMessages,
+              title: newTitle,
+            };
+            updateConversation(updatedConversation); // Save final conversation to localStorage
+            const conversations = JSON.parse(
+              localStorage.getItem("conversations") || "[]"
+            );
+            const updatedConversations = processConversationUpdate(
+              updatedConversation,
+              conversations
+            );
+            localStorage.setItem(
+              "conversations",
+              JSON.stringify(updatedConversations)
+            );
+          } // Update UI messages
+          setMessages((prevMessages) => {
+            // Preserve all existing messages without modifying their properties
+            // Just add the final message to display
+            const finalMessage = {
+              id: assistantMessage.id,
+              text: answer,
+              isBot: true,
+              threadId: threadIdentifier,
+              timestamp: new Date(),
+              assistantName: "Assistant",
+              isFinal: true,
+              role: "assistant",
+              content: answer,
+              fileAttachmentId, // Include fileAttachmentId in the UI message
+              // Attach images directly if they exist
+              ...(hasImages && {
+                hasImages: true,
+                images: [...uniqueImages],
+                imageFileIds: uniqueImages.map((img) => img.fileId),
+              }),
+            };
+
+            return [...prevMessages, finalMessage];
+          });
+
+          setIsLoading(false);
+        }
+      );
+      emitter.on("error", ({ message }) => {
+        const errorMessage = {
+          id: `error-${Date.now()}`,
+          text: `Sorry, there was an error: ${message}`,
+          content: `Sorry, there was an error: ${message}`,
+          isBot: true,
+          role: "assistant",
+          timestamp: new Date(),
+          isError: true,
+        };
+
+        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+        // Save error message to conversation history
+        if (activeConversation) {
+          const updatedConversation = {
+            ...activeConversation,
+            messages: [...(activeConversation.messages || []), errorMessage],
+          };
+
+          updateConversation(updatedConversation);
+
+          // Save to localStorage
+          const conversations = JSON.parse(
+            localStorage.getItem("conversations") || "[]"
+          );
+          const updatedConversations = processConversationUpdate(
+            updatedConversation,
+            conversations
+          );
+          localStorage.setItem(
+            "conversations",
+            JSON.stringify(updatedConversations)
+          );
+        }
+
+        setIsLoading(false);
+      });
+
+      emitter.on("stopped", () => {
+        setStreamStopped(true);
+        setIsLoading(false);
+      });
+    } catch (error) {
+      const errorMessage = {
+        id: `error-${Date.now()}`,
+        text: "Sorry, there was an error processing your request. Please try again.",
+        content:
+          "Sorry, there was an error processing your request. Please try again.",
+        isBot: true,
+        role: "assistant",
+        timestamp: new Date(),
+        isError: true,
+      };
+
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+      // Save error message to conversation history
+      if (activeConversation) {
+        const updatedConversation = {
+          ...activeConversation,
+          messages: [...(activeConversation.messages || []), errorMessage],
+        };
+
+        updateConversation(updatedConversation);
+
+        // Save to localStorage
+        const conversations = JSON.parse(
+          localStorage.getItem("conversations") || "[]"
+        );
+        const updatedConversations = processConversationUpdate(
+          updatedConversation,
+          conversations
+        );
+        localStorage.setItem("conversations", JSON.stringify(updatedConversations));
+      }
+
+      setIsLoading(false);
+    }
+  };
+
+  const handleStopGenerating = () => {
+    if (emitterRef.current && emitterRef.current.stop) {
+      emitterRef.current.stop();
+    }
+    setIsLoading(false);
+  };
+
+  const handleRegenerate = () => {
+    const lastUserMsg = [...messages].reverse().find((m) => !m.isBot);
+    if (lastUserMsg) {
+      handleSendMessage(lastUserMsg.text);
+    }
   };
 
   useEffect(() => {
@@ -99,237 +484,162 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
   }, [messages]);
 
   const isChatEmpty = messages.length === 0;
+  const renderMessages = () => {
+    const messageElements = [];
+
+    // Sort messages by timestamp to ensure chronological order
+    const sortedMessages = [...messages].sort((a, b) => {
+      // Compare by timestamp first
+      const timeCompare = new Date(a.timestamp) - new Date(b.timestamp);
+      // If timestamps are equal (which can happen with quick succession messages)
+      // Use the sequence in the array as a tiebreaker
+      return timeCompare !== 0
+        ? timeCompare
+        : messages.indexOf(a) - messages.indexOf(b);
+    });
+
+    // Find the last user message index
+    let lastUserMessageIndex = -1;
+    sortedMessages.forEach((msg, idx) => {
+      if (!msg.isBot) {
+        lastUserMessageIndex = idx;
+      }
+    });
+
+    sortedMessages.forEach((message, index) => {
+      const isLastMessageInStream = index === sortedMessages.length - 1;
+      messageElements.push(
+        <ChatMessage
+          key={message.id || `msg-${index}`}
+          id={message.id || `msg-${index}`}
+          message={typeof message === "string" ? message : message.text}
+          isBot={message.isBot}
+          timestamp={message.timestamp}
+          isImage={message.isImage}
+          imageUrl={message.imageUrl}
+          imageFileId={message.imageFileId}
+          images={message.images}
+          hasImages={
+            message.hasImages || (message.images && message.images.length > 0)
+          }
+          isChunk={message.isChunk}
+          isFinal={message.isFinal}
+          threadId={message.threadId}
+          onRegenerateResponse={
+            message.isBot && isLastMessageInStream && message.isFinal
+              ? handleRegenerate
+              : undefined
+          }
+          logs={message.logs}
+          isLoadingLogs={isLoading && isLastMessageInStream}
+          fileAttachmentId={message.fileAttachmentId}
+        />
+      );
+
+      // Only add thinking indicator after the last user message
+      if (!message.isBot && index === lastUserMessageIndex && isLoading) {
+        messageElements.push(
+          <ThinkingIndicator
+            key={`thinking-after-${message.id}`}
+            text="Thinking"
+            showSpinner={true}
+          />
+        );
+      }
+    });
+
+    // Add the end of response indicator only at the very end
+    const lastMessage = sortedMessages[sortedMessages.length - 1];
+    if (lastMessage && lastMessage.isBot && lastMessage.isFinal && !isLoading) {
+      messageElements.push(
+        <ThinkingIndicator
+          key="end-response"
+          text="End of response"
+          showSpinner={false}
+          lineVariant="full"
+          isDone={true}
+        />
+      );
+    }
+
+    return messageElements;
+  };
 
   return (
     <Box
       sx={{
         flexGrow: 1,
-        height: "100vh",
         display: "flex",
         flexDirection: "column",
         backgroundColor: theme.palette.background.default,
+        height: "100%",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
-      {/* Header Bar */}
+      {}
       <Box
         sx={{
-          p: "8px 16px",
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: theme.palette.background.paper,
-          boxShadow: theme.shadows[1],
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          {!drawerOpen && (
-            <Tooltip title="Open Sidebar">
-              <IconButton
-                onClick={onToggleDrawer}
-                sx={{
-                  mr: 1,
-                  color: theme.palette.text.secondary,
-                  "&:hover": {
-                    color: theme.palette.text.primary,
-                  },
-                }}
-              >
-                <MenuIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          <img
-            src={Logo}
-            alt="InteliPlan Logo"
-            height="36"
-            className="hover-lift"
-            style={{ borderRadius: "4px" }}
-          />
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Tooltip title="Help & FAQ">
-            <IconButton
-              onClick={toggleHelpDrawer}
-              sx={{
-                color: theme.palette.text.secondary,
-                mr: 1.5,
-                "&:hover": {
-                  color: theme.palette.primary.main,
-                },
-              }}
-            >
-              <HelpOutlineIcon fontSize="medium" />
-            </IconButton>
-          </Tooltip>
-          <IconButton sx={{ p: 0.5 }}>
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: theme.palette.primary.main,
-                transition: "transform 0.2s ease",
-                "&:hover": {
-                  transform: "scale(1.05)",
-                },
-              }}
-            >
-              <AccountCircleIcon fontSize="small" />
-            </Avatar>
-          </IconButton>
-          <Typography
-            variant="body2"
-            sx={{
-              ml: 1,
-              fontWeight: "medium",
-              color: theme.palette.text.primary,
-            }}
-          >
-
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Help Drawer */}
-      <Drawer
-        anchor="right"
-        open={helpDrawerOpen}
-        onClose={() => setHelpDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            width: { xs: "100%", sm: 360 },
-            bgcolor: theme.palette.background.paper,
-            borderLeft: `1px solid ${theme.palette.divider}`,
-            boxShadow: theme.shadows[3],
-          },
-        }}
-      >
-        <Box
-          sx={{
-            p: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h6" fontWeight="medium">
-            Help & Information
-          </Typography>
-          <IconButton
-            onClick={() => setHelpDrawerOpen(false)}
-            sx={{ color: theme.palette.text.secondary }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ p: 2, pt: 1, pb: 0 }}
-        >
-          Frequently asked questions about this assistant.
-        </Typography>
-
-        <Box sx={{ p: 1, overflowY: "auto", flexGrow: 1 }}>
-          {faqItems.map((item, index) => (
-            <Fade
-              key={index}
-              in={true}
-              timeout={300}
-              style={{ transitionDelay: `${index * 50}ms` }}
-            >
-              <Accordion
-                defaultExpanded={index === 0}
-                sx={{
-                  borderBottom:
-                    index < faqItems.length - 1
-                      ? `1px solid ${theme.palette.divider}`
-                      : "none",
-                  "&:last-of-type": {
-                    borderBottomLeftRadius: theme.shape.borderRadius,
-                    borderBottomRightRadius: theme.shape.borderRadius,
-                  },
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={
-                    <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} />
-                  }
-                >
-                  <Typography variant="subtitle1" fontWeight="medium">
-                    {item.question}
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.answer}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-            </Fade>
-          ))}
-        </Box>
-
-        <Box
-          sx={{
-            p: 2,
-            mt: "auto",
-            borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: theme.palette.background.secondary,
-          }}
-        >
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Need more help?
-          </Typography>
-          <Typography
-            variant="body2"
-            component="a"
-            href="mailto:support@intelliplan.example.com"
-            color="primary"
-            className="hover-lift"
-            sx={{
-              textDecoration: "none",
-              fontWeight: "medium",
-              "&:hover": {
-                textDecoration: "underline",
-                color: theme.palette.primary.dark,
-              },
-            }}
-          >
-            Email support@intelliplan.kcc.com
-          </Typography>
-        </Box>
-      </Drawer>
-
-      {/* Chat Content Area */}
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: "900px",
-          mx: "auto",
-          flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          flexGrow: 1,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: "70px",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
-        {/* Messages area or empty state */}
+        {}
+        {allowLoggerDisplay && (
+          <Box
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              pb: 1,
+              mb: 2,
+              backgroundColor: theme.palette.background.default,
+            }}
+          >
+            <Logger logs={progressLogs} isLoading={isLoading} showCountOnly={true} />
+          </Box>
+        )}
         <Box
           sx={{
+            px: 2,
             flexGrow: 1,
-            overflowY: "auto",
-            p: { xs: 1.5, sm: 2.5 },
             display: "flex",
             flexDirection: "column",
+            overflow: "visible",
           }}
         >
-          {isChatEmpty && !isBotResponding ? (
+          {isChatEmpty && !isLoading ? (
             <Fade in={true} timeout={800}>
-              <Box sx={{ textAlign: "center", my: "auto" }}>
-                <img src={Logo} alt="InteliPlan Logo" height="80" className="hover-lift" />
+              <Box
+                sx={{
+                  textAlign: "center",
+                  my: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexGrow: 1,
+                }}
+              >
+                <img
+                  src={Logo}
+                  alt="InteliPlan Logo"
+                  style={{
+                    width: 180,
+                    height: 40,
+                    marginBottom: theme.spacing(2),
+                  }}
+                />
                 <Typography
-                  variant="h4"
+                  variant="h5"
                   sx={{
                     mb: 1,
                     color: theme.palette.text.primary,
@@ -344,93 +654,42 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
                   sx={{ mb: 3, color: "#a5a5a5" }}
                   className="text-reveal"
                 >
-                  Ask a question, analyze data or select one from your history.
+                  Ask a question, analyze data, or select a conversation from
+                  history.
                 </Typography>
-
-                {messages.length === 0 && (
-                  <Fade
-                    in={true}
-                    timeout={1000}
-                    style={{ transitionDelay: "300ms" }}
-                  >
-                    <Box sx={{ width: "100%", maxWidth: "600px", mx: "auto" }}>
-                      <MessageInput
-                        onSendMessage={handleSendMessage}
-                        disabled={isBotResponding}
-                      />
-                    </Box>
-                  </Fade>
-                )}
               </Box>
             </Fade>
           ) : (
-            messages.map((message, index) => (
-              <ChatMessage
-                key={`msg-${activeConversation?.id}-${index}`}
-                message={message.text}
-                isBot={message.isBot}
-                timestamp={message.timestamp}
-                onRegenerateResponse={
-                  message.isBot && index === messages.length - 1
-                    ? () => {
-                      // Find the last user message before this bot message
-                      const lastUserMessageIndex = messages
-                        .slice(0, index)
-                        .map((m, i) => ({ ...m, index: i }))
-                        .filter((m) => !m.isBot)
-                        .pop();
-
-                      if (lastUserMessageIndex) {
-                        handleSendMessage(
-                          messages[lastUserMessageIndex.index].text
-                        );
-                      }
-                    }
-                    : undefined
-                }
-              />
-            ))
+            renderMessages()
           )}
-          {isBotResponding && messages?.length > 0 && (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                p: 1.5,
-                mt: 1,
-              }}
-              className="message-in-left"
-            >
-              <CircularProgress
-                size={20}
-                sx={{ mr: 1.5, color: theme.palette.primary.main }}
-              />
-              <Typography
-                variant="body2"
-                sx={{ color: theme.palette.text.secondary }}
-              >
-                {messages?.length > 0 && 'Agent is thinking...'}
-              </Typography>
+          {streamStopped && messages.length > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Button variant="outlined" onClick={handleRegenerate}>
+                Regenerate response?
+              </Button>
             </Box>
           )}
           <div ref={messagesEndRef} />
         </Box>
-
-        {/* Input at bottom - always visible */}
-        <Box
-          sx={{
-            p: { xs: 1, sm: 1.5 },
-            // borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: "transparent",
-            boxShadow: `0 -2px 5px ${alpha(theme.palette.common.black, 0.05)}`,
-          }}
-        >
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            disabled={isBotResponding}
-          />
-        </Box>
+      </Box>
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.default,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "70px",
+          zIndex: 10,
+        }}
+      >
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          disabled={isLoading}
+          onStopGenerating={handleStopGenerating}
+        />
       </Box>
     </Box>
   );

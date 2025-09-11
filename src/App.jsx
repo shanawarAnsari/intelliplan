@@ -1,29 +1,16 @@
+// In App.jsx or the parent component that uses ConversationHistory
 import React, { useState } from "react";
-import { Box } from "@mui/material";
-import { ThemeProviderWrapper } from "./contexts/ThemeContext";
-import ChatBox from "./components/ChatBox";
-import ConversationHistory from "./components/ConversationHistory";
-import { ConversationProvider } from "./contexts/ConversationContext";
+import ConversationHistory from "./ConversationHistory";
+import ChatBox from "./ChatBox";
 
 function App() {
-  const [drawerOpen, setDrawerOpen] = useState(true);
-
-  const handleToggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-  };
+  const [isChatBoxLoading, setIsChatBoxLoading] = useState(false);
 
   return (
-    <ThemeProviderWrapper>
-      <ConversationProvider>
-        <Box sx={{ display: "flex" }}>
-          <ConversationHistory
-            open={drawerOpen}
-            onToggleDrawer={handleToggleDrawer}
-          />
-          <ChatBox drawerOpen={drawerOpen} onToggleDrawer={handleToggleDrawer} />
-        </Box>
-      </ConversationProvider>
-    </ThemeProviderWrapper>
+    <div className="app">
+      <ConversationHistory isChatBoxLoading={isChatBoxLoading} />
+      <ChatBox onIsLoadingChange={setIsChatBoxLoading} />
+    </div>
   );
 }
 

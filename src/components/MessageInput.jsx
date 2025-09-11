@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { TextField, IconButton, Paper, Box, useTheme } from "@mui/material";
+import { TextField, IconButton, Paper, Box, Tooltip } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import StopCircleIcon from "@mui/icons-material/StopCircle";
 
-const MessageInput = ({ onSendMessage, disabled }) => {
+const MessageInput = ({ onSendMessage, disabled, onStopGenerating }) => {
   const [message, setMessage] = useState("");
-  const theme = useTheme();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,18 +14,24 @@ const MessageInput = ({ onSendMessage, disabled }) => {
     }
   };
 
+  const handleStopGenerating = () => {
+    if (onStopGenerating) {
+      onStopGenerating();
+    }
+  };
+
   return (
     <Paper
       component="form"
       onSubmit={handleSubmit}
-      elevation={1}
+      elevation={2}
       sx={{
         display: "flex",
         alignItems: "center",
-        p: "10px 16px",
-        borderRadius: theme.shape.borderRadius,
-        backgroundColor: "transparent",
-        boxShadow: theme.shadows[2],
+        p: "8px 12px",
+        borderRadius: "10px",
+        backgroundColor: "background.paper",
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
       }}
       className="slide-up"
     >
@@ -37,48 +43,79 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+
+          if (e.key === "Enter" && !e.shiftKey && !disabled) {
             e.preventDefault();
             handleSubmit(e);
           }
         }}
         variant="outlined"
-        disabled={disabled}
+
+        disabled={false}
         InputProps={{
           sx: {
-            borderRadius: theme.shape.borderRadius,
-            fontSize: theme.typography.chatMessage.fontSize,
+            borderRadius: "6px",
+            fontSize: "0.9rem",
           },
         }}
         sx={{
-          mr: 1.5,
+          mr: 0.75,
           "& .MuiOutlinedInput-root": {
             "& fieldset": {
-              borderColor: theme.palette.divider,
+              borderColor: "rgba(255, 255, 255, 0.23)",
             },
             "&:hover fieldset": {
-              borderColor: theme.palette.primary.main,
+              borderColor: "primary.main",
             },
             "&.Mui-focused fieldset": {
-              borderColor: theme.palette.primary.main,
+              borderColor: "primary.main",
             },
+            padding: "4px 8px",
           },
         }}
       />
       <Box>
-        <IconButton
-          type="submit"
-          color="primary"
-          disabled={!message.trim() || disabled}
-          sx={{
-            width: "40px",
-            height: "40px",
-            padding: "8px",
-          }}
-          className={message.trim() && !disabled ? "button-pulse" : ""}
-        >
-          <SendIcon fontSize="medium" />
-        </IconButton>
+        {disabled ? (
+          <Tooltip title="Stop generating">
+            <IconButton
+              onClick={handleStopGenerating}
+              sx={{
+                bgcolor: "rgba(211, 47, 47, 0.1)",
+                color: "#d32f2f",
+                "&:hover": {
+                  bgcolor: "rgba(211, 47, 47, 0.2)",
+                },
+                width: "32px",
+                height: "32px",
+                padding: "6px",
+              }}
+            >
+              <StopCircleIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <IconButton
+            type="submit"
+            color="primary"
+            disabled={!message.trim()}
+            sx={{
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              "&:hover": {
+                bgcolor: "primary.dark",
+              },
+              "&.Mui-disabled": {
+                bgcolor: "action.disabledBackground",
+              },
+              width: "32px",
+              height: "32px",
+              padding: "6px",
+            }}
+            className={message.trim() ? "button-pulse" : ""}
+          >
+            <SendIcon fontSize="small" />
+          </IconButton>
+        )}
       </Box>
     </Paper>
   );
