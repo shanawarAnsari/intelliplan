@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { Box, useTheme, Button, Fade, Typography } from "@mui/material";
 import Logger from "./Logger";
 import ThinkingIndicator from "./ThinkingIndicator";
-import Logo from "../assets/Intelliplan-logo.png";
+import Logo from "../../assets/Intelliplan-logo.png";
 import ChatMessage from "./ChatMessage";
 import MessageInput from "./MessageInput";
-import { orchestrateStreaming } from "../services/StreamingService";
-import { useConversation } from "../contexts/ConversationContext";
-import { useConversationHistory } from "../hooks/useConversationHistory";
+import { orchestrateStreaming } from "../../services/StreamingService";
+import { useConversation } from "../../contexts/ConversationContext";
+import { useConversationHistory } from "../../hooks/useConversationHistory";
 
 const ChatBox = ({ onIsLoadingChange }) => {
   const [messages, setMessages] = useState([]);
@@ -133,8 +133,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
 
         setProgressLogs((prevLogs) => [
           ...prevLogs,
-          `${handler || "System"} (${type}): ${
-            typeof content === "string" ? content : JSON.stringify(content)
+          `${handler || "System"} (${type}): ${typeof content === "string" ? content : JSON.stringify(content)
           }`,
         ]);
 
@@ -577,7 +576,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
         position: "relative",
       }}
     >
-      {}
+      { }
       <Box
         sx={{
           display: "flex",
@@ -592,7 +591,7 @@ const ChatBox = ({ onIsLoadingChange }) => {
           overflowX: "hidden",
         }}
       >
-        {}
+        { }
         {allowLoggerDisplay && (
           <Box
             sx={{

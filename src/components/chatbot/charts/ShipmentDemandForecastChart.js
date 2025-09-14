@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import { Box, Card, CardContent } from "@mui/material";
-import { designTokens } from "../../styles/theme";
+import { designTokens } from "../../../styles/theme";
 import { shipmentData } from "./shipmentData";
 
 const DemandForecastChart = () => {

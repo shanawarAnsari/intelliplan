@@ -1,17 +1,12 @@
 import React from "react";
 import { ThemeProviderWrapper } from "./contexts/ThemeContext";
 import { ConversationProvider } from "./contexts/ConversationContext";
-// import ChatBox from "./components/ChatBox"; // Replaced by MainLayout
-import MainLayout from "./chatbot/MainLayout"; // Import the new MainLayout
+import MainLayout from "./components/chatbot/MainLayout";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import TopNavbar from "./navbar/TopNavbar";
-
-import RunRatePage from "./runrate/RunRatePage";
+import TopNavbar from "./components/navbar/TopNavbar";
+import SalesForecastTable from "./components/runrate/index"
 import "./styles/global.css";
-
-function App() {
-  // const [isChatBoxLoading, setIsChatBoxLoading] = React.useState(false); // This state might be managed differently or within MainLayout/ChatBox
-
+const App = () => {
   return (
     <ThemeProviderWrapper>
       <ConversationProvider>
@@ -19,12 +14,12 @@ function App() {
           <TopNavbar />
           <Routes>
             <Route path="/chatbot" element={<MainLayout />} />
-            <Route path="/runrate" element={<RunRatePage />} />
+            <Route path="/runrate" element={<SalesForecastTable />} />
             <Route path="*" element={<MainLayout />} />
           </Routes>
         </Router>
       </ConversationProvider>
-    </ThemeProviderWrapper>
+    </ThemeProviderWrapper >
   );
 }
 

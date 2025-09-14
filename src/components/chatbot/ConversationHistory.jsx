@@ -21,13 +21,13 @@ import {
   alpha,
 } from "@mui/material";
 
-import { useConversation } from "../contexts/ConversationContext";
-import { useConversationHistory } from "../hooks/useConversationHistory";
+import { useConversation } from "../../contexts/ConversationContext";
+import { useConversationHistory } from "../../hooks/useConversationHistory";
 import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import kimberlyClarkLogo from "../assets/KC_logo_for_dark.png";
+import kimberlyClarkLogo from "../../assets/KC_logo_for_dark.png";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 
 const ConversationHistory = ({ isChatBoxLoading }) => {
@@ -195,8 +195,8 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                         activeConversation?.id === conv.id
                           ? alpha(theme.palette.primary.main, 0.08)
                           : theme.palette.mode === "dark"
-                          ? alpha(theme.palette.background.paper, 0.6)
-                          : alpha(theme.palette.background.paper, 0.9),
+                            ? alpha(theme.palette.background.paper, 0.6)
+                            : alpha(theme.palette.background.paper, 0.9),
                       boxShadow: theme.shadows[1],
                       borderRadius: "6px",
                       transition: "all 0.25s ease-in-out",
@@ -208,11 +208,10 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                             ? alpha(theme.palette.primary.main, 0.12)
                             : alpha(theme.palette.action.hover, 0.1),
                       },
-                      border: `1px solid ${
-                        activeConversation?.id === conv.id
-                          ? alpha(theme.palette.primary.main, 0.3)
-                          : alpha(theme.palette.divider, 0.1)
-                      }`,
+                      border: `1px solid ${activeConversation?.id === conv.id
+                        ? alpha(theme.palette.primary.main, 0.3)
+                        : alpha(theme.palette.divider, 0.1)
+                        }`,
                       position: "relative",
                       overflow: "hidden",
                     }}
@@ -259,9 +258,8 @@ const ConversationHistory = ({ isChatBoxLoading }) => {
                         }}
                       >
                         {conv.messages && conv.messages.length > 0
-                          ? `${conv.messages[0].content.substring(0, 80)}${
-                              conv.messages[0].content.length > 80 ? "..." : ""
-                            }`
+                          ? `${conv.messages[0].content.substring(0, 80)}${conv.messages[0].content.length > 80 ? "..." : ""
+                          }`
                           : "No messages yet"}
                       </Typography>
                     </CardContent>

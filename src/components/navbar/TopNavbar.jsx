@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import Logo from "../assets/Intelliplan-logo.png";
+import Logo from "../../assets/Intelliplan-logo.png";
 import { Link } from "react-router-dom";
 
 const domains = [

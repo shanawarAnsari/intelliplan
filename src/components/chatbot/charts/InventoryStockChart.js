@@ -11,7 +11,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
-import { designTokens } from "../../styles/theme";
+import { designTokens } from "../../../styles/theme";
 import { inventoryData } from "./inventoryData";
 
 const InventoryStockChart = () => {

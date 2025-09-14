@@ -20,7 +20,7 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import DownloadIcon from "@mui/icons-material/Download";
 import Logger from "./Logger";
 import ImageComponent from "./ImageComponent";
-import FileService from "../services/FileService";
+import FileService from "../../services/FileService";
 
 const ChatMessage = ({
   message,
@@ -183,7 +183,7 @@ const ChatMessage = ({
             setFileError(null);
             try {
               // Clear any existing cache for this file
-              const FileService = await import("../services/FileService");
+              const FileService = await import("../../services/FileService");
               await FileService.revokeFileUrl(fileDownloadUrl);
 
               const { blobUrl, filename } = await FileService.fetchFileFromOpenAI(
@@ -233,7 +233,7 @@ const ChatMessage = ({
       if (hasLoadedImageRef.current && imageUrl) return;
 
       try {
-        const ImageService = await import("../services/ImageService");
+        const ImageService = await import("../../services/ImageService");
         const url = await ImageService.fetchImageFromOpenAI(fileId);
 
         if (isMounted) {
@@ -392,10 +392,10 @@ const ChatMessage = ({
               ? isChunk
                 ? "rgba(37, 37, 37, 0.65)"
                 : isFinal
-                ? "rgba(25, 118, 210, 0.12)"
-                : isRoutingMessage
-                ? "rgba(25, 118, 210, 0.08)"
-                : theme.palette.background.secondary
+                  ? "rgba(25, 118, 210, 0.12)"
+                  : isRoutingMessage
+                    ? "rgba(25, 118, 210, 0.08)"
+                    : theme.palette.background.secondary
               : theme.palette.primary.main,
             color: isBot
               ? theme.palette.text.primary
@@ -409,10 +409,10 @@ const ChatMessage = ({
             borderLeft: isFinal
               ? `4px solid ${theme.palette.primary.main}`
               : isChunk
-              ? `2px solid rgba(180, 180, 180, 0.6)`
-              : isRoutingMessage
-              ? `3px solid ${theme.palette.primary.main}`
-              : `4px solid transparent`,
+                ? `2px solid rgba(180, 180, 180, 0.6)`
+                : isRoutingMessage
+                  ? `3px solid ${theme.palette.primary.main}`
+                  : `4px solid transparent`,
             opacity: isChunk ? 0.98 : 1,
             transition: "opacity 0.3s ease, background-color 0.3s ease",
           }}
@@ -547,8 +547,8 @@ const ChatMessage = ({
                 >
                   {typeof message === "string"
                     ? renderMarkdownLinks(
-                        message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")
-                      )
+                      message.replace(/!\[.*?\]\(attachment:\/\/.*?\)/g, "")
+                    )
                     : ""}
                 </Typography>
               )}

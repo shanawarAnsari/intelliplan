@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
-import { displayImage } from "../services/ImageService";
+import { displayImage } from "../../services/ImageService";
 
 const ImageComponent = ({ img, index }) => {
   const [imgLoading, setImgLoading] = useState(true);
@@ -81,7 +81,7 @@ const ImageComponent = ({ img, index }) => {
           console.log(
             `[ImageComponent] Loading image ${index} from fileId: ${img.fileId}`
           );
-          const ImageService = await import("../services/ImageService");
+          const ImageService = await import("../../services/ImageService");
           const url = await ImageService.fetchImageFromOpenAI(img.fileId);
 
           if (url) {
@@ -115,7 +115,7 @@ const ImageComponent = ({ img, index }) => {
     };
 
     loadImage();
-  }, [img.fileId, index]);
+  }, [img.fileId, index, img]);
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -163,7 +163,7 @@ const ImageComponent = ({ img, index }) => {
               if (img.fileId) {
                 const loadImage = async () => {
                   try {
-                    const ImageService = await import("../services/ImageService");
+                    const ImageService = await import("../../services/ImageService");
                     const url = await ImageService.fetchImageFromOpenAI(img.fileId);
                     if (url) {
                       setImgUrl(url);

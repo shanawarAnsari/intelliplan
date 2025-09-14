@@ -7,7 +7,7 @@ import HelpFAQ from "./HelpFAQ";
 import { DemandForecastChart, InventoryStockChart } from "./charts";
 import HistoryIcon from "@mui/icons-material/History";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import { useConversation } from "../contexts/ConversationContext";
+import { useConversation } from "../../contexts/ConversationContext";
 import { AddCircleOutline } from "@mui/icons-material";
 
 const MainLayout = () => {
@@ -104,7 +104,7 @@ const MainLayout = () => {
             position: "relative",
           }}
         >
-          {}
+          { }
           <Box
             ref={historyPanelRef}
             sx={{
@@ -128,7 +128,7 @@ const MainLayout = () => {
             )}
           </Box>
 
-          {}
+          { }
           <Box
             sx={{
               flexGrow: 1,
@@ -138,7 +138,7 @@ const MainLayout = () => {
             }}
           >
             {" "}
-            {}
+            { }
             <Box
               sx={{
                 display: "flex",
@@ -201,13 +201,13 @@ const MainLayout = () => {
                 </IconButton>
               </Tooltip>
             </Box>
-            {}{" "}
+            { }{" "}
             <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
               <ChatBox onIsLoadingChange={setIsChatBoxLoading} />
             </Box>
           </Box>
 
-          {}
+          { }
           <Box
             ref={likedMessagesPanelRef}
             sx={{

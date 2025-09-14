@@ -1,8 +1,3 @@
-import { fetchImageFromOpenAI } from "../services/ImageService";
-
-/**
- * Utility class for message data processing tasks
- */
 export class MessageProcessor {
   /**
    * Extract text content from different types of message content
