@@ -1,143 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import React from "react";
+import { Box, Card, CardContent, Divider } from "@mui/material";
+import { mockShipemntData } from "./mockData";
+import { tableColumns } from "./constants";
 import {
-  Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, TextField, Typography, TablePagination, InputAdornment, IconButton,
-  MenuItem, Select, FormControl, InputLabel, Button
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import DownloadIcon from '@mui/icons-material/Download';
-import { saveAs } from 'file-saver';
-import rgmData from '../data/rgm_data.json';
-
-const columns = [
-  { id: 'category', label: 'Category' },
-  { id: 'TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH', label: 'Forecast Gross Sales' },
-  { id: 'AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS', label: 'Weekend Avg Shipments' },
-  { id: 'AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS', label: 'Weekday Avg Shipments' },
-  { id: 'TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH', label: 'Actual Shipments' },
-];
+  useTableState,
+  useDataFiltering,
+  useDataExport,
+  useCalculatedFields,
+} from "./hooks";
+import { FilterSection, ActiveFiltersChips } from "./FilterSection";
+import DataTable from "./DataTable";
 
 const SalesForecastTable = () => {
-  const [data, setData] = useState(rgmData);
-  const [search, setSearch] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Extract unique sources for filter dropdown
+  const sources = [...new Set(mockShipemntData.map((row) => row.SOURCE))];
 
-  const sources = [...new Set(rgmData.map(row => row.SOURCE))];
+  // Use custom hooks for state management
+  const {
+    search,
+    setSearch,
+    sourceFilter,
+    setSourceFilter,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
+    userInputs,
+    clearFilters,
+    handleUserInputChange,
+    resetPage,
+    hasActiveFilters,
+  } = useTableState();
 
-  useEffect(() => {
-    let filtered = rgmData;
+  // Use custom hook for data filtering
+  const filteredData = useDataFiltering(mockShipemntData, search, sourceFilter);
 
-    if (sourceFilter) {
-      filtered = filtered.filter(row => row.SOURCE === sourceFilter);
-    }
+  // Use custom hook for calculating dynamic fields based on user inputs
+  const calculatedData = useCalculatedFields(filteredData, userInputs);
 
-    if (search) {
-      filtered = filtered.filter(row =>
-        row.category.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+  // Use custom hook for export functionality
+  const { handleDownload } = useDataExport(tableColumns);
 
-    setData(filtered);
-  }, [search, sourceFilter]);
+  // Reset page when filters change
+  React.useEffect(() => {
+    resetPage();
+  }, [search, sourceFilter, resetPage]);
 
-  const handleDownload = () => {
-    const csv = [
-      columns.map(col => col.label).join(','),
-      ...data.map(row =>
-        columns.map(col => row[col.id]).join(',')
-      ),
-    ].join('\n');
+  // Handle pagination
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, 'filtered_sales_forecast.csv');
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Handle export
+  const handleExport = () => {
+    handleDownload(calculatedData);
   };
 
   return (
-    <Box sx={{ p: 3, backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-        Intelliplan POC – Gross Sales Table
-      </Typography>
+    <Box
+      sx={{
+        p: 1,
+        backgroundColor: "#f8fafc",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+      }}
+    >
+      {/* Filters Section */}
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          borderRadius: 2,
+          boxShadow:
+            "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+        }}
+      >
+        <CardContent>
+          <FilterSection
+            search={search}
+            setSearch={setSearch}
+            sourceFilter={sourceFilter}
+            setSourceFilter={setSourceFilter}
+            sources={sources}
+            hasActiveFilters={hasActiveFilters}
+            clearFilters={clearFilters}
+            onExport={handleExport}
+          />
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="Search Category"
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton>
-                  <SearchIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+          <ActiveFiltersChips
+            search={search}
+            setSearch={setSearch}
+            sourceFilter={sourceFilter}
+            setSourceFilter={setSourceFilter}
+            hasActiveFilters={hasActiveFilters}
+          />
 
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Source Filter</InputLabel>
-          <Select
-            value={sourceFilter}
-            label="Source Filter"
-            onChange={(e) => setSourceFilter(e.target.value)}
-          >
-            <MenuItem value="">All Sources</MenuItem>
-            {sources.map(source => (
-              <MenuItem key={source} value={source}>{source}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Button
-          variant="contained"
-          startIcon={<DownloadIcon />}
-          onClick={handleDownload}
-        >
-          Download CSV
-        </Button>
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              {columns.map(col => (
-                <TableCell key={col.id} sx={{ fontWeight: 'bold' }}>
-                  {col.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, idx) => (
-              <TableRow key={idx}>
-                {columns.map(col => (
-                  <TableCell key={col.id}>
-                    {typeof row[col.id] === 'number'
-                      ? row[col.id].toLocaleString(undefined, { maximumFractionDigits: 2 })
-                      : row[col.id]}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={data.length}
-          page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-        />
-      </TableContainer>
+          {/* Data Table */}
+          <Box sx={{ mt: 1 }}>
+            <Divider sx={{ mb: 1 }} />
+            <DataTable
+              columns={tableColumns}
+              data={calculatedData}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handlePageChange}
+              onRowsPerPageChange={handleRowsPerPageChange}
+              userInputs={userInputs}
+              onUserInputChange={handleUserInputChange}
+            />
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

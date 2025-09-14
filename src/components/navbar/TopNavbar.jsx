@@ -29,6 +29,9 @@ const TopNavbar = ({ onToggleHelp }) => {
   return (
     <Box
       sx={{
+        position: "sticky",
+        top: 0,
+        zIndex: 1100,
         p: "8px 24px",
         borderBottom: `1px solid ${theme.palette.divider}`,
         display: "flex",
