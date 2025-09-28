@@ -80,7 +80,6 @@ const FilterSection = ({
             label="Source Filter"
             onChange={(e) => setSourceFilter(e.target.value)}
           >
-            <MenuItem value="">All Sources</MenuItem>
             {sources.map((source) => (
               <MenuItem key={source} value={source}>
                 {source}

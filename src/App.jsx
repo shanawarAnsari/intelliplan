@@ -15,7 +15,7 @@ const App = () => {
           <Routes>
             <Route path="/chatbot" element={<MainLayout />} />
             <Route path="/runrate" element={<SalesForecastTable />} />
-            <Route path="*" element={<MainLayout />} />
+            <Route path="*" element={<SalesForecastTable />} />
           </Routes>
         </Router>
       </ConversationProvider>

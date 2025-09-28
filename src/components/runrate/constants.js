@@ -40,7 +40,7 @@ export const tableColumns = [
     format: (value) =>
       typeof value === "number" && !isNaN(value) ? value.toLocaleString() : "N/A",
   },
-  // New pinkish orange columns from the spreadsheet
+
   {
     id: "SHIPMENTS_REMAINING_DAYS",
     label: "Shipments for remaining days based on run rate",
@@ -48,66 +48,64 @@ export const tableColumns = [
     minWidth: 180,
     format: (value) =>
       typeof value === "number" && !isNaN(value) ? value.toFixed(2) : "0.00",
-    headerColor: "#ffb3ba", // Pinkish orange color
+    headerColor: "#ffb3ba",
   },
   {
     id: "ACTUAL_SHIPMENTS_TILL_DATE_PLUS_REMAINING",
-    label: "Actual shipments till date + Shipments for remaining days",
+    label: "Run rate forecast (Actual shipments till date + Shipments for remaining days)",
     align: "right",
     minWidth: 200,
     format: (value) =>
       typeof value === "number" && !isNaN(value) ? value.toFixed(2) : "0.00",
-    headerColor: "#ffb3ba", // Pinkish orange color
-  },
-  {
-    id: "RUN_RATE_FORECAST",
-    label:
-      "Run rate forecast (Actual shipments till date + Shipments for remaining days)",
-    align: "right",
-    minWidth: 220,
-    format: (value) => "", // Don't populate this column
-    headerColor: "#ffb3ba", // Pinkish orange color
+    headerColor: "#ffb3ba",
   },
   {
     id: "RUN_RATE_VS_FORECAST_MO",
     label: "Run rate forecast vs M-O - S&OP forecast for MO",
     align: "right",
     minWidth: 200,
-    format: (value) => "", // Don't populate this column
-    headerColor: "#ffb3ba", // Pinkish orange color
+    format: (value) =>
+      typeof value === "number" && !isNaN(value) ? value.toFixed(2) : "0.00",
+    headerColor: "#ffb3ba",
   },
   {
     id: "LOW_SIDE_PERCENT",
     label: "Low side %",
     align: "right",
-    minWidth: 120,
-    format: (value) => "", // Don't populate this column
-    headerColor: "#ffb3ba", // Pinkish orange color
-    isUserInput: true, // Mark as user input field
+    minWidth: 125,
+    format: (value) => "",
+    headerColor: "#F0F0F0",
+    isUserInput: true,
   },
   {
     id: "HIGH_SIDE_PERCENT",
     label: "High side %",
     align: "right",
-    minWidth: 120,
-    format: (value) => "", // Don't populate this column
-    headerColor: "#ffb3ba", // Pinkish orange color
-    isUserInput: true, // Mark as user input field
+    minWidth: 125,
+    format: (value) => "",
+    headerColor: "#F0F0F0",
+    isUserInput: true,
   },
   {
     id: "LOW_SIDE_GS",
     label: "Low side GS",
     align: "right",
     minWidth: 120,
-    format: (value) => "", // Don't populate this column
-    headerColor: "#ffb3ba", // Pinkish orange color
+    format: (value) =>
+      typeof value === "number"
+        ? `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        : "0",
+    headerColor: "#ffb3ba",
   },
   {
     id: "HIGH_SIDE_GS",
     label: "High side GS",
     align: "right",
     minWidth: 120,
-    format: (value) => "", // Don't populate this column
-    headerColor: "#ffb3ba", // Pinkish orange color
+    format: (value) =>
+      typeof value === "number"
+        ? `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        : "0",
+    headerColor: "#ffb3ba",
   },
 ];
