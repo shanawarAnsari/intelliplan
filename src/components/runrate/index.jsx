@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Card, CardContent, Divider } from "@mui/material";
-import { mockShipemntData } from "./mockData";
+import { mockShipmentData } from "./mockData";
 import { tableColumns } from "./constants";
 import {
   useTableState,
@@ -12,15 +12,39 @@ import { FilterSection, ActiveFiltersChips } from "./FilterSection";
 import DataTable from "./DataTable";
 
 const SalesForecastTable = () => {
-  // Extract unique sources for filter dropdown
-  const sources = [...new Set(mockShipemntData.map((row) => row.SOURCE))];
+  // Extract unique values for hierarchical filter dropdowns
+  const countries = [...new Set(mockShipmentData.map((row) => row.COUNTRY))].sort();
+
+  // Get categories filtered by selected country
+  const getAvailableCategories = (countryFilter) => {
+    const filtered = countryFilter
+      ? mockShipmentData.filter((row) => row.COUNTRY === countryFilter)
+      : mockShipmentData;
+    return [...new Set(filtered.map((row) => row.CATEGORY))].sort();
+  };
+
+  // Get sub-categories filtered by selected country and category
+  const getAvailableSubCategories = (countryFilter, categoryFilter) => {
+    let filtered = mockShipmentData;
+    if (countryFilter) {
+      filtered = filtered.filter((row) => row.COUNTRY === countryFilter);
+    }
+    if (categoryFilter) {
+      filtered = filtered.filter((row) => row.CATEGORY === categoryFilter);
+    }
+    return [...new Set(filtered.map((row) => row.SUB_CATEGORY))].sort();
+  };
 
   // Use custom hooks for state management
   const {
     search,
     setSearch,
-    sourceFilter,
-    setSourceFilter,
+    countryFilter,
+    setCountryFilter,
+    categoryFilter,
+    setCategoryFilter,
+    subCategoryFilter,
+    setSubCategoryFilter,
     page,
     setPage,
     rowsPerPage,
@@ -32,8 +56,38 @@ const SalesForecastTable = () => {
     hasActiveFilters,
   } = useTableState();
 
+  // Get available options based on current filters
+  const availableCategories = React.useMemo(
+    () => getAvailableCategories(countryFilter),
+    [countryFilter]
+  );
+
+  const availableSubCategories = React.useMemo(
+    () => getAvailableSubCategories(countryFilter, categoryFilter),
+    [countryFilter, categoryFilter]
+  );
+
+  // Clear dependent filters when parent filter changes
+  React.useEffect(() => {
+    if (categoryFilter && !availableCategories.includes(categoryFilter)) {
+      setCategoryFilter("");
+    }
+  }, [categoryFilter, availableCategories, setCategoryFilter]);
+
+  React.useEffect(() => {
+    if (subCategoryFilter && !availableSubCategories.includes(subCategoryFilter)) {
+      setSubCategoryFilter("");
+    }
+  }, [subCategoryFilter, availableSubCategories, setSubCategoryFilter]);
+
   // Use custom hook for data filtering
-  const filteredData = useDataFiltering(mockShipemntData, search, sourceFilter);
+  const filteredData = useDataFiltering(
+    mockShipmentData,
+    search,
+    countryFilter,
+    categoryFilter,
+    subCategoryFilter
+  );
 
   // Use custom hook for calculating dynamic fields based on user inputs
   const calculatedData = useCalculatedFields(filteredData, userInputs);
@@ -44,7 +98,7 @@ const SalesForecastTable = () => {
   // Reset page when filters change
   React.useEffect(() => {
     resetPage();
-  }, [search, sourceFilter, resetPage]);
+  }, [search, countryFilter, categoryFilter, subCategoryFilter, resetPage]);
 
   // Handle pagination
   const handlePageChange = (event, newPage) => {
@@ -83,9 +137,15 @@ const SalesForecastTable = () => {
           <FilterSection
             search={search}
             setSearch={setSearch}
-            sourceFilter={sourceFilter}
-            setSourceFilter={setSourceFilter}
-            sources={sources}
+            countryFilter={countryFilter}
+            setCountryFilter={setCountryFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            subCategoryFilter={subCategoryFilter}
+            setSubCategoryFilter={setSubCategoryFilter}
+            countries={countries}
+            categories={availableCategories}
+            subCategories={availableSubCategories}
             hasActiveFilters={hasActiveFilters}
             clearFilters={clearFilters}
             onExport={handleExport}
@@ -94,8 +154,12 @@ const SalesForecastTable = () => {
           <ActiveFiltersChips
             search={search}
             setSearch={setSearch}
-            sourceFilter={sourceFilter}
-            setSourceFilter={setSourceFilter}
+            countryFilter={countryFilter}
+            setCountryFilter={setCountryFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            subCategoryFilter={subCategoryFilter}
+            setSubCategoryFilter={setSubCategoryFilter}
             hasActiveFilters={hasActiveFilters}
           />
 

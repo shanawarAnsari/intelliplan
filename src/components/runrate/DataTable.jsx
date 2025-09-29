@@ -14,6 +14,30 @@ import {
   Divider,
 } from "@mui/material";
 
+// Utility function to calculate totals for numeric columns
+const calculateTotals = (data, columns) => {
+  const totals = {};
+
+  columns.forEach((col) => {
+    if (col.id === "COUNTRY") {
+      totals[col.id] = "TOTAL";
+    } else if (col.id === "CATEGORY" || col.id === "SUB_CATEGORY") {
+      totals[col.id] = "";
+    } else if (col.isUserInput) {
+      totals[col.id] = ""; // Don't total user input fields
+    } else {
+      // Sum numeric columns
+      const sum = data.reduce((acc, row) => {
+        const value = parseFloat(row[col.id]) || 0;
+        return acc + value;
+      }, 0);
+      totals[col.id] = sum;
+    }
+  });
+
+  return totals;
+};
+
 const DataTable = ({
   columns,
   data,
@@ -24,6 +48,9 @@ const DataTable = ({
   userInputs,
   onUserInputChange,
 }) => {
+  // Calculate totals for all data (not just current page)
+  const totals = calculateTotals(data, columns);
+
   return (
     <>
       <TableContainer
@@ -69,6 +96,49 @@ const DataTable = ({
             </TableRow>
           </TableHead>
           <TableBody>
+            {/* Totals Row */}
+            <TableRow
+              sx={{
+                backgroundColor: "#f1f5f9",
+                borderBottom: "2px solid #3b82f6",
+                "& .MuiTableCell-root": {
+                  fontWeight: 700,
+                  color: "#1e293b",
+                  fontSize: "0.875rem",
+                },
+              }}
+            >
+              {columns.map((col) => (
+                <TableCell
+                  key={`total-${col.id}`}
+                  align={col.align}
+                  sx={{
+                    py: 1,
+                    px: 3,
+                    height: "40px",
+                    verticalAlign: "middle",
+                    backgroundColor: "#f1f5f9",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent:
+                        col.align === "right" ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    {col.isUserInput
+                      ? "" // Don't show anything for user input columns in totals
+                      : col.format && typeof totals[col.id] === "number"
+                      ? col.format(totals[col.id])
+                      : totals[col.id] || ""}
+                  </Box>
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* Data Rows */}
             {data
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((row, idx) => (
@@ -94,8 +164,18 @@ const DataTable = ({
                       align={col.align}
                       sx={{
                         fontSize: "0.875rem",
-                        fontWeight: col.id === "category" ? 600 : 400,
-                        color: col.id === "category" ? "#1e293b" : "#475569",
+                        fontWeight:
+                          col.id === "COUNTRY" ||
+                          col.id === "CATEGORY" ||
+                          col.id === "SUB_CATEGORY"
+                            ? 600
+                            : 400,
+                        color:
+                          col.id === "COUNTRY" ||
+                          col.id === "CATEGORY" ||
+                          col.id === "SUB_CATEGORY"
+                            ? "#1e293b"
+                            : "#475569",
                         backgroundColor: col.headerColor ? "#fef2f2" : "transparent",
                         borderBottom: "1px solid #e2e8f0",
                         py: 1,
@@ -116,36 +196,72 @@ const DataTable = ({
                           <TextField
                             size="small"
                             variant="outlined"
-                            placeholder="Enter %"
-                            value={userInputs[`${idx}-${col.id}`] || ""}
-                            onChange={(e) =>
-                              onUserInputChange(idx, col.id, e.target.value)
+                            placeholder="0"
+                            value={
+                              userInputs[`${page * rowsPerPage + idx}-${col.id}`] ||
+                              ""
                             }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow empty string, minus sign, or valid numbers
+                              if (
+                                value === "" ||
+                                value === "-" ||
+                                (!isNaN(value) && value >= -1000 && value <= 1000)
+                              ) {
+                                onUserInputChange(
+                                  page * rowsPerPage + idx,
+                                  col.id,
+                                  value
+                                );
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const value = parseFloat(e.target.value);
+                              if (!isNaN(value)) {
+                                // Ensure value is within bounds
+                                const clampedValue = Math.max(
+                                  -1000,
+                                  Math.min(1000, value)
+                                );
+                                onUserInputChange(
+                                  page * rowsPerPage + idx,
+                                  col.id,
+                                  clampedValue.toString()
+                                );
+                              }
+                            }}
                             sx={{
-                              minWidth: 80,
+                              minWidth: 100,
                               "& .MuiOutlinedInput-root": {
-                                height: "32px",
+                                height: "36px",
                                 fontSize: "0.875rem",
                                 backgroundColor: "#ffffff",
                                 borderRadius: 1,
+                                border: "1px solid #d1d5db",
+                                "&:hover": {
+                                  borderColor: "#9ca3af",
+                                },
+                                "&.Mui-focused": {
+                                  borderColor: "#3b82f6",
+                                  boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                },
                               },
                               "& .MuiOutlinedInput-input": {
-                                padding: "6px 8px",
+                                padding: "8px 12px",
                                 textAlign: "right",
+                                color: "#1f2937",
+                                "&::placeholder": {
+                                  color: "#9ca3af",
+                                  opacity: 1,
+                                },
                               },
                             }}
                             type="number"
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <Typography
-                                    variant="caption"
-                                    sx={{ color: "#6b7280" }}
-                                  >
-                                    %
-                                  </Typography>
-                                </InputAdornment>
-                              ),
+                            inputProps={{
+                              min: -1000,
+                              max: 1000,
+                              step: 0.01,
                             }}
                           />
                         ) : col.format ? (

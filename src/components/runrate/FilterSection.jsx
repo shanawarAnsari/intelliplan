@@ -17,9 +17,15 @@ import ClearIcon from "@mui/icons-material/Clear";
 const FilterSection = ({
   search,
   setSearch,
-  sourceFilter,
-  setSourceFilter,
-  sources,
+  countryFilter,
+  setCountryFilter,
+  categoryFilter,
+  setCategoryFilter,
+  subCategoryFilter,
+  setSubCategoryFilter,
+  countries,
+  categories,
+  subCategories,
   hasActiveFilters,
   clearFilters,
   onExport,
@@ -28,66 +34,40 @@ const FilterSection = ({
     <Box
       sx={{
         display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        justifyContent: "space-between",
-        alignItems: { md: "center" },
+        flexDirection: "column",
         gap: 2,
       }}
     >
-      {/* Left side - Search */}
-      <TextField
-        label="Search Category"
-        variant="outlined"
-        size="small"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{
-          minWidth: { xs: "100%", md: 300 },
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-          },
-        }}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <SearchIcon sx={{ color: "#6b7280" }} />
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      {/* Right side - Source Filter and Export */}
+      {/* Top row - Search and Export */}
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          flexDirection: { xs: "column", md: "row" },
+          justifyContent: "space-between",
+          alignItems: { md: "center" },
           gap: 2,
-          flexWrap: "wrap",
         }}
       >
-        <FormControl
+        <TextField
+          label="Search Products"
+          variant="outlined"
           size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           sx={{
-            minWidth: { xs: "100%", md: 200 },
+            minWidth: { xs: "100%", md: 300 },
             "& .MuiOutlinedInput-root": {
               borderRadius: 2,
             },
           }}
-        >
-          <InputLabel>Source Filter</InputLabel>
-          <Select
-            value={sourceFilter}
-            label="Source Filter"
-            onChange={(e) => setSourceFilter(e.target.value)}
-          >
-            <MenuItem value="">All Sources</MenuItem>
-            {sources.map((source) => (
-              <MenuItem key={source} value={source}>
-                {source}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <SearchIcon sx={{ color: "#6b7280" }} />
+              </InputAdornment>
+            ),
+          }}
+        />
 
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           {hasActiveFilters && (
@@ -125,6 +105,88 @@ const FilterSection = ({
           </Button>
         </Box>
       </Box>
+
+      {/* Bottom row - Hierarchical filters */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          gap: 2,
+          alignItems: { md: "center" },
+        }}
+      >
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: { xs: "100%", md: 150 },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+            },
+          }}
+        >
+          <InputLabel>Country</InputLabel>
+          <Select
+            value={countryFilter}
+            label="Country"
+            onChange={(e) => setCountryFilter(e.target.value)}
+          >
+            <MenuItem value="">All Countries</MenuItem>
+            {countries.map((country) => (
+              <MenuItem key={country} value={country}>
+                {country}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: { xs: "100%", md: 200 },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+            },
+          }}
+        >
+          <InputLabel>Category</InputLabel>
+          <Select
+            value={categoryFilter}
+            label="Category"
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <MenuItem value="">All Categories</MenuItem>
+            {categories.map((category) => (
+              <MenuItem key={category} value={category}>
+                {category}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: { xs: "100%", md: 200 },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+            },
+          }}
+        >
+          <InputLabel>Sub Category</InputLabel>
+          <Select
+            value={subCategoryFilter}
+            label="Sub Category"
+            onChange={(e) => setSubCategoryFilter(e.target.value)}
+          >
+            <MenuItem value="">All Sub Categories</MenuItem>
+            {subCategories.map((subCategory) => (
+              <MenuItem key={subCategory} value={subCategory}>
+                {subCategory}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
     </Box>
   );
 };
@@ -132,8 +194,12 @@ const FilterSection = ({
 const ActiveFiltersChips = ({
   search,
   setSearch,
-  sourceFilter,
-  setSourceFilter,
+  countryFilter,
+  setCountryFilter,
+  categoryFilter,
+  setCategoryFilter,
+  subCategoryFilter,
+  setSubCategoryFilter,
   hasActiveFilters,
 }) => {
   if (!hasActiveFilters) return null;
@@ -142,17 +208,35 @@ const ActiveFiltersChips = ({
     <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
       {search && (
         <Chip
-          label={`Category: "${search}"`}
+          label={`Search: "${search}"`}
           onDelete={() => setSearch("")}
           size="small"
           color="primary"
           variant="outlined"
         />
       )}
-      {sourceFilter && (
+      {countryFilter && (
         <Chip
-          label={`Source: ${sourceFilter}`}
-          onDelete={() => setSourceFilter("")}
+          label={`Country: ${countryFilter}`}
+          onDelete={() => setCountryFilter("")}
+          size="small"
+          color="primary"
+          variant="outlined"
+        />
+      )}
+      {categoryFilter && (
+        <Chip
+          label={`Category: ${categoryFilter}`}
+          onDelete={() => setCategoryFilter("")}
+          size="small"
+          color="primary"
+          variant="outlined"
+        />
+      )}
+      {subCategoryFilter && (
+        <Chip
+          label={`Sub Category: ${subCategoryFilter}`}
+          onDelete={() => setSubCategoryFilter("")}
           size="small"
           color="primary"
           variant="outlined"

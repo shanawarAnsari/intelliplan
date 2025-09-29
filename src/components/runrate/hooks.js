@@ -70,14 +70,18 @@ export { calculateRemainingDays, calculateRemainingShipments };
 // Hook for managing table state (pagination, search, filters)
 export const useTableState = () => {
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [subCategoryFilter, setSubCategoryFilter] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [userInputs, setUserInputs] = useState({});
 
   const clearFilters = () => {
     setSearch("");
-    setSourceFilter("");
+    setCountryFilter("");
+    setCategoryFilter("");
+    setSubCategoryFilter("");
   };
 
   const handleUserInputChange = (rowIndex, columnId, value) => {
@@ -92,8 +96,12 @@ export const useTableState = () => {
   return {
     search,
     setSearch,
-    sourceFilter,
-    setSourceFilter,
+    countryFilter,
+    setCountryFilter,
+    categoryFilter,
+    setCategoryFilter,
+    subCategoryFilter,
+    setSubCategoryFilter,
     page,
     setPage,
     rowsPerPage,
@@ -102,69 +110,105 @@ export const useTableState = () => {
     clearFilters,
     handleUserInputChange,
     resetPage,
-    hasActiveFilters: search || sourceFilter,
+    hasActiveFilters: search || countryFilter || categoryFilter || subCategoryFilter,
   };
 };
 
 // Hook for data filtering and processing
-export const useDataFiltering = (originalData, search, sourceFilter) => {
+export const useDataFiltering = (
+  originalData,
+  search,
+  countryFilter,
+  categoryFilter,
+  subCategoryFilter
+) => {
   const [filteredData, setFilteredData] = useState(originalData);
 
   useEffect(() => {
     let filtered = originalData;
 
-    if (sourceFilter) {
-      filtered = filtered.filter((row) => row.SOURCE === sourceFilter);
+    // Apply hierarchical filters
+    if (countryFilter) {
+      filtered = filtered.filter((row) => row.COUNTRY === countryFilter);
     }
 
+    if (categoryFilter) {
+      filtered = filtered.filter((row) => row.CATEGORY === categoryFilter);
+    }
+
+    if (subCategoryFilter) {
+      filtered = filtered.filter((row) => row.SUB_CATEGORY === subCategoryFilter);
+    }
+
+    // Apply search across all three fields
     if (search) {
-      filtered = filtered.filter((row) =>
-        row.category.toLowerCase().includes(search.toLowerCase())
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(
+        (row) =>
+          row.COUNTRY?.toLowerCase().includes(searchLower) ||
+          row.CATEGORY?.toLowerCase().includes(searchLower) ||
+          row.SUB_CATEGORY?.toLowerCase().includes(searchLower)
       );
     }
 
     // Calculate derived fields for each row
     const processedData = filtered.map((row, index) => {
-      // Log first few rows for debugging
-      if (index < 3) {
-        console.log(`🔍 Processing row ${index} - Category: ${row.category}`);
-        console.log(
-          `📊 Weekday Rate: ${row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS}, Weekend Rate: ${row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS}`
-        );
-      }
+      // Convert string values to numbers
+      const parseNumericValue = (value) => {
+        if (value === "" || value === null || value === undefined) return 0;
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+
+      const totalForecast = parseNumericValue(
+        row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH
+      );
+      const weekdayRate = parseNumericValue(
+        row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS
+      );
+      const weekendRate = parseNumericValue(
+        row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS
+      );
+      const actualShipmentsTillDate = parseNumericValue(
+        row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH
+      );
 
       // Calculate SHIPMENTS_REMAINING_DAYS
       const shipmentsRemainingDays = calculateRemainingShipments(
-        row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS,
-        row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS
+        weekdayRate,
+        weekendRate
       );
 
-      // Log the calculated value for first few rows
-      if (index < 3) {
-        console.log(
-          `💫 Calculated SHIPMENTS_REMAINING_DAYS for ${row.category}: ${shipmentsRemainingDays}`
-        );
-      }
-
       // Calculate ACTUAL_SHIPMENTS_TILL_DATE_PLUS_REMAINING
-      const actualShipmentsTillDate = isNaN(row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH)
-        ? 0
-        : row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH;
       const actualPlusRemaining = actualShipmentsTillDate + shipmentsRemainingDays;
+
+      // Calculate RUN_RATE_FORECAST (same as ACTUAL_SHIPMENTS_TILL_DATE_PLUS_REMAINING)
+      const runRateForecast = actualPlusRemaining;
+
+      // Calculate RUN_RATE_VS_FORECAST_MO (percentage difference)
+      const runRateVsForecast =
+        totalForecast > 0 ? (actualPlusRemaining / totalForecast) * 100 : 0;
+
       return {
         ...row,
+        // Convert string values to numbers for proper display
+        TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH: totalForecast,
+        AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS: weekdayRate,
+        AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS: weekendRate,
+        TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH: actualShipmentsTillDate,
+        // Calculated fields
         SHIPMENTS_REMAINING_DAYS: shipmentsRemainingDays,
         ACTUAL_SHIPMENTS_TILL_DATE_PLUS_REMAINING: actualPlusRemaining,
-        // Set other calculated fields to null/empty to not populate them
-        RUN_RATE_FORECAST: null,
-        RUN_RATE_VS_FORECAST_MO: null,
+        RUN_RATE_FORECAST: runRateForecast,
+        RUN_RATE_VS_FORECAST_MO: runRateVsForecast,
+        // Set other calculated fields to null/empty to not populate them initially
         LOW_SIDE_GS: null,
         HIGH_SIDE_GS: null,
       };
     });
 
     setFilteredData(processedData);
-  }, [originalData, search, sourceFilter]);
+  }, [originalData, search, countryFilter, categoryFilter, subCategoryFilter]);
 
   return filteredData;
 };
@@ -208,8 +252,24 @@ export const useCalculatedFields = (data, userInputs) => {
 
       // Calculate LOW_SIDE_GS and HIGH_SIDE_GS based on RUN_RATE_FORECAST
       const runRateForecast = row.RUN_RATE_FORECAST || 0;
-      const lowSideGS = (runRateForecast * lowSidePercent) / 100;
-      const highSideGS = (runRateForecast * highSidePercent) / 100;
+      const lowSideGS =
+        runRateForecast > 0 && lowSidePercent > 0
+          ? (runRateForecast * lowSidePercent) / 100 - runRateForecast
+          : 0;
+      const highSideGS =
+        runRateForecast > 0 && highSidePercent > 0
+          ? (runRateForecast * highSidePercent) / 100 - runRateForecast
+          : 0;
+
+      // Debug logging for first few rows
+      if (rowIndex < 3) {
+        console.log(`💰 Calculating GS for row ${rowIndex}:`);
+        console.log(`- Run Rate Forecast: ${runRateForecast}`);
+        console.log(
+          `- Low Side %: ${lowSidePercent}%, High Side %: ${highSidePercent}%`
+        );
+        console.log(`- Low Side GS: ${lowSideGS}, High Side GS: ${highSideGS}`);
+      }
 
       return {
         ...row,
