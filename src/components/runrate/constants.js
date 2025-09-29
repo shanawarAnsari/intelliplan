@@ -48,7 +48,7 @@ export const tableColumns = [
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
   },
-  // New pinkish orange columns from the spreadsheet
+
   {
     id: "SHIPMENTS_REMAINING_DAYS",
     label: "Shipments for remaining days based on run rate",

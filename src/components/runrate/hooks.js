@@ -1,24 +1,17 @@
 import { useState, useEffect } from "react";
 import { saveAs } from "file-saver";
 
-// Utility function to calculate remaining weekdays and weekends in current month
 const calculateRemainingDays = () => {
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const currentDate = today.getDate();
-
-  // Get the last day of the current month
   const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
   let remainingWeekdays = 0;
   let remainingWeekends = 0;
-
-  // Count remaining days from tomorrow until end of month
   for (let day = currentDate + 1; day <= lastDayOfMonth; day++) {
     const date = new Date(currentYear, currentMonth, day);
     const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       // Sunday or Saturday
       remainingWeekends++;
@@ -27,20 +20,12 @@ const calculateRemainingDays = () => {
       remainingWeekdays++;
     }
   }
-
-  // Debug: Log the calculation (remove this in production)
-  console.log(`Remaining days calculation for ${today.toDateString()}:`);
-  console.log(`- Remaining weekdays: ${remainingWeekdays}`);
-  console.log(`- Remaining weekends: ${remainingWeekends}`);
-
   return { remainingWeekdays, remainingWeekends };
 };
 
 // Function to calculate shipments for remaining days based on run rate
 const calculateRemainingShipments = (weekdayRunRate, weekendRunRate) => {
   const { remainingWeekdays, remainingWeekends } = calculateRemainingDays();
-
-  // Handle NaN values
   const safeWeekdayRate =
     isNaN(weekdayRunRate) || weekdayRunRate === null ? 0 : weekdayRunRate;
   const safeWeekendRate =
@@ -49,25 +34,11 @@ const calculateRemainingShipments = (weekdayRunRate, weekendRunRate) => {
   const weekdayShipments = remainingWeekdays * safeWeekdayRate;
   const weekendShipments = remainingWeekends * safeWeekendRate;
   const total = weekdayShipments + weekendShipments;
-
-  // Enhanced logging for debugging
-  console.log(
-    `🚢 Shipments calculation for rates - Weekday: ${safeWeekdayRate}, Weekend: ${safeWeekendRate}`
-  );
-  console.log(
-    `📅 Remaining days - Weekdays: ${remainingWeekdays}, Weekends: ${remainingWeekends}`
-  );
-  console.log(
-    `💰 Calculated shipments - Weekday: ${weekdayShipments}, Weekend: ${weekendShipments}, Total: ${total}`
-  );
-
   return total;
 };
 
-// Export utility functions for potential external use
 export { calculateRemainingDays, calculateRemainingShipments };
 
-// Hook for managing table state (pagination, search, filters)
 export const useTableState = () => {
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("");

@@ -75,7 +75,7 @@ const TopNavbar = ({ onToggleHelp }) => {
             }
             onMouseOut={(e) => (e.currentTarget.style.color = "#fff")}
           >
-            Chatbot
+            Home
           </Link>
           <Link
             to="/runrate"

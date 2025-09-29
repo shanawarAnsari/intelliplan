@@ -17,6 +17,7 @@ body {
   color: #f9fafb;
 
   line-height: 1.25;
+
 }
 
 @keyframes fadeIn {
@@ -128,12 +129,10 @@ body {
 }
 
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0) 100%);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
