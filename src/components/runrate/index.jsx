@@ -7,6 +7,7 @@ import {
   useDataFiltering,
   useDataExport,
   useCalculatedFields,
+  useColumnVisibility,
 } from "./hooks";
 import { FilterSection, ActiveFiltersChips } from "./FilterSection";
 import DataTable from "./DataTable";
@@ -56,6 +57,10 @@ const SalesForecastTable = () => {
     hasActiveFilters,
   } = useTableState();
 
+  // Use column visibility hook
+  const { visibleColumns, handleVisibilityChange, getVisibleColumns } =
+    useColumnVisibility(tableColumns);
+
   // Get available options based on current filters
   const availableCategories = React.useMemo(
     () => getAvailableCategories(countryFilter),
@@ -92,8 +97,8 @@ const SalesForecastTable = () => {
   // Use custom hook for calculating dynamic fields based on user inputs
   const calculatedData = useCalculatedFields(filteredData, userInputs);
 
-  // Use custom hook for export functionality
-  const { handleDownload } = useDataExport(tableColumns);
+  // Use custom hook for export functionality with visible columns only
+  const { handleDownload } = useDataExport(getVisibleColumns());
 
   // Reset page when filters change
   React.useEffect(() => {
@@ -149,6 +154,9 @@ const SalesForecastTable = () => {
             hasActiveFilters={hasActiveFilters}
             clearFilters={clearFilters}
             onExport={handleExport}
+            columns={tableColumns}
+            visibleColumns={visibleColumns}
+            onVisibilityChange={handleVisibilityChange}
           />
 
           <ActiveFiltersChips
@@ -167,7 +175,7 @@ const SalesForecastTable = () => {
           <Box sx={{ mt: 1 }}>
             <Divider sx={{ mb: 1 }} />
             <DataTable
-              columns={tableColumns}
+              columns={getVisibleColumns()}
               data={calculatedData}
               page={page}
               rowsPerPage={rowsPerPage}

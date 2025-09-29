@@ -39,6 +39,7 @@ const calculateRemainingShipments = (weekdayRunRate, weekendRunRate) => {
 
 export { calculateRemainingDays, calculateRemainingShipments };
 
+// Hook for managing table state (pagination, search, filters)
 export const useTableState = () => {
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
@@ -82,6 +83,27 @@ export const useTableState = () => {
     handleUserInputChange,
     resetPage,
     hasActiveFilters: search || countryFilter || categoryFilter || subCategoryFilter,
+  };
+};
+
+// Hook for managing column visibility
+export const useColumnVisibility = (columns) => {
+  // Initially show all columns
+  const [visibleColumns, setVisibleColumns] = useState(columns.map((col) => col.id));
+
+  const handleVisibilityChange = (newVisibleColumns) => {
+    setVisibleColumns(newVisibleColumns);
+  };
+
+  // Get only visible columns
+  const getVisibleColumns = () => {
+    return columns.filter((col) => visibleColumns.includes(col.id));
+  };
+
+  return {
+    visibleColumns,
+    handleVisibilityChange,
+    getVisibleColumns,
   };
 };
 

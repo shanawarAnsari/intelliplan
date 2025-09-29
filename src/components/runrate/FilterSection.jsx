@@ -13,6 +13,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
 import ClearIcon from "@mui/icons-material/Clear";
+import ColumnVisibilityControl from "./ColumnVisibilityControl";
 
 const FilterSection = ({
   search,
@@ -29,6 +30,10 @@ const FilterSection = ({
   hasActiveFilters,
   clearFilters,
   onExport,
+  // New props for column visibility
+  columns,
+  visibleColumns,
+  onVisibilityChange,
 }) => {
   return (
     <Box
@@ -70,6 +75,12 @@ const FilterSection = ({
         />
 
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <ColumnVisibilityControl
+            columns={columns}
+            visibleColumns={visibleColumns}
+            onVisibilityChange={onVisibilityChange}
+          />
+
           {hasActiveFilters && (
             <Button
               variant="outlined"
