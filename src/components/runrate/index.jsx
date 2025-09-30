@@ -30,8 +30,8 @@ const SalesForecastTable = () => {
     if (countryFilter) {
       filtered = filtered.filter((row) => row.COUNTRY === countryFilter);
     }
-    if (categoryFilter) {
-      filtered = filtered.filter((row) => row.CATEGORY === categoryFilter);
+    if (categoryFilter && categoryFilter.length > 0) {
+      filtered = filtered.filter((row) => categoryFilter.includes(row.CATEGORY));
     }
     return [...new Set(filtered.map((row) => row.SUB_CATEGORY))].sort();
   };
@@ -74,16 +74,26 @@ const SalesForecastTable = () => {
 
   // Clear dependent filters when parent filter changes
   React.useEffect(() => {
-    if (categoryFilter && !availableCategories.includes(categoryFilter)) {
-      setCategoryFilter("");
+    if (Array.isArray(categoryFilter) && categoryFilter.length > 0) {
+      const validCategories = categoryFilter.filter((cat) =>
+        availableCategories.includes(cat)
+      );
+      if (validCategories.length !== categoryFilter.length) {
+        setCategoryFilter(validCategories);
+      }
     }
-  }, [categoryFilter, availableCategories, setCategoryFilter]);
+  }, [availableCategories, categoryFilter, setCategoryFilter]);
 
   React.useEffect(() => {
-    if (subCategoryFilter && !availableSubCategories.includes(subCategoryFilter)) {
-      setSubCategoryFilter("");
+    if (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0) {
+      const validSubCategories = subCategoryFilter.filter((subCat) =>
+        availableSubCategories.includes(subCat)
+      );
+      if (validSubCategories.length !== subCategoryFilter.length) {
+        setSubCategoryFilter(validSubCategories);
+      }
     }
-  }, [subCategoryFilter, availableSubCategories, setSubCategoryFilter]);
+  }, [availableSubCategories, subCategoryFilter, setSubCategoryFilter]);
 
   // Use custom hook for data filtering
   const filteredData = useDataFiltering(

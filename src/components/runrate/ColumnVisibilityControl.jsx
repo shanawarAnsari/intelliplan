@@ -275,10 +275,12 @@ const ColumnVisibilityControl = ({
                         sx={{
                           py: 0.5,
                           px: 2,
-                          "&:hover": !isEssential ? {
-                            backgroundColor: "rgba(255, 255, 255, 0.05)",
-                            transform: "translateX(2px)",
-                          } : {},
+                          "&:hover": !isEssential
+                            ? {
+                                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                                transform: "translateX(2px)",
+                              }
+                            : {},
                           "&.Mui-disabled": {
                             opacity: 0.6,
                           },
@@ -347,13 +349,17 @@ const ColumnVisibilityControl = ({
                 })}
               </List>
 
-              {groupIndex < getColumnGroups().length - 1 && <Divider sx={{ borderColor: "#6b7280" }} />}
+              {groupIndex < getColumnGroups().length - 1 && (
+                <Divider sx={{ borderColor: "#6b7280" }} />
+              )}
             </Box>
           ))}
         </Box>
 
         {/* Footer */}
-        <Box sx={{ p: 2, borderTop: "1px solid #6b7280", backgroundColor: "#4b5563" }}>
+        <Box
+          sx={{ p: 2, borderTop: "1px solid #6b7280", backgroundColor: "#4b5563" }}
+        >
           <Button
             fullWidth
             variant="outlined"

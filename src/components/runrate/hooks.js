@@ -42,9 +42,9 @@ export { calculateRemainingDays, calculateRemainingShipments };
 // Hook for managing table state (pagination, search, filters)
 export const useTableState = () => {
   const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [subCategoryFilter, setSubCategoryFilter] = useState("");
+  const [countryFilter, setCountryFilter] = useState("US");
+  const [categoryFilter, setCategoryFilter] = useState([]);
+  const [subCategoryFilter, setSubCategoryFilter] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [userInputs, setUserInputs] = useState({});
@@ -52,8 +52,8 @@ export const useTableState = () => {
   const clearFilters = () => {
     setSearch("");
     setCountryFilter("");
-    setCategoryFilter("");
-    setSubCategoryFilter("");
+    setCategoryFilter([]);
+    setSubCategoryFilter([]);
   };
 
   const handleUserInputChange = (rowIndex, columnId, value) => {
@@ -82,7 +82,11 @@ export const useTableState = () => {
     clearFilters,
     handleUserInputChange,
     resetPage,
-    hasActiveFilters: search || countryFilter || categoryFilter || subCategoryFilter,
+    hasActiveFilters:
+      search ||
+      countryFilter ||
+      (Array.isArray(categoryFilter) && categoryFilter.length > 0) ||
+      (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0),
   };
 };
 
@@ -125,12 +129,14 @@ export const useDataFiltering = (
       filtered = filtered.filter((row) => row.COUNTRY === countryFilter);
     }
 
-    if (categoryFilter) {
-      filtered = filtered.filter((row) => row.CATEGORY === categoryFilter);
+    if (Array.isArray(categoryFilter) && categoryFilter.length > 0) {
+      filtered = filtered.filter((row) => categoryFilter.includes(row.CATEGORY));
     }
 
-    if (subCategoryFilter) {
-      filtered = filtered.filter((row) => row.SUB_CATEGORY === subCategoryFilter);
+    if (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0) {
+      filtered = filtered.filter((row) =>
+        subCategoryFilter.includes(row.SUB_CATEGORY)
+      );
     }
 
     // Apply search across all three fields
