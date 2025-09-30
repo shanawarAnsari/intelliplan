@@ -131,8 +131,8 @@ const DataTable = ({
                     {col.isUserInput
                       ? "" // Don't show anything for user input columns in totals
                       : col.format && typeof totals[col.id] === "number"
-                      ? col.format(totals[col.id])
-                      : totals[col.id] || ""}
+                        ? col.format(totals[col.id])
+                        : totals[col.id] || ""}
                   </Box>
                 </TableCell>
               ))}
@@ -166,14 +166,14 @@ const DataTable = ({
                         fontSize: "0.875rem",
                         fontWeight:
                           col.id === "COUNTRY" ||
-                          col.id === "CATEGORY" ||
-                          col.id === "SUB_CATEGORY"
+                            col.id === "CATEGORY" ||
+                            col.id === "SUB_CATEGORY"
                             ? 600
                             : 400,
                         color:
                           col.id === "COUNTRY" ||
-                          col.id === "CATEGORY" ||
-                          col.id === "SUB_CATEGORY"
+                            col.id === "CATEGORY" ||
+                            col.id === "SUB_CATEGORY"
                             ? "#1e293b"
                             : "#475569",
                         backgroundColor: col.headerColor ? "#fef2f2" : "transparent",
@@ -291,10 +291,10 @@ const DataTable = ({
         sx={{
           backgroundColor: "transparent",
           "& .MuiTablePagination-toolbar": {
-            color: "#374151",
+            color: "#FFF",
           },
           "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            color: "#6b7280",
+            color: "#FFF",
             fontWeight: 500,
           },
         }}

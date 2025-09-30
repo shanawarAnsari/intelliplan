@@ -17,7 +17,7 @@ export const tableColumns = [
     id: "SUB_CATEGORY",
     label: "Sub Category",
     align: "left",
-    minWidth: 160,
+    minWidth: 180,
     format: (value) => value,
   },
   {
@@ -126,7 +126,7 @@ function getCurrencyFormatting(value, maximumFractionDigits) {
   if (value === null || value === undefined || value === 0) return "$0";
   return typeof value === "number" && !isNaN(value)
     ? `$${value.toLocaleString(undefined, {
-        maximumFractionDigits: maximumFractionDigits,
-      })}`
+      maximumFractionDigits: maximumFractionDigits,
+    })}`
     : "$0";
 }

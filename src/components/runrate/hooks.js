@@ -51,7 +51,6 @@ export const useTableState = () => {
 
   const clearFilters = () => {
     setSearch("");
-    setCountryFilter("");
     setCategoryFilter([]);
     setSubCategoryFilter([]);
   };
@@ -84,7 +83,6 @@ export const useTableState = () => {
     resetPage,
     hasActiveFilters:
       search ||
-      countryFilter ||
       (Array.isArray(categoryFilter) && categoryFilter.length > 0) ||
       (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0),
   };
