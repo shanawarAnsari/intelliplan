@@ -27,6 +27,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import TuneIcon from "@mui/icons-material/Tune";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import ColumnVisibilityControl from "./ColumnVisibilityControl";
+import { TableBar, ViewColumn } from "@mui/icons-material";
 
 // Simplified filter popover component - only for categories and sub-categories
 const SimplifiedFilterPopover = ({
@@ -240,7 +241,7 @@ const SimplifiedFilterPopover = ({
         )}
 
         <Divider sx={{ my: 2 }} />
-
+        {/* 
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <Button
             variant="contained"
@@ -254,7 +255,7 @@ const SimplifiedFilterPopover = ({
           >
             Apply Filters
           </Button>
-        </Box>
+        </Box> */}
       </Box>
     </Popover>
   );
@@ -284,11 +285,7 @@ const CombinedFilterButton = ({ selectedCount, hasSelection, onClick }) => (
         minWidth: 100,
         backgroundColor: hasSelection ? "#3b82f6" : "transparent",
         borderColor: hasSelection ? "#3b82f6" : "#d1d5db",
-        color: hasSelection ? "white" : "#6b7280",
-        "&:hover": {
-          backgroundColor: hasSelection ? "#2563eb" : "#f3f4f6",
-          borderColor: hasSelection ? "#2563eb" : "#9ca3af",
-        },
+        color: "white",
       }}
     >
       Filter
@@ -316,18 +313,14 @@ const CombinedColumnsButton = ({ selectedColumns, totalColumns, onClick }) => {
         variant={hiddenCount > 0 ? "contained" : "outlined"}
         size="small"
         onClick={onClick}
-        startIcon={<TuneIcon />}
+        startIcon={<ViewColumn />}
         sx={{
           borderRadius: 2,
           textTransform: "none",
           minWidth: 100,
           backgroundColor: hiddenCount > 0 ? "#3b82f6" : "transparent",
           borderColor: hiddenCount > 0 ? "#3b82f6" : "#d1d5db",
-          color: hiddenCount > 0 ? "white" : "#6b7280",
-          "&:hover": {
-            backgroundColor: hiddenCount > 0 ? "#2563eb" : "#f3f4f6",
-            borderColor: hiddenCount > 0 ? "#2563eb" : "#9ca3af",
-          },
+          color: "white",
         }}
       >
         Columns
@@ -427,6 +420,7 @@ const FilterSection = ({
             minWidth: { xs: "100%", md: 300 },
             "& .MuiOutlinedInput-root": {
               borderRadius: 2,
+              borderColor: "#fff",
             },
           }}
           InputProps={{

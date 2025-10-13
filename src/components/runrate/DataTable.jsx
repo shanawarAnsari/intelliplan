@@ -297,10 +297,10 @@ const DataTable = ({
         sx={{
           backgroundColor: "transparent",
           "& .MuiTablePagination-toolbar": {
-            color: "#374151",
+            color: "#FFF",
           },
           "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            color: "#6b7280",
+            color: "#FFF",
             fontWeight: 500,
           },
         }}
