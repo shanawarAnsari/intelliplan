@@ -21,7 +21,11 @@ const calculateTotals = (data, columns) => {
   columns.forEach((col) => {
     if (col.id === "COUNTRY") {
       totals[col.id] = "TOTAL";
-    } else if (col.id === "CATEGORY" || col.id === "SUB_CATEGORY") {
+    } else if (
+      col.id === "CATEGORY" ||
+      col.id === "SUB_CATEGORY" ||
+      col.id === "BUSINESS_UNIT"
+    ) {
       totals[col.id] = "";
     } else if (col.isUserInput) {
       totals[col.id] = ""; // Don't total user input fields
@@ -166,11 +170,13 @@ const DataTable = ({
                         fontSize: "0.875rem",
                         fontWeight:
                           col.id === "COUNTRY" ||
+                          col.id === "BUSINESS_UNIT" ||
                           col.id === "CATEGORY" ||
                           col.id === "SUB_CATEGORY"
                             ? 600
                             : 400,
                         color:
+                          col.id === "BUSINESS_UNIT" ||
                           col.id === "COUNTRY" ||
                           col.id === "CATEGORY" ||
                           col.id === "SUB_CATEGORY"

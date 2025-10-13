@@ -7,6 +7,13 @@ export const tableColumns = [
     format: (value) => value,
   },
   {
+    id: "BUSINESS_UNIT",
+    label: "Business Unit",
+    align: "left",
+    minWidth: 120,
+    format: (value) => value,
+  },
+  {
     id: "CATEGORY",
     label: "Category",
     align: "left",
@@ -42,13 +49,26 @@ export const tableColumns = [
     format: (value) => getCurrencyFormatting(value, 2),
   },
   {
+    id: "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
+    label: "8 weeks weekend shipment run rate",
+    align: "right",
+    minWidth: 140,
+    format: (value) => getCurrencyFormatting(value, 2),
+  },
+  {
+    id: "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
+    label: "8 weeks weekday shipment run rate",
+    align: "right",
+    minWidth: 140,
+    format: (value) => getCurrencyFormatting(value, 2),
+  },
+  {
     id: "TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH",
     label: "Actual Shipments till date",
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
   },
-
   {
     id: "SHIPMENTS_REMAINING_DAYS",
     label: "Shipments for remaining days based on run rate",
@@ -57,7 +77,6 @@ export const tableColumns = [
     format: (value) => getCurrencyFormatting(value, 2),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
-
   {
     id: "RUN_RATE_FORECAST",
     label:
@@ -75,7 +94,7 @@ export const tableColumns = [
     format: (value) => {
       if (value === null || value === undefined || value === 0) return "0.00%";
       return typeof value === "number" && !isNaN(value)
-        ? `${value.toFixed(2)}`
+        ? `${value.toFixed(2)}%`
         : "0.00%";
     },
     headerColor: "#ffb3ba", // Pinkish orange color

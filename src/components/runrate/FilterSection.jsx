@@ -39,6 +39,7 @@ const SimplifiedFilterPopover = ({
   setCategoryFilter,
   subCategoryFilter,
   setSubCategoryFilter,
+  levelFilter, // Add levelFilter prop
 }) => {
   // Convert to array format for consistency
   const selectedCategories = Array.isArray(categoryFilter) ? categoryFilter : [];
@@ -111,119 +112,132 @@ const SimplifiedFilterPopover = ({
         </Box>
         <Divider sx={{ mb: 2 }} />
 
-        {/* Category Filter - Multi Select */}
-        <Box sx={{ mb: 2 }}>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              mb: 1,
-              fontWeight: 600,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            Categories
-            {selectedCategories.length > 0 && (
-              <Button
-                size="small"
-                onClick={() => setCategoryFilter([])}
+        {/* Category Filter - Show only if level is CATEGORY or SUB_CATEGORY */}
+        {(levelFilter === "CATEGORY" || levelFilter === "SUB_CATEGORY") && (
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: 1,
+                fontWeight: 600,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              Categories
+              {selectedCategories.length > 0 && (
+                <Button
+                  size="small"
+                  onClick={() => setCategoryFilter([])}
+                  sx={{
+                    p: 0,
+                    minWidth: "auto",
+                    fontSize: "0.75rem",
+                    color: "#6b7280",
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
+            </Typography>
+            <Box
+              sx={{
+                maxHeight: 150,
+                overflow: "auto",
+              }}
+            >
+              {categories.map((category) => (
+                <Chip
+                  key={category}
+                  label={category}
+                  size="small"
+                  onClick={() => handleCategoryToggle(category)}
+                  variant={
+                    selectedCategories.includes(category) ? "filled" : "outlined"
+                  }
+                  color={
+                    selectedCategories.includes(category) ? "primary" : "default"
+                  }
+                  sx={{
+                    m: 0.5,
+                    borderRadius: 1,
+                    height: 28,
+                    fontSize: "0.75rem",
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {levelFilter === "CATEGORY" && <Divider sx={{ my: 2 }} />}
+
+        {/* Sub Category Filter - Only show for SUB_CATEGORY level */}
+        {levelFilter === "SUB_CATEGORY" && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Box>
+              <Typography
+                variant="subtitle2"
                 sx={{
-                  p: 0,
-                  minWidth: "auto",
-                  fontSize: "0.75rem",
-                  color: "#6b7280",
+                  mb: 1,
+                  fontWeight: 600,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
-                Clear
-              </Button>
-            )}
-          </Typography>
-          <Box
-            sx={{
-              maxHeight: 150,
-              overflow: "auto",
-            }}
-          >
-            {categories.map((category) => (
-              <Chip
-                key={category}
-                label={category}
-                size="small"
-                onClick={() => handleCategoryToggle(category)}
-                variant={
-                  selectedCategories.includes(category) ? "filled" : "outlined"
-                }
-                color={selectedCategories.includes(category) ? "primary" : "default"}
+                Sub Categories
+                {selectedSubCategories.length > 0 && (
+                  <Button
+                    size="small"
+                    onClick={() => setSubCategoryFilter([])}
+                    sx={{
+                      p: 0,
+                      minWidth: "auto",
+                      fontSize: "0.75rem",
+                      color: "#6b7280",
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </Typography>
+              <Box
                 sx={{
-                  m: 0.5,
-                  borderRadius: 1,
-                  height: 28,
-                  fontSize: "0.75rem",
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Sub Category Filter - Multi Select */}
-        <Box>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              mb: 1,
-              fontWeight: 600,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            Sub Categories
-            {selectedSubCategories.length > 0 && (
-              <Button
-                size="small"
-                onClick={() => setSubCategoryFilter([])}
-                sx={{
-                  p: 0,
-                  minWidth: "auto",
-                  fontSize: "0.75rem",
-                  color: "#6b7280",
+                  maxHeight: 150,
+                  overflow: "auto",
                 }}
               >
-                Clear
-              </Button>
-            )}
-          </Typography>
-          <Box
-            sx={{
-              maxHeight: 150,
-              overflow: "auto",
-            }}
-          >
-            {subCategories.map((subCategory) => (
-              <Chip
-                key={subCategory}
-                label={subCategory}
-                size="small"
-                onClick={() => handleSubCategoryToggle(subCategory)}
-                variant={
-                  selectedSubCategories.includes(subCategory) ? "filled" : "outlined"
-                }
-                color={
-                  selectedSubCategories.includes(subCategory) ? "primary" : "default"
-                }
-                sx={{
-                  m: 0.5,
-                  borderRadius: 1,
-                  height: 28,
-                  fontSize: "0.75rem",
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
+                {subCategories.map((subCategory) => (
+                  <Chip
+                    key={subCategory}
+                    label={subCategory}
+                    size="small"
+                    onClick={() => handleSubCategoryToggle(subCategory)}
+                    variant={
+                      selectedSubCategories.includes(subCategory)
+                        ? "filled"
+                        : "outlined"
+                    }
+                    color={
+                      selectedSubCategories.includes(subCategory)
+                        ? "primary"
+                        : "default"
+                    }
+                    sx={{
+                      m: 0.5,
+                      borderRadius: 1,
+                      height: 28,
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </>
+        )}
 
         <Divider sx={{ my: 2 }} />
 
@@ -340,14 +354,26 @@ const FilterSection = ({
   columns,
   visibleColumns,
   onVisibilityChange,
+  runRateOption,
+  setRunRateOption,
+  levelFilter,
+  setLevelFilter,
 }) => {
   const [filtersAnchorEl, setFiltersAnchorEl] = useState(null);
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
 
-  // Calculate total selected filters (only for category and subcategory)
+  // Calculate total selected filters based on level filter
   const totalSelectedFilters =
-    (Array.isArray(categoryFilter) ? categoryFilter.length : 0) +
-    (Array.isArray(subCategoryFilter) ? subCategoryFilter.length : 0);
+    (levelFilter === "CATEGORY" || levelFilter === "SUB_CATEGORY"
+      ? Array.isArray(categoryFilter)
+        ? categoryFilter.length
+        : 0
+      : 0) +
+    (levelFilter === "SUB_CATEGORY"
+      ? Array.isArray(subCategoryFilter)
+        ? subCategoryFilter.length
+        : 0
+      : 0);
 
   // Handle column button click
   const handleColumnsClick = (event) => {
@@ -357,6 +383,20 @@ const FilterSection = ({
   // Handle columns popover close
   const handleColumnsClose = () => {
     setColumnsAnchorEl(null);
+  };
+
+  // Handle level filter change and clear inappropriate filters
+  const handleLevelFilterChange = (e) => {
+    const newLevel = e.target.value;
+    setLevelFilter(newLevel);
+
+    // Clear filters that don't apply to the new level
+    if (newLevel === "BUSINESS_UNIT") {
+      setCategoryFilter([]);
+      setSubCategoryFilter([]);
+    } else if (newLevel === "CATEGORY") {
+      setSubCategoryFilter([]);
+    }
   };
 
   return (
@@ -399,7 +439,7 @@ const FilterSection = ({
         />
 
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          {/* Country Filter - Single Select Dropdown */}
+          {/* Country Filter - Always show */}
           <FormControl
             size="small"
             sx={{
@@ -425,14 +465,63 @@ const FilterSection = ({
             </Select>
           </FormControl>
 
-          {/* Filter Button */}
-          <CombinedFilterButton
-            selectedCount={totalSelectedFilters}
-            hasSelection={totalSelectedFilters > 0}
-            onClick={(e) => setFiltersAnchorEl(e.currentTarget)}
-          />
+          {/* Level Filter Dropdown */}
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 180,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+              },
+            }}
+          >
+            <InputLabel id="level-select-label">Aggregation Level</InputLabel>
+            <Select
+              labelId="level-select-label"
+              id="level-select"
+              value={levelFilter}
+              label="Aggregation Level"
+              onChange={handleLevelFilterChange}
+            >
+              <MenuItem value="BUSINESS_UNIT">Business Unit</MenuItem>
+              <MenuItem value="CATEGORY">Category</MenuItem>
+              <MenuItem value="SUB_CATEGORY">Sub Category</MenuItem>
+            </Select>
+          </FormControl>
 
-          {/* Clear Filters Button - Now shown always next to filter button */}
+          {/* Run Rate Option Dropdown */}
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 180,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+              },
+            }}
+          >
+            <InputLabel id="runrate-select-label">Run Rate Period</InputLabel>
+            <Select
+              labelId="runrate-select-label"
+              id="runrate-select"
+              value={runRateOption}
+              label="Run Rate Period"
+              onChange={(e) => setRunRateOption(e.target.value)}
+            >
+              <MenuItem value="13weeks">13 Weeks</MenuItem>
+              <MenuItem value="8weeks">8 Weeks</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Filter Button - Only show for relevant levels */}
+          {(levelFilter === "CATEGORY" || levelFilter === "SUB_CATEGORY") && (
+            <CombinedFilterButton
+              selectedCount={totalSelectedFilters}
+              hasSelection={totalSelectedFilters > 0}
+              onClick={(e) => setFiltersAnchorEl(e.currentTarget)}
+            />
+          )}
+
+          {/* Clear Filters Button */}
           {hasActiveFilters && (
             <Button
               variant="outlined"
@@ -488,6 +577,7 @@ const FilterSection = ({
         setCategoryFilter={setCategoryFilter}
         subCategoryFilter={subCategoryFilter}
         setSubCategoryFilter={setSubCategoryFilter}
+        levelFilter={levelFilter} // Pass the levelFilter
       />
 
       {/* Column visibility popover */}
@@ -568,6 +658,7 @@ const ActiveFiltersChips = ({
   subCategoryFilter,
   setSubCategoryFilter,
   hasActiveFilters,
+  levelFilter, // Add levelFilter prop
 }) => {
   if (!hasActiveFilters) return null;
 
@@ -610,26 +701,32 @@ const ActiveFiltersChips = ({
           variant="outlined"
         />
       )}
-      {selectedCategories.map((category) => (
-        <Chip
-          key={category}
-          label={`Category: ${category}`}
-          onDelete={() => handleCategoryRemove(category)}
-          size="small"
-          color="primary"
-          variant="outlined"
-        />
-      ))}
-      {selectedSubCategories.map((subCategory) => (
-        <Chip
-          key={subCategory}
-          label={`Sub Category: ${subCategory}`}
-          onDelete={() => handleSubCategoryRemove(subCategory)}
-          size="small"
-          color="primary"
-          variant="outlined"
-        />
-      ))}
+
+      {/* Only show Category chips if level is appropriate */}
+      {(levelFilter === "CATEGORY" || levelFilter === "SUB_CATEGORY") &&
+        selectedCategories.map((category) => (
+          <Chip
+            key={category}
+            label={`Category: ${category}`}
+            onDelete={() => handleCategoryRemove(category)}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        ))}
+
+      {/* Only show Sub Category chips if level is SUB_CATEGORY */}
+      {levelFilter === "SUB_CATEGORY" &&
+        selectedSubCategories.map((subCategory) => (
+          <Chip
+            key={subCategory}
+            label={`Sub Category: ${subCategory}`}
+            onDelete={() => handleSubCategoryRemove(subCategory)}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        ))}
     </Box>
   );
 };

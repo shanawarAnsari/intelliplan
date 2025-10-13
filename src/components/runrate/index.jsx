@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Card, CardContent, Divider } from "@mui/material";
 import { mockShipmentData } from "./mockData";
 import { tableColumns } from "./constants";
@@ -8,6 +8,7 @@ import {
   useDataExport,
   useCalculatedFields,
   useColumnVisibility,
+  useDataAggregation,
 } from "./hooks";
 import { FilterSection, ActiveFiltersChips } from "./FilterSection";
 import DataTable from "./DataTable";
@@ -15,20 +16,42 @@ import DataTable from "./DataTable";
 const SalesForecastTable = () => {
   // Extract unique values for hierarchical filter dropdowns
   const countries = [...new Set(mockShipmentData.map((row) => row.COUNTRY))].sort();
+  const businessUnits = [
+    ...new Set(mockShipmentData.map((row) => row.BUSINESS_UNIT)),
+  ].sort();
 
-  // Get categories filtered by selected country
-  const getAvailableCategories = (countryFilter) => {
+  // Get business units filtered by selected country
+  const getAvailableBusinessUnits = (countryFilter) => {
     const filtered = countryFilter
       ? mockShipmentData.filter((row) => row.COUNTRY === countryFilter)
       : mockShipmentData;
-    return [...new Set(filtered.map((row) => row.CATEGORY))].sort();
+    return [...new Set(filtered.map((row) => row.BUSINESS_UNIT))].sort();
   };
 
-  // Get sub-categories filtered by selected country and category
-  const getAvailableSubCategories = (countryFilter, categoryFilter) => {
+  // Get categories filtered by selected country and business unit
+  const getAvailableCategories = (countryFilter, businessUnitFilter) => {
     let filtered = mockShipmentData;
     if (countryFilter) {
       filtered = filtered.filter((row) => row.COUNTRY === countryFilter);
+    }
+    if (businessUnitFilter) {
+      filtered = filtered.filter((row) => row.BUSINESS_UNIT === businessUnitFilter);
+    }
+    return [...new Set(filtered.map((row) => row.CATEGORY))].sort();
+  };
+
+  // Get sub-categories filtered by selected country, business unit, and category
+  const getAvailableSubCategories = (
+    countryFilter,
+    businessUnitFilter,
+    categoryFilter
+  ) => {
+    let filtered = mockShipmentData;
+    if (countryFilter) {
+      filtered = filtered.filter((row) => row.COUNTRY === countryFilter);
+    }
+    if (businessUnitFilter) {
+      filtered = filtered.filter((row) => row.BUSINESS_UNIT === businessUnitFilter);
     }
     if (categoryFilter && categoryFilter.length > 0) {
       filtered = filtered.filter((row) => categoryFilter.includes(row.CATEGORY));
@@ -51,28 +74,47 @@ const SalesForecastTable = () => {
     rowsPerPage,
     setRowsPerPage,
     userInputs,
+    runRateOption,
+    setRunRateOption,
+    levelFilter,
+    setLevelFilter,
     clearFilters,
     handleUserInputChange,
     resetPage,
     hasActiveFilters,
   } = useTableState();
 
+  // Add state for business unit filter
+  const [businessUnitFilter, setBusinessUnitFilter] = useState("");
+
   // Use column visibility hook
   const { visibleColumns, handleVisibilityChange, getVisibleColumns } =
     useColumnVisibility(tableColumns);
 
   // Get available options based on current filters
-  const availableCategories = React.useMemo(
-    () => getAvailableCategories(countryFilter),
+  const availableBusinessUnits = React.useMemo(
+    () => getAvailableBusinessUnits(countryFilter),
     [countryFilter]
   );
 
+  const availableCategories = React.useMemo(
+    () => getAvailableCategories(countryFilter, businessUnitFilter),
+    [countryFilter, businessUnitFilter]
+  );
+
   const availableSubCategories = React.useMemo(
-    () => getAvailableSubCategories(countryFilter, categoryFilter),
-    [countryFilter, categoryFilter]
+    () =>
+      getAvailableSubCategories(countryFilter, businessUnitFilter, categoryFilter),
+    [countryFilter, businessUnitFilter, categoryFilter]
   );
 
   // Clear dependent filters when parent filter changes
+  React.useEffect(() => {
+    if (businessUnitFilter && !availableBusinessUnits.includes(businessUnitFilter)) {
+      setBusinessUnitFilter("");
+    }
+  }, [availableBusinessUnits, businessUnitFilter]);
+
   React.useEffect(() => {
     if (Array.isArray(categoryFilter) && categoryFilter.length > 0) {
       const validCategories = categoryFilter.filter((cat) =>
@@ -100,20 +142,72 @@ const SalesForecastTable = () => {
     mockShipmentData,
     search,
     countryFilter,
+    businessUnitFilter, // Add businessUnitFilter
     categoryFilter,
-    subCategoryFilter
+    subCategoryFilter,
+    runRateOption
   );
 
+  // Use data aggregation based on level filter
+  const aggregatedData = useDataAggregation(filteredData, levelFilter);
+
+  // Get visible columns based on run rate option and level filter
+  const getFilteredVisibleColumns = () => {
+    const visibleCols = getVisibleColumns();
+
+    // Filter columns based on level filter
+    let filteredCols = [...visibleCols];
+    if (levelFilter === "BUSINESS_UNIT") {
+      // Hide Category and SubCategory columns
+      filteredCols = filteredCols.filter(
+        (col) => !["CATEGORY", "SUB_CATEGORY"].includes(col.id)
+      );
+    } else if (levelFilter === "CATEGORY") {
+      // Hide only SubCategory column
+      filteredCols = filteredCols.filter((col) => col.id !== "SUB_CATEGORY");
+    }
+
+    // Filter out columns based on the runRateOption
+    return filteredCols.filter((col) => {
+      if (runRateOption === "13weeks") {
+        return ![
+          "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
+          "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
+        ].includes(col.id);
+      } else {
+        return ![
+          "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS",
+          "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS",
+        ].includes(col.id);
+      }
+    });
+  };
+
   // Use custom hook for calculating dynamic fields based on user inputs
-  const calculatedData = useCalculatedFields(filteredData, userInputs);
+  const calculatedData = useCalculatedFields(aggregatedData, userInputs);
 
   // Use custom hook for export functionality with visible columns only
-  const { handleDownload } = useDataExport(getVisibleColumns());
+  const { handleDownload } = useDataExport(getFilteredVisibleColumns());
+
+  // Modified clearFilters function to also clear businessUnitFilter
+  const handleClearAllFilters = () => {
+    clearFilters();
+    setBusinessUnitFilter("");
+  };
 
   // Reset page when filters change
   React.useEffect(() => {
     resetPage();
-  }, [search, countryFilter, categoryFilter, subCategoryFilter, resetPage]);
+  }, [
+    search,
+    countryFilter,
+    businessUnitFilter, // Add businessUnitFilter
+    categoryFilter,
+    subCategoryFilter,
+    resetPage,
+    runRateOption,
+    levelFilter,
+  ]);
 
   // Handle pagination
   const handlePageChange = (event, newPage) => {
@@ -162,11 +256,18 @@ const SalesForecastTable = () => {
             categories={availableCategories}
             subCategories={availableSubCategories}
             hasActiveFilters={hasActiveFilters}
-            clearFilters={clearFilters}
+            clearFilters={handleClearAllFilters}
             onExport={handleExport}
             columns={tableColumns}
             visibleColumns={visibleColumns}
             onVisibilityChange={handleVisibilityChange}
+            runRateOption={runRateOption}
+            setRunRateOption={setRunRateOption}
+            levelFilter={levelFilter}
+            setLevelFilter={setLevelFilter}
+            businessUnits={availableBusinessUnits}
+            businessUnitFilter={businessUnitFilter}
+            setBusinessUnitFilter={setBusinessUnitFilter}
           />
 
           <ActiveFiltersChips
@@ -179,13 +280,16 @@ const SalesForecastTable = () => {
             subCategoryFilter={subCategoryFilter}
             setSubCategoryFilter={setSubCategoryFilter}
             hasActiveFilters={hasActiveFilters}
+            levelFilter={levelFilter}
+            businessUnitFilter={businessUnitFilter}
+            setBusinessUnitFilter={setBusinessUnitFilter}
           />
 
           {/* Data Table */}
           <Box sx={{ mt: 1 }}>
             <Divider sx={{ mb: 1 }} />
             <DataTable
-              columns={getVisibleColumns()}
+              columns={getFilteredVisibleColumns()}
               data={calculatedData}
               page={page}
               rowsPerPage={rowsPerPage}

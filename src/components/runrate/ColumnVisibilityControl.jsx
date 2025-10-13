@@ -49,8 +49,8 @@ const ColumnVisibilityControl = ({
   };
 
   const handleDeselectAll = () => {
-    // Keep the first 3 columns (Country, Category, Sub Category) always visible
-    const essentialColumns = columns.slice(0, 3).map((col) => col.id);
+    // Keep the first 4 columns (Business Unit, Country, Category, Sub Category) always visible
+    const essentialColumns = columns.slice(0, 4).map((col) => col.id);
     onVisibilityChange(essentialColumns);
   };
 
@@ -59,7 +59,7 @@ const ColumnVisibilityControl = ({
       {
         name: "Basic Information",
         columns: columns.filter((col) =>
-          ["COUNTRY", "CATEGORY", "SUB_CATEGORY"].includes(col.id)
+          ["COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"].includes(col.id)
         ),
       },
       {
@@ -69,6 +69,8 @@ const ColumnVisibilityControl = ({
             "TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH",
             "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS",
             "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS",
+            "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
+            "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
             "TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH",
           ].includes(col.id)
         ),
@@ -263,6 +265,7 @@ const ColumnVisibilityControl = ({
                   const isVisible = visibleColumns.includes(column.id);
                   const isEssential = [
                     "COUNTRY",
+                    "BUSINESS_UNIT",
                     "CATEGORY",
                     "SUB_CATEGORY",
                   ].includes(column.id);
