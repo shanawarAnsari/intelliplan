@@ -17,7 +17,6 @@ import {
 // Utility function to calculate totals for numeric columns
 const calculateTotals = (data, columns) => {
   const totals = {};
-
   columns.forEach((col) => {
     if (col.id === "COUNTRY") {
       totals[col.id] = "TOTAL";
@@ -28,9 +27,11 @@ const calculateTotals = (data, columns) => {
     ) {
       totals[col.id] = "";
     } else if (col.isUserInput) {
-      totals[col.id] = ""; // Don't total user input fields
-    } else {
-      // Sum numeric columns
+      totals[col.id] = "";
+    } else if (col.id === "RUN_RATE_VS_FORECAST_MO") {
+      totals[col.id] = (totals["RUN_RATE_FORECAST"] / totals["TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH"]) * 100
+    }
+    else {
       const sum = data.reduce((acc, row) => {
         const value = parseFloat(row[col.id]) || 0;
         return acc + value;
@@ -38,7 +39,6 @@ const calculateTotals = (data, columns) => {
       totals[col.id] = sum;
     }
   });
-
   return totals;
 };
 
@@ -135,8 +135,8 @@ const DataTable = ({
                     {col.isUserInput
                       ? "" // Don't show anything for user input columns in totals
                       : col.format && typeof totals[col.id] === "number"
-                      ? col.format(totals[col.id])
-                      : totals[col.id] || ""}
+                        ? col.format(totals[col.id])
+                        : totals[col.id] || ""}
                   </Box>
                 </TableCell>
               ))}
@@ -170,16 +170,16 @@ const DataTable = ({
                         fontSize: "0.875rem",
                         fontWeight:
                           col.id === "COUNTRY" ||
-                          col.id === "BUSINESS_UNIT" ||
-                          col.id === "CATEGORY" ||
-                          col.id === "SUB_CATEGORY"
+                            col.id === "BUSINESS_UNIT" ||
+                            col.id === "CATEGORY" ||
+                            col.id === "SUB_CATEGORY"
                             ? 600
                             : 400,
                         color:
                           col.id === "BUSINESS_UNIT" ||
-                          col.id === "COUNTRY" ||
-                          col.id === "CATEGORY" ||
-                          col.id === "SUB_CATEGORY"
+                            col.id === "COUNTRY" ||
+                            col.id === "CATEGORY" ||
+                            col.id === "SUB_CATEGORY"
                             ? "#1e293b"
                             : "#475569",
                         backgroundColor: col.headerColor ? "#fef2f2" : "transparent",
