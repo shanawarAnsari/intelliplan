@@ -122,10 +122,7 @@ export const tableColumns = [
     label: "Low Side",
     align: "right",
     minWidth: 120,
-    format: (value) => {
-      if (value === null || value === undefined || value === 0) return "0.00";
-      return typeof value === "number" && !isNaN(value) ? value.toFixed(2) : "0.00";
-    },
+    format: (value) => getCurrencyFormatting(value, 2),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
   {
@@ -133,10 +130,7 @@ export const tableColumns = [
     label: "High side GS",
     align: "right",
     minWidth: 120,
-    format: (value) => {
-      if (value === null || value === undefined || value === 0) return "0.00";
-      return typeof value === "number" && !isNaN(value) ? value.toFixed(2) : "0.00";
-    },
+    format: (value) => getCurrencyFormatting(value, 2),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
 ];

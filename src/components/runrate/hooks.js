@@ -286,27 +286,18 @@ export const useCalculatedFields = (data, userInputs) => {
         parseFloat(userInputs[`${rowIndex}-LOW_SIDE_PERCENT`]) || 0;
       const highSidePercent =
         parseFloat(userInputs[`${rowIndex}-HIGH_SIDE_PERCENT`]) || 0;
-
+      debugger;
       // Calculate LOW_SIDE_GS and HIGH_SIDE_GS based on RUN_RATE_FORECAST
-      const runRateForecast = row.RUN_RATE_FORECAST || 0;
+      const currentMonthSnop = row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH || 0;
+      debugger;
       const lowSideGS =
-        runRateForecast > 0 && lowSidePercent > 0
-          ? (runRateForecast * lowSidePercent) / 100 - runRateForecast
+        currentMonthSnop > 0 && lowSidePercent > 0
+          ? (currentMonthSnop * lowSidePercent) / 100 - currentMonthSnop
           : 0;
       const highSideGS =
-        runRateForecast > 0 && highSidePercent > 0
-          ? (runRateForecast * highSidePercent) / 100 - runRateForecast
+        currentMonthSnop > 0 && highSidePercent > 0
+          ? (currentMonthSnop * highSidePercent) / 100 - currentMonthSnop
           : 0;
-
-      // Debug logging for first few rows
-      if (rowIndex < 3) {
-        console.log(`💰 Calculating GS for row ${rowIndex}:`);
-        console.log(`- Run Rate Forecast: ${runRateForecast}`);
-        console.log(
-          `- Low Side %: ${lowSidePercent}%, High Side %: ${highSidePercent}%`
-        );
-        console.log(`- Low Side GS: ${lowSideGS}, High Side GS: ${highSideGS}`);
-      }
 
       return {
         ...row,
@@ -412,8 +403,8 @@ export const useDataAggregation = (filteredData, levelFilter) => {
       group.RUN_RATE_VS_FORECAST_MO =
         group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH > 0
           ? (group.RUN_RATE_FORECAST /
-              group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
-            100
+            group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
+          100
           : 0;
 
       // Remove helper fields
