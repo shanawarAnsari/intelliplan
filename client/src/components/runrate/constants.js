@@ -3,28 +3,28 @@ export const tableColumns = [
     id: "COUNTRY",
     label: "Country",
     align: "left",
-    minWidth: 100,
+    minWidth: 80,
     format: (value) => value,
   },
   {
     id: "BUSINESS_UNIT",
     label: "Business Unit",
     align: "left",
-    minWidth: 120,
+    minWidth: 100,
     format: (value) => value,
   },
   {
     id: "CATEGORY",
     label: "Category",
     align: "left",
-    minWidth: 180,
+    minWidth: 140,
     format: (value) => value,
   },
   {
     id: "SUB_CATEGORY",
     label: "Sub Category",
     align: "left",
-    minWidth: 180,
+    minWidth: 140,
     format: (value) => value,
   },
   {
@@ -139,7 +139,7 @@ function getCurrencyFormatting(value, maximumFractionDigits) {
   if (value === null || value === undefined || value === 0) return "$0";
   return typeof value === "number" && !isNaN(value)
     ? `$${value.toLocaleString(undefined, {
-      maximumFractionDigits: maximumFractionDigits,
-    })}`
+        maximumFractionDigits: maximumFractionDigits,
+      })}`
     : "$0";
 }

@@ -1,5 +1,16 @@
-import React, { useState } from "react";
-import { Box, Card, CardContent, Divider } from "@mui/material";
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Divider,
+  Alert,
+  CircularProgress,
+  Typography,
+  Button,
+} from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
 import { tableColumns } from "./constants";
 import {
@@ -13,54 +24,11 @@ import {
 import { FilterSection, ActiveFiltersChips } from "./FilterSection";
 import DataTable from "./DataTable";
 import { useRunRateData } from "./hooks/useRunRate";
+import { getUniqueValues, getFilteredValues } from "./utils/filterUtils";
 
 const SalesForecastTable = () => {
-
-  const { data: mockShipmentData, error, loading } = useRunRateData();
-  // Extract unique values for hierarchical filter dropdowns
-  const countries = [...new Set(mockShipmentData?.map((row) => row.COUNTRY))].sort();
-  const businessUnits = [
-    ...new Set(mockShipmentData?.map((row) => row.BUSINESS_UNIT)),
-  ].sort();
-
-  // Get business units filtered by selected country
-  const getAvailableBusinessUnits = (countryFilter) => {
-    const filtered = countryFilter
-      ? mockShipmentData?.filter((row) => row.COUNTRY === countryFilter)
-      : mockShipmentData;
-    return [...new Set(filtered?.map((row) => row.BUSINESS_UNIT))].sort();
-  };
-
-  // Get categories filtered by selected country and business unit
-  const getAvailableCategories = (countryFilter, businessUnitFilter) => {
-    let filtered = mockShipmentData;
-    if (countryFilter) {
-      filtered = filtered?.filter((row) => row.COUNTRY === countryFilter);
-    }
-    if (businessUnitFilter) {
-      filtered = filtered?.filter((row) => row.BUSINESS_UNIT === businessUnitFilter);
-    }
-    return [...new Set(filtered?.map((row) => row.CATEGORY))].sort();
-  };
-
-  // Get sub-categories filtered by selected country, business unit, and category
-  const getAvailableSubCategories = (
-    countryFilter,
-    businessUnitFilter,
-    categoryFilter
-  ) => {
-    let filtered = mockShipmentData;
-    if (countryFilter) {
-      filtered = filtered?.filter((row) => row.COUNTRY === countryFilter);
-    }
-    if (businessUnitFilter) {
-      filtered = filtered?.filter((row) => row.BUSINESS_UNIT === businessUnitFilter);
-    }
-    if (categoryFilter && categoryFilter.length > 0) {
-      filtered = filtered?.filter((row) => categoryFilter.includes(row.CATEGORY));
-    }
-    return [...new Set(filtered?.map((row) => row.SUB_CATEGORY))].sort();
-  };
+  const { data: mockShipmentData, error, loading, refetch } = useRunRateData();
+  const [businessUnitFilter, setBusinessUnitFilter] = useState([]);
 
   // Use custom hooks for state management
   const {
@@ -84,41 +52,67 @@ const SalesForecastTable = () => {
     clearFilters,
     handleUserInputChange,
     resetPage,
-    hasActiveFilters,
+    hasActiveFilters: getHasActiveFilters,
   } = useTableState();
 
-  // Add state for business unit filter
-  const [businessUnitFilter, setBusinessUnitFilter] = useState("");
+  // Calculate hasActiveFilters with businessUnitFilter
+  const hasActiveFilters = getHasActiveFilters(
+    categoryFilter,
+    subCategoryFilter,
+    businessUnitFilter
+  );
 
   // Use column visibility hook
   const { visibleColumns, handleVisibilityChange, getVisibleColumns } =
     useColumnVisibility(tableColumns);
 
+  // Extract unique values using utility function
+  const countries = useMemo(
+    () => getUniqueValues(mockShipmentData, "COUNTRY"),
+    [mockShipmentData]
+  );
+
   // Get available options based on current filters
-  const availableBusinessUnits = React.useMemo(
-    () => getAvailableBusinessUnits(countryFilter),
-    [countryFilter]
-  );
-
-  const availableCategories = React.useMemo(
-    () => getAvailableCategories(countryFilter, businessUnitFilter),
-    [countryFilter, businessUnitFilter]
-  );
-
-  const availableSubCategories = React.useMemo(
+  const availableBusinessUnits = useMemo(
     () =>
-      getAvailableSubCategories(countryFilter, businessUnitFilter, categoryFilter),
-    [countryFilter, businessUnitFilter, categoryFilter]
+      getFilteredValues(mockShipmentData, "BUSINESS_UNIT", {
+        COUNTRY: countryFilter,
+      }),
+    [mockShipmentData, countryFilter]
+  );
+
+  const availableCategories = useMemo(
+    () =>
+      getFilteredValues(mockShipmentData, "CATEGORY", {
+        COUNTRY: countryFilter,
+        BUSINESS_UNIT: businessUnitFilter,
+      }),
+    [mockShipmentData, countryFilter, businessUnitFilter]
+  );
+
+  const availableSubCategories = useMemo(
+    () =>
+      getFilteredValues(mockShipmentData, "SUB_CATEGORY", {
+        COUNTRY: countryFilter,
+        BUSINESS_UNIT: businessUnitFilter,
+        CATEGORY: categoryFilter,
+      }),
+    [mockShipmentData, countryFilter, businessUnitFilter, categoryFilter]
   );
 
   // Clear dependent filters when parent filter changes
-  React.useEffect(() => {
-    if (businessUnitFilter && !availableBusinessUnits.includes(businessUnitFilter)) {
-      setBusinessUnitFilter("");
+  useEffect(() => {
+    if (Array.isArray(businessUnitFilter) && businessUnitFilter.length > 0) {
+      const validBusinessUnits = businessUnitFilter.filter((bu) =>
+        availableBusinessUnits.includes(bu)
+      );
+      if (validBusinessUnits.length !== businessUnitFilter.length) {
+        setBusinessUnitFilter(validBusinessUnits);
+      }
     }
   }, [availableBusinessUnits, businessUnitFilter]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (Array.isArray(categoryFilter) && categoryFilter.length > 0) {
       const validCategories = categoryFilter.filter((cat) =>
         availableCategories.includes(cat)
@@ -129,7 +123,7 @@ const SalesForecastTable = () => {
     }
   }, [availableCategories, categoryFilter, setCategoryFilter]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0) {
       const validSubCategories = subCategoryFilter.filter((subCat) =>
         availableSubCategories.includes(subCat)
@@ -145,7 +139,7 @@ const SalesForecastTable = () => {
     mockShipmentData,
     search,
     countryFilter,
-    businessUnitFilter, // Add businessUnitFilter
+    businessUnitFilter,
     categoryFilter,
     subCategoryFilter,
     runRateOption
@@ -158,19 +152,15 @@ const SalesForecastTable = () => {
   const getFilteredVisibleColumns = () => {
     const visibleCols = getVisibleColumns();
 
-    // Filter columns based on level filter
     let filteredCols = [...visibleCols];
     if (levelFilter === "BUSINESS_UNIT") {
-      // Hide Category and SubCategory columns
       filteredCols = filteredCols.filter(
         (col) => !["CATEGORY", "SUB_CATEGORY"].includes(col.id)
       );
     } else if (levelFilter === "CATEGORY") {
-      // Hide only SubCategory column
       filteredCols = filteredCols.filter((col) => col.id !== "SUB_CATEGORY");
     }
 
-    // Filter out columns based on the runRateOption
     return filteredCols.filter((col) => {
       if (runRateOption === "13weeks") {
         return ![
@@ -186,25 +176,25 @@ const SalesForecastTable = () => {
     });
   };
 
-  // Use custom hook for calculating dynamic fields based on user inputs
+  // Use custom hook for calculating dynamic fields
   const calculatedData = useCalculatedFields(aggregatedData, userInputs);
 
-  // Use custom hook for export functionality with visible columns only
-  const { handleDownload } = useDataExport(getFilteredVisibleColumns());
+  // Use custom hook for export functionality - pass the filtered visible columns directly
+  const { handleDownload } = useDataExport(getFilteredVisibleColumns);
 
-  // Modified clearFilters function to also clear businessUnitFilter
+  // Clear all filters including businessUnitFilter
   const handleClearAllFilters = () => {
     clearFilters();
-    setBusinessUnitFilter("");
+    setBusinessUnitFilter([]);
   };
 
   // Reset page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     resetPage();
   }, [
     search,
     countryFilter,
-    businessUnitFilter, // Add businessUnitFilter
+    businessUnitFilter,
     categoryFilter,
     subCategoryFilter,
     resetPage,
@@ -224,90 +214,157 @@ const SalesForecastTable = () => {
 
   // Handle export
   const handleExport = () => {
-    handleDownload(calculatedData);
+    // Get the filtered visible columns at export time
+    const visibleCols = getFilteredVisibleColumns();
+    handleDownload(calculatedData, userInputs, visibleCols);
   };
 
-  return (
-    <>{loading ? <h4>loading..</h4> :
+  if (loading) {
+    return (
       <Box
         sx={{
-          p: 1,
-          backgroundColor: "#f8fafc",
-          background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+          gap: 2,
         }}
       >
-        {/* Filters Section */}
-        <Card
-          elevation={0}
+        <CircularProgress size={60} thickness={4} />
+        <Typography variant="h6" color="text.secondary">
+          Loading Run Rate Data...
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Please wait while we fetch the latest data
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert
+          severity="error"
+          icon={<ErrorOutlineIcon fontSize="large" />}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={refetch}
+            >
+              Retry
+            </Button>
+          }
           sx={{
-            mb: 3,
-            borderRadius: 2,
-            boxShadow:
-              "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+            "& .MuiAlert-message": {
+              width: "100%",
+            },
           }}
         >
-          <CardContent>
-            <FilterSection
-              search={search}
-              setSearch={setSearch}
-              countryFilter={countryFilter}
-              setCountryFilter={setCountryFilter}
-              categoryFilter={categoryFilter}
-              setCategoryFilter={setCategoryFilter}
-              subCategoryFilter={subCategoryFilter}
-              setSubCategoryFilter={setSubCategoryFilter}
-              countries={countries}
-              categories={availableCategories}
-              subCategories={availableSubCategories}
-              hasActiveFilters={hasActiveFilters}
-              clearFilters={handleClearAllFilters}
-              onExport={handleExport}
-              columns={tableColumns}
-              visibleColumns={visibleColumns}
-              onVisibilityChange={handleVisibilityChange}
-              runRateOption={runRateOption}
-              setRunRateOption={setRunRateOption}
-              levelFilter={levelFilter}
-              setLevelFilter={setLevelFilter}
-              businessUnits={availableBusinessUnits}
-              businessUnitFilter={businessUnitFilter}
-              setBusinessUnitFilter={setBusinessUnitFilter}
+          <Typography variant="h6" gutterBottom>
+            Failed to Load Data
+          </Typography>
+          <Typography variant="body2">{error}</Typography>
+        </Alert>
+      </Box>
+    );
+  }
+
+  // Check for null or empty data AFTER loading is complete
+  if (!mockShipmentData || mockShipmentData.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="info">
+          <Typography variant="h6" gutterBottom>
+            No Data Available
+          </Typography>
+          <Typography variant="body2">
+            There is no run rate data available at this time.
+          </Typography>
+        </Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        p: 1,
+        backgroundColor: "#f8fafc",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+      }}
+    >
+      <Card
+        elevation={0}
+        sx={{
+          mb: 2,
+          borderRadius: 2,
+          boxShadow:
+            "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+        }}
+      >
+        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+          <FilterSection
+            search={search}
+            setSearch={setSearch}
+            countryFilter={countryFilter}
+            setCountryFilter={setCountryFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            subCategoryFilter={subCategoryFilter}
+            setSubCategoryFilter={setSubCategoryFilter}
+            countries={countries}
+            categories={availableCategories}
+            subCategories={availableSubCategories}
+            hasActiveFilters={hasActiveFilters}
+            clearFilters={handleClearAllFilters}
+            onExport={handleExport}
+            columns={tableColumns}
+            visibleColumns={visibleColumns}
+            onVisibilityChange={handleVisibilityChange}
+            runRateOption={runRateOption}
+            setRunRateOption={setRunRateOption}
+            levelFilter={levelFilter}
+            setLevelFilter={setLevelFilter}
+            businessUnits={availableBusinessUnits}
+            businessUnitFilter={businessUnitFilter}
+            setBusinessUnitFilter={setBusinessUnitFilter}
+          />
+
+          <ActiveFiltersChips
+            search={search}
+            setSearch={setSearch}
+            countryFilter={countryFilter}
+            setCountryFilter={setCountryFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            subCategoryFilter={subCategoryFilter}
+            setSubCategoryFilter={setSubCategoryFilter}
+            hasActiveFilters={hasActiveFilters}
+            levelFilter={levelFilter}
+            businessUnitFilter={businessUnitFilter}
+            setBusinessUnitFilter={setBusinessUnitFilter}
+          />
+
+          <Box sx={{ mt: 1 }}>
+            <Divider sx={{ mb: 1 }} />
+            <DataTable
+              columns={getFilteredVisibleColumns()}
+              data={calculatedData}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handlePageChange}
+              onRowsPerPageChange={handleRowsPerPageChange}
+              userInputs={userInputs}
+              onUserInputChange={handleUserInputChange}
             />
-
-            <ActiveFiltersChips
-              search={search}
-              setSearch={setSearch}
-              countryFilter={countryFilter}
-              setCountryFilter={setCountryFilter}
-              categoryFilter={categoryFilter}
-              setCategoryFilter={setCategoryFilter}
-              subCategoryFilter={subCategoryFilter}
-              setSubCategoryFilter={setSubCategoryFilter}
-              hasActiveFilters={hasActiveFilters}
-              levelFilter={levelFilter}
-              businessUnitFilter={businessUnitFilter}
-              setBusinessUnitFilter={setBusinessUnitFilter}
-            />
-
-            {/* Data Table */}
-            <Box sx={{ mt: 1 }}>
-              <Divider sx={{ mb: 1 }} />
-              <DataTable
-                columns={getFilteredVisibleColumns()}
-                data={calculatedData}
-                page={page}
-                rowsPerPage={rowsPerPage}
-                onPageChange={handlePageChange}
-                onRowsPerPageChange={handleRowsPerPageChange}
-                userInputs={userInputs}
-                onUserInputChange={handleUserInputChange}
-              />
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>}
-    </>
-
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

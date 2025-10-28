@@ -66,6 +66,13 @@ export const useTableState = () => {
 
   const resetPage = () => setPage(0);
 
+  // Changed to a function that accepts filters as parameters
+  const hasActiveFilters = (categoryFilter, subCategoryFilter, businessUnitFilter) =>
+    search ||
+    (Array.isArray(businessUnitFilter) && businessUnitFilter.length > 0) ||
+    (Array.isArray(categoryFilter) && categoryFilter.length > 0) ||
+    (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0);
+
   return {
     search,
     setSearch,
@@ -87,10 +94,7 @@ export const useTableState = () => {
     clearFilters,
     handleUserInputChange,
     resetPage,
-    hasActiveFilters:
-      search ||
-      (Array.isArray(categoryFilter) && categoryFilter.length > 0) ||
-      (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0),
+    hasActiveFilters,
   };
 };
 
@@ -120,14 +124,20 @@ export const useDataFiltering = (
   originalData,
   search,
   countryFilter,
-  businessUnitFilter, // Add businessUnitFilter parameter
+  businessUnitFilter,
   categoryFilter,
   subCategoryFilter,
   runRateOption
 ) => {
-  const [filteredData, setFilteredData] = useState(originalData);
+  const [filteredData, setFilteredData] = useState(null); // Changed from originalData to null
 
   useEffect(() => {
+    // Handle null/undefined data during initial load
+    if (!originalData) {
+      setFilteredData(null);
+      return;
+    }
+
     let filtered = originalData || [];
 
     // Apply hierarchical filters
@@ -135,8 +145,10 @@ export const useDataFiltering = (
       filtered = filtered?.filter((row) => row.COUNTRY === countryFilter);
     }
 
-    if (businessUnitFilter) {
-      filtered = filtered?.filter((row) => row.BUSINESS_UNIT === businessUnitFilter);
+    if (Array.isArray(businessUnitFilter) && businessUnitFilter.length > 0) {
+      filtered = filtered?.filter((row) =>
+        businessUnitFilter.includes(row.BUSINESS_UNIT)
+      );
     }
 
     if (Array.isArray(categoryFilter) && categoryFilter.length > 0) {
@@ -241,7 +253,7 @@ export const useDataFiltering = (
     originalData,
     search,
     countryFilter,
-    businessUnitFilter, // Add businessUnitFilter dependency
+    businessUnitFilter,
     categoryFilter,
     subCategoryFilter,
     runRateOption,
@@ -251,25 +263,81 @@ export const useDataFiltering = (
 };
 
 // Hook for export functionality
-export const useDataExport = (columns) => {
-  const handleDownload = (data) => {
-    const csv = [
-      columns.map((col) => col.label).join(","),
-      ...data.map((row) =>
-        columns
-          .map((col) => {
-            const value = row[col.id];
-            if (col.format) {
-              return col.format(value);
-            }
-            return typeof value === "number" ? value : value || "";
-          })
-          .join(",")
-      ),
-    ].join("\n");
+export const useDataExport = (getVisibleColumnsFunc) => {
+  const handleDownload = (data, userInputs = {}, visibleColumns = null) => {
+    if (!data || data.length === 0) {
+      alert("No data to export");
+      return;
+    }
 
+    // Get visible columns either from parameter or by calling the function
+    let columns;
+    if (visibleColumns) {
+      columns = visibleColumns;
+    } else if (typeof getVisibleColumnsFunc === "function") {
+      columns = getVisibleColumnsFunc();
+    } else {
+      alert("Cannot determine visible columns");
+      return;
+    }
+
+    // Create CSV header
+    const headers = columns.map((col) => col.label).join(",");
+
+    // Create CSV rows with actual displayed values
+    const rows = data.map((row, rowIndex) => {
+      return columns
+        .map((col) => {
+          let value;
+
+          // Handle user input columns
+          if (col.isUserInput) {
+            const inputKey = `${rowIndex}-${col.id}`;
+            value = userInputs[inputKey] || "";
+          } else {
+            // Get the actual value from the row
+            value = row[col.id];
+
+            // Format the value if formatter exists
+            if (col.format && value !== null && value !== undefined) {
+              const formattedValue = col.format(value);
+              // Remove special characters for CSV
+              value = formattedValue.replace(/[$,%]/g, "");
+            } else if (value === null || value === undefined) {
+              value = "";
+            }
+          }
+
+          // Escape commas and quotes for CSV
+          const stringValue = String(value);
+          if (
+            stringValue.includes(",") ||
+            stringValue.includes('"') ||
+            stringValue.includes("\n")
+          ) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        })
+        .join(",");
+    });
+
+    // Combine headers and rows
+    const csv = [headers, ...rows].join("\n");
+
+    // Create blob and download
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, `sales_forecast_${new Date().toISOString().split("T")[0]}.csv`);
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `run_rate_export_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return { handleDownload };
@@ -314,10 +382,16 @@ export const useCalculatedFields = (data, userInputs) => {
 
 // New function to aggregate data based on level filter
 export const useDataAggregation = (filteredData, levelFilter) => {
-  const [aggregatedData, setAggregatedData] = useState(filteredData);
+  const [aggregatedData, setAggregatedData] = useState(null); // Changed from filteredData to null
 
   useEffect(() => {
-    if (!filteredData || !filteredData.length) {
+    // Handle null data during initial load
+    if (!filteredData) {
+      setAggregatedData(null);
+      return;
+    }
+
+    if (!filteredData.length) {
       setAggregatedData([]);
       return;
     }
@@ -403,8 +477,8 @@ export const useDataAggregation = (filteredData, levelFilter) => {
       group.RUN_RATE_VS_FORECAST_MO =
         group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH > 0
           ? (group.RUN_RATE_FORECAST /
-            group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
-          100
+              group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
+            100
           : 0;
 
       // Remove helper fields
