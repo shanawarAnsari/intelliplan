@@ -1,0 +1,37 @@
+services:
+  # React Frontend
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        BUILD_IMAGE: node:22-alpine
+        RUNTIME_IMAGE: nginx:alpine
+    ports:
+      - '3000:80'
+    environment:
+      - REACT_APP_API_URL=http://server:8080
+      - REACT_APP_API_BASE_PATH=/api
+    depends_on:
+      - server
+    networks:
+      - intelliplan-network
+
+  # Node.js Backend API
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      args:
+        RUNTIME_IMAGE: node:22-alpine
+    ports:
+      - '8080:8080'
+    environment:
+      - PORT=8080
+      - NODE_ENV=DEV
+    networks:
+      - intelliplan-network
+
+networks:
+  intelliplan-network:
+    driver: bridge

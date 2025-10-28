@@ -1,0 +1,60 @@
+# Ingress configuration: manages external HTTP/HTTPS access to services
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # Name of this ingress resource
+  name: intelliplan-ingress
+  # Annotations provide additional configuration to the ingress controller
+  annotations:
+    # Use simpler rewrite rules
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    # Force HTTPS: redirect all HTTP traffic to HTTPS (set to false for local testing)
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+    # Increase timeouts to prevent EOF errors
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
+    # Disable buffering for API responses
+    nginx.ingress.kubernetes.io/proxy-buffering: 'off'
+    # Set proper cache headers for API responses
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      if ($request_uri ~* "^/api") {
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+      }
+spec:
+  # Specifies which ingress controller handles this resource (nginx)
+  ingressClassName: nginx
+  # Routing rules for incoming requests
+  rules:
+    # Domain name for the application
+    - host: www.intelliplan.kcc.com
+      http:
+        paths:
+          # Route 1: Backend API (MUST come first for proper matching)
+          # Matches URLs like: /api, /api/, /api/items, /api/health, etc.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                # Service name from service.yaml
+                name: intelliplan-server-service
+                port:
+                  # Service port
+                  number: 8080
+          # Route 2: Frontend application (catch-all)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # Service name from service.yaml
+                name: intelliplan-client-service
+                port:
+                  # Service port (not container port)
+                  number: 80
+  # TLS/SSL configuration for HTTPS
+  tls:
+    # Hosts that should use TLS encryption
+    - hosts:
+        - www.intelliplan.kcc.com
+      # Kubernetes secret containing the SSL certificate and private key
+      secretName: intelliplan-tls

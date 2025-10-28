@@ -1,70 +1,141 @@
-# Getting Started with Create React App
+# IntelliPlan v2
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Enterprise planning application with React frontend and Node.js backend.
 
-## Available Scripts
+## Prerequisites
 
-In the project directory, you can run:
+- Node.js 18+
+- npm or yarn
+- Docker (optional, for containerized deployment)
 
-### `npm start`
+## Local Development Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 1. Install Dependencies
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+# Install server dependencies
+cd server
+npm install
 
-### `npm test`
+# Install client dependencies
+cd ../client
+npm install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 2. Start the Backend Server
 
-### `npm run build`
+```bash
+cd server
+npm run dev
+# Server will start on http://localhost:8080
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 3. Start the Frontend (in a new terminal)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+cd client
+npm start
+# React app will start on http://localhost:3000
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 4. Verify Setup
 
-### `npm run eject`
+- Backend health check: http://localhost:8080/api/health
+- Items API: http://localhost:8080/api/items
+- Frontend: http://localhost:3000
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Troubleshooting
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Issue: API returns HTML instead of JSON
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+**Symptoms:**
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Requesting `/api/items` returns HTML
+- 304 status code with HTML content
 
-## Learn More
+**Solutions:**
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. **Make sure backend server is running:**
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+   ```bash
+   cd server
+   npm run dev
+   ```
 
-### Code Splitting
+   You should see: `✅ Server running on port 8080`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+2. **Clear browser cache:**
 
-### Analyzing the Bundle Size
+   - Chrome: Ctrl+Shift+Delete
+   - Or use Incognito mode
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+3. **Test API directly:**
 
-### Making a Progressive Web App
+   ```bash
+   curl http://localhost:8080/api/health
+   curl http://localhost:8080/api/items
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+4. **Check proxy configuration:**
 
-### Advanced Configuration
+   - Verify `package.json` has `"proxy": "http://localhost:8080"`
+   - Restart React dev server after adding proxy
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+5. **Use absolute API URLs in code:**
+   ```javascript
+   // Instead of: fetch('/api/items')
+   // Use:
+   fetch("http://localhost:8080/api/items");
+   ```
 
-### Deployment
+### Issue: CORS errors
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+If you see CORS errors, the backend server includes CORS middleware. Make sure:
 
-### `npm run build` fails to minify
+- Backend server is running
+- CORS origin includes your frontend URL
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Issue: Connection refused
+
+- Check if backend is running on port 8080
+- Check if another process is using port 8080:
+
+  ```bash
+  # Windows
+  netstat -ano | findstr :8080
+
+  # Linux/Mac
+  lsof -i :8080
+  ```
+
+## Docker Deployment
+
+```bash
+# Build images
+docker-compose build
+
+# Start services
+docker-compose up
+```
+
+## Kubernetes Deployment
+
+```bash
+# Apply configurations
+kubectl apply -f k8s/
+
+# Check status
+kubectl get pods
+kubectl get services
+kubectl get ingress
+```
+
+## Project Structure
+
+```
+intelliplan_v2/
+├── client/          # React frontend
+├── server/          # Express backend
+├── k8s/             # Kubernetes configs
+└── docker-compose.yml
+```
