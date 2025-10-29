@@ -14,7 +14,7 @@ COPY package*.json ./
 COPY .env.docker .env
 
 # Install dependencies (production only)
-RUN npm install --legacy-peer-deps
+RUN npm install 
 
 # Copy application files
 COPY . .

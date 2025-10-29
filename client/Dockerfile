@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --legacy-peer-deps
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -20,7 +20,7 @@ COPY . .
 COPY .env.docker .env
 
 # Build the application
-RUN npm run build:prod
+RUN npm run build
 
 # Stage 2: Serve with Nginx
 FROM ${RUNTIME_IMAGE} AS runner
