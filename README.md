@@ -1,70 +1,224 @@
-# Getting Started with Create React App
+# IntelliPlan - AI Chat Assistant
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern React-based chat application that communicates with AI agents via REST API calls. The application provides a clean, user-friendly interface for interacting with large language models.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- ✨ **Clean REST API Integration**: Simple HTTP calls with standardized payload structure
+- 🎨 **Modern UI Design**: Built with Material-UI (MUI) for a professional look and feel
+- 💾 **Conversation History**: Automatic saving of conversations to localStorage
+- 🌙 **Dark Theme**: Eye-friendly dark theme with custom design tokens
+- 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
+- ⚡ **Real-time Messaging**: Send messages and receive responses instantly
+- 🎯 **User-friendly**: Intuitive interface with clear visual hierarchy
 
-### `npm start`
+## Technology Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Frontend**: React 18
+- **UI Framework**: Material-UI (MUI) v5
+- **API Communication**: Fetch API
+- **State Management**: React Context API
+- **Storage**: localStorage for conversation history
+- **Styling**: CSS-in-JS with MUI theme system
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Quick Start
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js 14+ and npm
+- .env file with API configuration
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. **Install Dependencies**
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+   ```bash
+   npm install
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **Configure Environment Variables**
 
-### `npm run eject`
+   Create a `.env` file in the project root:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+   ```bash
+   cp .env.example .env
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+   Update the variables with your API endpoint and user information.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+3. **Start Development Server**
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+   ```bash
+   npm start
+   ```
 
-## Learn More
+   The app will open at `http://localhost:3000`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## API Integration
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### REST API Endpoint
 
-### Code Splitting
+The application sends messages to your API at: `{REACT_APP_API_BASE_URL}/chat`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Request Payload Structure
 
-### Analyzing the Bundle Size
+```json
+{
+  "model": "gpt-4.1-mini",
+  "temperature": "0",
+  "user": [
+    {
+      "sub": "user@example.com",
+      "email": "user@example.com"
+    }
+  ],
+  "requestTime": "1740488332202",
+  "messages": [
+    {
+      "prompt": "user's message",
+      "adGroupName": "KC_GENAI_OKTA_NONPROD_INTELLIPLAN"
+    }
+  ],
+  "maxTokens": 2000,
+  "chatHistory": "15"
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Expected Response
 
-### Making a Progressive Web App
+```json
+{
+  "answer": "response text from the AI model",
+  "conversationId": "optional-conversation-id",
+  "success": true
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Project Structure
 
-### Advanced Configuration
+```
+src/
+├── components/
+│   ├── ChatBox.jsx                # Main chat interface
+│   ├── ChatMessage.jsx            # Message display component
+│   ├── MessageInput.jsx           # Input field component
+│   └── ConversationHistory.jsx    # Sidebar conversation list
+├── contexts/
+│   ├── ConversationContext.jsx    # Global state management
+│   └── ThemeContext.jsx           # Theme provider
+├── services/
+│   └── RestApiService.js          # API communication
+├── styles/
+│   ├── global.css                 # Global animations
+│   └── theme.js                   # MUI theme config
+├── App.jsx                        # Root component
+└── index.jsx                      # Entry point
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Usage Guide
 
-### Deployment
+### Sending a Message
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Messages are automatically sent when users click the send button or press Enter. The app handles:
 
-### `npm run build` fails to minify
+- User message display
+- Loading state while waiting for API response
+- Error handling and display
+- Conversation history updates
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Managing Conversations
+
+- **Create new**: Click "New Conversation" or clear the chat
+- **View history**: Select from conversation list in sidebar
+- **Auto-save**: Conversations are saved to localStorage automatically
+
+## Environment Variables
+
+```env
+# Required
+REACT_APP_API_BASE_URL=http://your-api-endpoint/api
+
+# User Configuration
+REACT_APP_USER_EMAIL=your-email@example.com
+REACT_APP_USER_SUB=your-email@example.com
+REACT_APP_AD_GROUP=YOUR_AD_GROUP
+
+# Model Configuration (optional)
+REACT_APP_MODEL=gpt-4.1-mini
+REACT_APP_TEMPERATURE=0
+REACT_APP_MAX_TOKENS=2000
+REACT_APP_CHAT_HISTORY=15
+```
+
+## Scripts
+
+- `npm start` - Run development server
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npm run eject` - Eject from Create React App (irreversible)
+
+## Troubleshooting
+
+### API Connection Issues
+
+- Verify `REACT_APP_API_BASE_URL` is correct and accessible
+- Check CORS is enabled on your API server
+- Inspect browser Network tab for failed requests
+- Check console for error messages
+
+### Conversations Not Saving
+
+- Ensure localStorage is enabled
+- Check browser storage quota
+- Clear browser cache if needed
+
+### Build Issues
+
+- Delete `node_modules` and `package-lock.json`
+- Run `npm install` again
+- Clear npm cache: `npm cache clean --force`
+
+## Performance Notes
+
+- Messages are rendered efficiently with React Context
+- CSS animations are GPU-accelerated
+- Conversations are persisted locally to reduce API calls
+- API requests include only necessary data
+
+## Browser Support
+
+- Chrome/Chromium (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+
+## Future Enhancements
+
+- User authentication integration
+- File upload support
+- Message search and filtering
+- Export conversations
+- Real-time typing indicators
+- Voice input/output support
+- Multi-language support
+
+## Security Notes
+
+- All API calls use standard HTTP (update to HTTPS in production)
+- User email/ID stored in environment variables
+- Conversations stored locally only
+- No sensitive data in localStorage
+
+## Support
+
+For issues or questions:
+
+1. Check the browser console for error messages
+2. Verify environment variables in `.env`
+3. Test API endpoint accessibility
+4. Review the API payload structure
+
+---
+
+**Last Updated**: November 2024  
+**Version**: 1.0.0

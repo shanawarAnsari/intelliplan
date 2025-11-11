@@ -1,6 +1,6 @@
-/* Global CSS styles for the KC Chat Bot application */
+/* Global CSS styles for the IntelliPlan Chat Bot application */
 
-/* Modern CSS Reset (optional, but good practice) */
+/* Modern CSS Reset */
 *,
 *::before,
 *::after {
@@ -10,189 +10,328 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
-/* Body styles are largely handled by MUI ThemeProvider and CssBaseline,
-   but you can add global overrides or defaults here if needed. */
 body {
   margin: 0;
-  /* Ensure no default margin */
-  background-color: #111827;
-  /* Fallback, Midnight Sapphire theme default background */
+  background: linear-gradient(135deg, #0a0f1c 0%, #1a1f35 50%, #0d1526 100%);
+  background-attachment: fixed;
   color: #f9fafb;
-  /* Fallback, Midnight Sapphire theme primary text */
   line-height: 1.5;
+  position: relative;
 }
 
-/* Simple animation for new elements - can be kept if used outside MUI Fade */
+/* Animated background gradient */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+      circle at 20% 50%,
+      rgba(0, 135, 185, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(circle at 80% 50%, rgba(167, 139, 250, 0.06) 0%, transparent 50%);
+  animation: gradientShift 20s ease infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes gradientShift {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* All content should be above the animated background */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glassmorphism utility class */
+.glass {
+  background: rgba(31, 41, 55, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(31, 41, 55, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  body::before {
+    animation: none !important;
+  }
+}
+
+/* Accessibility: High contrast mode support */
+@media (prefers-contrast: more) {
+  body {
+    background: #000;
+    color: #fff;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    border: 2px solid currentColor;
+  }
+
+  .glass,
+  .glass-light {
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: none;
+  }
+}
+
+/* Accessibility: Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Enhanced animations for smooth, modern feel */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
-    /* Slightly adjusted for the new theme */
+    transform: translateY(12px) scale(0.98);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.fade-in {
-  animation: fadeIn 0.35s ease-out;
-  /* Slightly adjusted duration */
-}
-
-/* Message bubble animations */
-@keyframes messageInLeft {
+@keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-12px);
+    transform: translateX(-20px);
   }
-
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Bounce animation for loading indicators */
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Pulse animation for attention-grabbing elements */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Shimmer effect for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Glow animation for special elements */
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(96, 165, 250, 0.3), 0 0 40px rgba(96, 165, 250, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(96, 165, 250, 0.5), 0 0 60px rgba(96, 165, 250, 0.2);
+  }
+}
+
+/* Message bubble animation */
+@keyframes messageInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
 }
 
 @keyframes messageInRight {
   from {
     opacity: 0;
-    transform: translateX(12px);
+    transform: translateX(16px) scale(0.95);
   }
-
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
   }
 }
 
-.message-in-left {
-  animation: messageInLeft 0.3s cubic-bezier(0, 0, 0.2, 1);
-  transform-origin: left center;
-}
-
-.message-in-right {
-  animation: messageInRight 0.3s cubic-bezier(0, 0, 0.2, 1);
-  transform-origin: right center;
-}
-
-/* Button and hover animations */
-@keyframes buttonPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7);
-  }
-
-  70% {
-    box-shadow: 0 0 0 8px rgba(96, 165, 250, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
-  }
-}
-
-.button-pulse {
-  animation: buttonPulse 2s infinite;
-}
-
-/* Chat input box reveal */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.slide-up {
-  animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1);
-}
-
-/* Text reveal effect for welcome message */
-@keyframes textReveal {
-  from {
-    clip-path: inset(0 100% 0 0);
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-.text-reveal {
-  animation: textReveal 0.8s cubic-bezier(0, 0, 0.2, 1);
-}
-
-/* Shimmer effect for loading states */
-@keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-
-  100% {
-    background-position: 200px 0;
-  }
-}
-
-.shimmer {
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.05) 50%,
-      rgba(255, 255, 255, 0) 100%);
-  background-size: 200px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* Subtle hover effects for interactive elements */
-.hover-lift {
-  transition: transform 0.1s ease-out, box-shadow 0.2s ease-out;
-  border-radius: 10px;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-}
-
-/* Basic text utility - MUI Typography's noWrap prop is generally preferred */
-.text-ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Custom scrollbar styling (optional, for a more modern look) */
+/* Modern custom scrollbar styling with glassmorphism */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937;
-  /* Midnight Sapphire theme paper background */
+  background: rgba(31, 41, 55, 0.3);
+  border-radius: 4px;
+  margin: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  /* A slightly darker, muted blue/grey */
+  background: linear-gradient(
+    135deg,
+    rgba(96, 165, 250, 0.5),
+    rgba(167, 139, 250, 0.5)
+  );
   border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #60a5fa;
-  /* Midnight Sapphire primary main for hover */
+  background: linear-gradient(
+    135deg,
+    rgba(96, 165, 250, 0.8),
+    rgba(167, 139, 250, 0.8)
+  );
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
 }
 
-/* Ensure focus styles are visible and accessible */
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 165, 250, 0.5) rgba(31, 41, 55, 0.3);
+}
+
+/* Ensure focus styles are visible and accessible with modern glow effect */
 *:focus-visible {
   outline: 2px solid #60a5fa;
-  /* Primary blue for high visibility */
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+  transition: all 0.2s ease;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(96, 165, 250, 0.3);
+  color: #f9fafb;
+}
+
+::-moz-selection {
+  background: rgba(96, 165, 250, 0.3);
+  color: #f9fafb;
+}
+
+/* Smooth transitions for interactive elements */
+button,
+a,
+input,
+textarea,
+select {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading shimmer effect utility */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(31, 41, 55, 0.3) 0%,
+    rgba(96, 165, 250, 0.1) 50%,
+    rgba(31, 41, 55, 0.3) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
 }
