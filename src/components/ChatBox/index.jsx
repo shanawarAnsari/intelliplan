@@ -20,16 +20,19 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
     error,
     sendMessage,
     createNewConversation,
+    updateMessageFeedback,
   } = useConversation();
 
   const messagesEndRef = useScrollToBottom([messages, isBotResponding]);
 
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
-      const formattedMessages = activeConversation.messages.map((msg) => ({
+      const formattedMessages = activeConversation.messages.map((msg, index) => ({
         text: msg.content,
         isBot: msg.role === "assistant",
         timestamp: msg.timestamp || new Date(),
+        feedback: msg.feedback || null,
+        messageIndex: index,
       }));
       setMessages(formattedMessages);
     } else {
@@ -86,7 +89,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          px: { xs: 2, sm: 3 },
+          px: { xs: 1.5, sm: 2 },
         }}
       >
         {/* Messages area or empty state */}
@@ -95,22 +98,22 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
           sx={{
             flexGrow: 1,
             overflowY: "auto",
-            py: 3,
+            py: 2,
             display: "flex",
             flexDirection: "column",
             scrollBehavior: "smooth",
             "&::-webkit-scrollbar": {
-              width: "8px",
+              width: "6px",
             },
             "&::-webkit-scrollbar-track": {
               background: "rgba(31, 41, 55, 0.3)",
-              borderRadius: "4px",
-              margin: "8px",
+              borderRadius: "3px",
+              margin: "6px",
             },
             "&::-webkit-scrollbar-thumb": {
               background:
                 "linear-gradient(135deg, rgba(96, 165, 250, 0.5), rgba(167, 139, 250, 0.5))",
-              borderRadius: "4px",
+              borderRadius: "3px",
               "&:hover": {
                 background:
                   "linear-gradient(135deg, rgba(96, 165, 250, 0.8), rgba(167, 139, 250, 0.8))",
@@ -126,6 +129,7 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
               error={error}
               isBotResponding={isBotResponding}
               messagesEndRef={messagesEndRef}
+              onUpdateFeedback={updateMessageFeedback}
             />
           )}
         </Box>
@@ -134,22 +138,11 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         {(!isChatEmpty || messages.length > 0) && (
           <Box
             sx={{
-              py: 3,
+              py: 2,
               background:
                 "linear-gradient(to top, rgba(10, 15, 28, 0.95) 0%, transparent 100%)",
               backdropFilter: "blur(10px)",
               position: "relative",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: "80%",
-                height: "1px",
-                background:
-                  "linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.3), transparent)",
-              },
             }}
           >
             <MessageInput

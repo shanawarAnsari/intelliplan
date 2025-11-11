@@ -11,12 +11,8 @@ import { loadConversations, saveConversations } from "../utils/storage";
 import { MESSAGE_ROLES } from "../utils/constants";
 import { generateConversationTitle } from "../utils/formatters";
 
-// Create context
 const ConversationContext = createContext();
 
-/**
- * Provider component for conversation management
- */
 export const ConversationProvider = ({ children }) => {
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -73,6 +69,7 @@ export const ConversationProvider = ({ children }) => {
     },
     [conversations]
   );
+
   /**
    * Create a new conversation
    */
@@ -94,6 +91,7 @@ export const ConversationProvider = ({ children }) => {
       return null;
     }
   }, []);
+
   /**
    * Send a message in the active conversation
    */
@@ -107,7 +105,6 @@ export const ConversationProvider = ({ children }) => {
       setError(null);
 
       try {
-        // Add user message to the conversation
         const userMessage = {
           role: MESSAGE_ROLES.USER,
           content: message,
@@ -150,13 +147,17 @@ export const ConversationProvider = ({ children }) => {
             role: MESSAGE_ROLES.ASSISTANT,
             content: response.answer,
             timestamp: new Date(),
+            isImage: response.isImage || false,
+            imageUrl: response.imageUrl || null,
+            imageFileId: response.imageFileId || null,
+            feedback: null, // Initialize feedback as null
           };
 
           const finalMessages = [...updatedMessages, assistantMessage];
           const finalConversation = {
             ...updatedConversation,
             messages: finalMessages,
-            title: updatedConversation.title, // Keep the generated title
+            title: updatedConversation.title,
           };
 
           setActiveConversation(finalConversation);
@@ -169,12 +170,10 @@ export const ConversationProvider = ({ children }) => {
 
             let updatedConversations;
             if (existingConvIndex >= 0) {
-              // Update existing conversation
               updatedConversations = prev.map((conv) =>
                 conv.id === activeConversation.id ? finalConversation : conv
               );
             } else {
-              // Add as new conversation to history
               updatedConversations = [finalConversation, ...prev];
             }
 
@@ -195,6 +194,50 @@ export const ConversationProvider = ({ children }) => {
     },
     [activeConversation, userInfo]
   );
+
+  /**
+   * Update message feedback (like/dislike)
+   */
+  const updateMessageFeedback = useCallback(
+    (messageIndex, feedbackType) => {
+      if (!activeConversation) {
+        return;
+      }
+
+      try {
+        const updatedMessages = activeConversation.messages.map((msg, idx) => {
+          if (idx === messageIndex && msg.role === MESSAGE_ROLES.ASSISTANT) {
+            return {
+              ...msg,
+              feedback: msg.feedback === feedbackType ? null : feedbackType, // Toggle feedback
+            };
+          }
+          return msg;
+        });
+
+        const updatedConversation = {
+          ...activeConversation,
+          messages: updatedMessages,
+        };
+
+        setActiveConversation(updatedConversation);
+
+        // Update conversations list and save to localStorage
+        setConversations((prev) => {
+          const updatedConversations = prev.map((conv) =>
+            conv.id === activeConversation.id ? updatedConversation : conv
+          );
+          saveConversations(updatedConversations);
+          return updatedConversations;
+        });
+      } catch (error) {
+        console.error("Error updating message feedback:", error);
+        setError(error.message);
+      }
+    },
+    [activeConversation]
+  );
+
   const value = {
     conversations,
     activeConversation,
@@ -203,6 +246,7 @@ export const ConversationProvider = ({ children }) => {
     selectConversation,
     createNewConversation,
     sendMessage,
+    updateMessageFeedback,
     setConversations,
   };
 
@@ -213,9 +257,6 @@ export const ConversationProvider = ({ children }) => {
   );
 };
 
-/**
- * Hook to use the conversation context
- */
 export const useConversation = () => {
   const context = useContext(ConversationContext);
   if (!context) {

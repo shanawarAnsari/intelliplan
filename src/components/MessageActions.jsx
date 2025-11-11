@@ -8,23 +8,30 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ShareIcon from "@mui/icons-material/Share";
 
-const MessageActions = ({ message, isBot }) => {
+const MessageActions = ({ message, isBot, feedback, onFeedbackChange }) => {
   const theme = useTheme();
   const [copied, setCopied] = useState(false);
-  const [feedback, setFeedback] = useState(null);
   const [snackbar, setSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message);
     setCopied(true);
+    setSnackbarMessage("Copied to clipboard!");
     setSnackbar(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleFeedback = (type) => {
-    setFeedback(type);
-    setSnackbar(true);
-    setTimeout(() => setFeedback(null), 2000);
+    if (onFeedbackChange) {
+      onFeedbackChange(type);
+      setSnackbarMessage(
+        type === "helpful"
+          ? "Thanks for your feedback!"
+          : "We appreciate your feedback!"
+      );
+      setSnackbar(true);
+    }
   };
 
   const handleShare = async () => {
@@ -50,15 +57,11 @@ const MessageActions = ({ message, isBot }) => {
           gap: 0.5,
           alignItems: "center",
           p: 0.5,
-          borderRadius: 2,
-          background: "rgba(31, 41, 55, 0.7)",
+          borderRadius: 1.5,
+          background: "rgba(31, 41, 55, 0.6)",
           backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          "&:hover": {
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-          },
+          border: "1px solid rgba(255, 255, 255, 0.06)",
+          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
         }}
       >
         <Tooltip title="Copy" placement="top">
@@ -66,20 +69,18 @@ const MessageActions = ({ message, isBot }) => {
             size="small"
             onClick={handleCopy}
             sx={{
-              width: 30,
-              height: 30,
+              width: 24,
+              height: 24,
               color: copied
                 ? theme.palette.success.main
                 : theme.palette.text.secondary,
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               "&:hover": {
-                bgcolor: "rgba(96, 165, 250, 0.15)",
+                bgcolor: "rgba(96, 165, 250, 0.1)",
                 color: theme.palette.primary.main,
-                transform: "scale(1.1)",
               },
             }}
           >
-            <ContentCopyIcon sx={{ fontSize: 16 }} />
+            <ContentCopyIcon sx={{ fontSize: 14 }} />
           </IconButton>
         </Tooltip>
 
@@ -90,21 +91,19 @@ const MessageActions = ({ message, isBot }) => {
                 size="small"
                 onClick={() => handleFeedback("helpful")}
                 sx={{
-                  width: 30,
-                  height: 30,
+                  width: 24,
+                  height: 24,
                   color:
                     feedback === "helpful"
                       ? theme.palette.success.main
                       : theme.palette.text.secondary,
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&:hover": {
-                    bgcolor: "rgba(16, 185, 129, 0.15)",
+                    bgcolor: "rgba(16, 185, 129, 0.1)",
                     color: theme.palette.success.main,
-                    transform: "scale(1.1)",
                   },
                 }}
               >
-                <ThumbUpIcon sx={{ fontSize: 16 }} />
+                <ThumbUpIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Tooltip>
 
@@ -113,47 +112,41 @@ const MessageActions = ({ message, isBot }) => {
                 size="small"
                 onClick={() => handleFeedback("unhelpful")}
                 sx={{
-                  width: 30,
-                  height: 30,
+                  width: 24,
+                  height: 24,
                   color:
                     feedback === "unhelpful"
                       ? theme.palette.error.main
                       : theme.palette.text.secondary,
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&:hover": {
-                    bgcolor: "rgba(239, 68, 68, 0.15)",
+                    bgcolor: "rgba(239, 68, 68, 0.1)",
                     color: theme.palette.error.main,
-                    transform: "scale(1.1)",
                   },
                 }}
               >
-                <ThumbDownIcon sx={{ fontSize: 16 }} />
+                <ThumbDownIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Tooltip>
           </>
         )}
 
-        {navigator.share && (
-          <Tooltip title="Share" placement="top">
-            <IconButton
-              size="small"
-              onClick={handleShare}
-              sx={{
-                width: 30,
-                height: 30,
-                color: theme.palette.text.secondary,
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                "&:hover": {
-                  bgcolor: "rgba(167, 139, 250, 0.15)",
-                  color: theme.palette.secondary.main,
-                  transform: "scale(1.1)",
-                },
-              }}
-            >
-              <ShareIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
-        )}
+        <Tooltip title="Share" placement="top">
+          <IconButton
+            size="small"
+            onClick={handleShare}
+            sx={{
+              width: 24,
+              height: 24,
+              color: theme.palette.text.secondary,
+              "&:hover": {
+                bgcolor: "rgba(167, 139, 250, 0.1)",
+                color: theme.palette.secondary.main,
+              },
+            }}
+          >
+            <ShareIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <Snackbar
@@ -175,9 +168,7 @@ const MessageActions = ({ message, isBot }) => {
             },
           }}
         >
-          {copied && "Copied to clipboard!"}
-          {feedback === "helpful" && "Thanks for your feedback!"}
-          {feedback === "unhelpful" && "We appreciate your feedback!"}
+          {snackbarMessage}
         </Alert>
       </Snackbar>
     </>

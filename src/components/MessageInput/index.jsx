@@ -48,40 +48,19 @@ const MessageInput = ({ onSendMessage, disabled }) => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        p: "16px",
-        borderRadius: "16px",
+        p: "12px",
+        borderRadius: "12px",
         background: "rgba(31, 41, 55, 0.7)",
         backdropFilter: "blur(20px)",
         border: isFocused
-          ? "2px solid rgba(96, 165, 250, 0.6)"
-          : "2px solid rgba(255, 255, 255, 0.08)",
+          ? "1.5px solid rgba(96, 165, 250, 0.5)"
+          : "1.5px solid rgba(255, 255, 255, 0.08)",
         boxShadow: isFocused
-          ? "0 0 0 4px rgba(96, 165, 250, 0.15), 0 8px 24px rgba(0, 0, 0, 0.2)"
-          : "0 4px 16px rgba(0, 0, 0, 0.1)",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          ? "0 0 0 3px rgba(96, 165, 250, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15)"
+          : "0 2px 8px rgba(0, 0, 0, 0.1)",
+        transition: "all 0.2s ease",
         position: "relative",
         overflow: "hidden",
-        "&::before": isFocused
-          ? {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "2px",
-              background: "linear-gradient(90deg, #60a5fa, #a78bfa, #60a5fa)",
-              backgroundSize: "200% 100%",
-              animation: "gradientSlide 3s linear infinite",
-            }
-          : {},
-        "@keyframes gradientSlide": {
-          "0%": {
-            backgroundPosition: "0% 0",
-          },
-          "100%": {
-            backgroundPosition: "200% 0",
-          },
-        },
       }}
     >
       {/* Main Input Area */}
@@ -89,7 +68,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         sx={{
           display: "flex",
           alignItems: "flex-end",
-          gap: 1.5,
+          gap: 1,
         }}
       >
         {/* Input Field */}
@@ -97,9 +76,9 @@ const MessageInput = ({ onSendMessage, disabled }) => {
           ref={textFieldRef}
           fullWidth
           multiline
-          maxRows={6}
-          minRows={3}
-          placeholder="Type your message here... (Shift+Enter for new line)"
+          maxRows={5}
+          minRows={2}
+          placeholder="Type your message... (Shift+Enter for new line)"
           value={message}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
@@ -110,9 +89,9 @@ const MessageInput = ({ onSendMessage, disabled }) => {
           InputProps={{
             disableUnderline: true,
             sx: {
-              fontSize: "0.9375rem",
+              fontSize: "0.8125rem",
               fontFamily: "inherit",
-              lineHeight: 1.7,
+              lineHeight: 1.5,
               color: theme.palette.text.primary,
             },
           }}
@@ -124,8 +103,8 @@ const MessageInput = ({ onSendMessage, disabled }) => {
           sx={{
             mr: 0,
             "& .MuiInput-root": {
-              paddingTop: "4px",
-              paddingBottom: "4px",
+              paddingTop: "2px",
+              paddingBottom: "2px",
             },
             "& textarea": {
               "&::placeholder": {
@@ -146,11 +125,11 @@ const MessageInput = ({ onSendMessage, disabled }) => {
       {/* Character Counter and Hints */}
       <Box
         sx={{
-          mt: 1.5,
+          mt: 1,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          minHeight: "24px",
+          minHeight: "20px",
         }}
       >
         <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
@@ -160,17 +139,12 @@ const MessageInput = ({ onSendMessage, disabled }) => {
               size="small"
               variant="outlined"
               sx={{
-                height: "22px",
-                fontSize: "0.7rem",
+                height: "18px",
+                fontSize: "0.625rem",
                 color: theme.palette.text.secondary,
                 borderColor: "rgba(96, 165, 250, 0.3)",
                 backgroundColor: "rgba(96, 165, 250, 0.05)",
                 fontWeight: 500,
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  borderColor: "rgba(96, 165, 250, 0.5)",
-                  backgroundColor: "rgba(96, 165, 250, 0.1)",
-                },
               }}
             />
           )}
@@ -185,16 +159,15 @@ const MessageInput = ({ onSendMessage, disabled }) => {
                 charCount > MAX_MESSAGE_CHARS * 0.95
                   ? theme.palette.error.main
                   : theme.palette.text.secondary,
-              fontSize: "0.7rem",
+              fontSize: "0.625rem",
               fontWeight: 600,
-              px: 1,
-              py: 0.5,
-              borderRadius: "8px",
+              px: 0.75,
+              py: 0.25,
+              borderRadius: "6px",
               backgroundColor:
                 charCount > MAX_MESSAGE_CHARS * 0.95
                   ? "rgba(239, 68, 68, 0.1)"
                   : "rgba(96, 165, 250, 0.1)",
-              transition: "all 0.3s ease",
             }}
           >
             {charCount} / {MAX_MESSAGE_CHARS}

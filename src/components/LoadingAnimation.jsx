@@ -14,40 +14,38 @@ const LoadingAnimation = () => {
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: 2,
-        p: 2.5,
+        gap: 1.5,
+        p: 1.5,
         background: "rgba(31, 41, 55, 0.5)",
         backdropFilter: "blur(10px)",
-        borderRadius: "16px",
-        border: "1px solid rgba(96, 165, 250, 0.2)",
-        animation: reducedMotion
-          ? "none"
-          : "fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+        borderRadius: "12px",
+        border: "1px solid rgba(96, 165, 250, 0.15)",
+        animation: reducedMotion ? "none" : "fadeIn 0.3s ease-out",
         maxWidth: "fit-content",
       }}
     >
       <Box
         sx={{
           display: "flex",
-          gap: 0.75,
+          gap: 0.5,
           alignItems: "center",
-          p: 1,
-          borderRadius: "12px",
-          background: "rgba(96, 165, 250, 0.1)",
+          p: 0.75,
+          borderRadius: "8px",
+          background: "rgba(96, 165, 250, 0.08)",
         }}
       >
         {[0, 1, 2].map((dot) => (
           <Box
             key={dot}
             sx={{
-              width: "10px",
-              height: "10px",
+              width: "7px",
+              height: "7px",
               borderRadius: "50%",
               background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
-              boxShadow: "0 2px 8px rgba(96, 165, 250, 0.4)",
+              boxShadow: "0 1px 4px rgba(96, 165, 250, 0.3)",
               animation: reducedMotion
                 ? "none"
-                : `bounce 1.4s infinite ease-in-out ${dot * 0.16}s`,
+                : `bounce 1.2s infinite ease-in-out ${dot * 0.14}s`,
               "@keyframes bounce": {
                 "0%, 80%, 100%": {
                   opacity: 0.3,
@@ -67,7 +65,7 @@ const LoadingAnimation = () => {
         sx={{
           color: theme.palette.text.primary,
           fontWeight: 600,
-          fontSize: "0.9375rem",
+          fontSize: "0.75rem",
           background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",

@@ -62,9 +62,9 @@ const MessageContent = ({ text }) => {
   return (
     <Typography
       sx={{
-        fontSize: "0.95rem",
-        lineHeight: 1.6,
-        letterSpacing: "0.3px",
+        fontSize: "0.8125rem",
+        lineHeight: 1.5,
+        letterSpacing: "0.2px",
       }}
     >
       {typeof text === "string" ? renderFormattedText(text) : text}

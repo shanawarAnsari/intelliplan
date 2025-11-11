@@ -11,19 +11,19 @@ const EmptyState = ({ onGetStarted }) => {
   const theme = useTheme();
 
   return (
-    <Fade in={true} timeout={1000}>
+    <Fade in={true} timeout={800}>
       <Box
         sx={{
           textAlign: "center",
           my: "auto",
-          px: 3,
-          py: 5,
+          px: 2,
+          py: 3,
         }}
       >
         {/* Animated icon with glow effect */}
         <Box
           sx={{
-            mb: 4,
+            mb: 2.5,
             display: "flex",
             justifyContent: "center",
             position: "relative",
@@ -33,20 +33,20 @@ const EmptyState = ({ onGetStarted }) => {
           <Box
             sx={{
               position: "absolute",
-              width: "120px",
-              height: "120px",
+              width: "80px",
+              height: "80px",
               borderRadius: "50%",
               background:
-                "radial-gradient(circle, rgba(96, 165, 250, 0.2) 0%, transparent 70%)",
-              animation: "pulse 3s ease-in-out infinite",
+                "radial-gradient(circle, rgba(96, 165, 250, 0.15) 0%, transparent 70%)",
+              animation: "pulse 2.5s ease-in-out infinite",
               "@keyframes pulse": {
                 "0%, 100%": {
                   transform: "scale(1)",
-                  opacity: 0.5,
+                  opacity: 0.4,
                 },
                 "50%": {
-                  transform: "scale(1.2)",
-                  opacity: 0.8,
+                  transform: "scale(1.15)",
+                  opacity: 0.6,
                 },
               },
             }}
@@ -55,21 +55,21 @@ const EmptyState = ({ onGetStarted }) => {
           <Box
             sx={{
               position: "relative",
-              p: 3,
+              p: 2,
               borderRadius: "50%",
               background:
-                "linear-gradient(135deg, rgba(96, 165, 250, 0.2) 0%, rgba(167, 139, 250, 0.2) 100%)",
+                "linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%)",
               backdropFilter: "blur(10px)",
-              border: "2px solid rgba(96, 165, 250, 0.3)",
+              border: "1.5px solid rgba(96, 165, 250, 0.25)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 8px 32px rgba(96, 165, 250, 0.3)",
+              boxShadow: "0 4px 16px rgba(96, 165, 250, 0.2)",
             }}
           >
             <ChatBubbleOutlineIcon
               sx={{
-                fontSize: 56,
+                fontSize: 36,
                 background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -80,9 +80,9 @@ const EmptyState = ({ onGetStarted }) => {
             <AutoAwesomeIcon
               sx={{
                 position: "absolute",
-                top: "10%",
-                right: "10%",
-                fontSize: 20,
+                top: "8%",
+                right: "8%",
+                fontSize: 14,
                 color: "#60a5fa",
                 animation: "sparkle 2s ease-in-out infinite",
                 "@keyframes sparkle": {
@@ -104,14 +104,14 @@ const EmptyState = ({ onGetStarted }) => {
         <Typography
           variant="h4"
           sx={{
-            mb: 2,
-            fontWeight: 800,
-            fontSize: { xs: "1.75rem", sm: "2.125rem", md: "2.5rem" },
+            mb: 1.5,
+            fontWeight: 700,
+            fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
             background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            letterSpacing: "-0.03em",
+            letterSpacing: "-0.02em",
           }}
         >
           Welcome to IntelliPlan
@@ -121,11 +121,11 @@ const EmptyState = ({ onGetStarted }) => {
         <Typography
           variant="body1"
           sx={{
-            mb: 5,
+            mb: 3,
             color: theme.palette.text.secondary,
-            fontSize: "1.0625rem",
-            lineHeight: 1.7,
-            maxWidth: "500px",
+            fontSize: "0.8125rem",
+            lineHeight: 1.5,
+            maxWidth: "450px",
             mx: "auto",
           }}
         >
@@ -159,17 +159,17 @@ const EmptyState = ({ onGetStarted }) => {
           >
             intelligent planning
           </Box>
-          . Start a conversation to explore what I can do for you.
+          .
         </Typography>
 
         {/* Suggestions section */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography
             variant="subtitle2"
             sx={{
-              mb: 2.5,
+              mb: 1.5,
               color: theme.palette.text.secondary,
-              fontSize: "0.875rem",
+              fontSize: "0.6875rem",
               fontWeight: 700,
               letterSpacing: "0.05em",
               textTransform: "uppercase",
@@ -181,10 +181,10 @@ const EmptyState = ({ onGetStarted }) => {
             sx={{
               display: "flex",
               flexDirection: { xs: "column", sm: "row" },
-              gap: 1.5,
+              gap: 1,
               justifyContent: "center",
               flexWrap: "wrap",
-              maxWidth: "700px",
+              maxWidth: "650px",
               mx: "auto",
             }}
           >
@@ -192,31 +192,28 @@ const EmptyState = ({ onGetStarted }) => {
               <Button
                 key={index}
                 variant="outlined"
-                size="medium"
+                size="small"
                 onClick={() => onGetStarted?.(prompt)}
                 sx={{
-                  borderWidth: "2px",
+                  borderWidth: "1.5px",
                   borderColor: "rgba(96, 165, 250, 0.3)",
                   color: theme.palette.text.primary,
                   textTransform: "none",
                   fontWeight: 600,
-                  borderRadius: 3,
-                  px: 3,
-                  py: 1.25,
-                  fontSize: "0.875rem",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 0.75,
+                  fontSize: "0.75rem",
                   background: "rgba(31, 41, 55, 0.5)",
                   backdropFilter: "blur(10px)",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    borderWidth: "2px",
-                    borderColor: "rgba(96, 165, 250, 0.6)",
+                    borderWidth: "1.5px",
+                    borderColor: "rgba(96, 165, 250, 0.5)",
                     background:
-                      "linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%)",
-                    transform: "translateY(-3px)",
-                    boxShadow: "0 8px 24px rgba(96, 165, 250, 0.25)",
-                  },
-                  "&:active": {
-                    transform: "translateY(-1px)",
+                      "linear-gradient(135deg, rgba(96, 165, 250, 0.12) 0%, rgba(167, 139, 250, 0.12) 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(96, 165, 250, 0.2)",
                   },
                 }}
               >
@@ -225,31 +222,6 @@ const EmptyState = ({ onGetStarted }) => {
             ))}
           </Box>
         </Box>
-
-        {/* Bottom decorative element */}
-        <Box
-          sx={{
-            mt: 5,
-            mx: "auto",
-            width: "200px",
-            height: "4px",
-            borderRadius: "2px",
-            background:
-              "linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.5), rgba(167, 139, 250, 0.5), transparent)",
-            animation: "shimmerLine 3s ease-in-out infinite",
-            "@keyframes shimmerLine": {
-              "0%": {
-                opacity: 0.3,
-              },
-              "50%": {
-                opacity: 1,
-              },
-              "100%": {
-                opacity: 0.3,
-              },
-            },
-          }}
-        />
       </Box>
     </Fade>
   );

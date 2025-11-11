@@ -26,44 +26,33 @@ const ChatHeader = ({
   return (
     <Box
       sx={{
-        p: "14px 20px",
+        p: "10px 16px",
         borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         background: "rgba(31, 41, 55, 0.7)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
         position: "relative",
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          bottom: 0,
-          left: "5%",
-          right: "5%",
-          height: "1px",
-          background:
-            "linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.3), transparent)",
-        },
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
         {!drawerOpen && (
-          <Tooltip title="Open Sidebar (Ctrl+Shift+H)" placement="bottom">
+          <Tooltip title="Open Sidebar" placement="bottom">
             <IconButton
               onClick={onToggleDrawer}
+              size="small"
               sx={{
                 color: theme.palette.text.secondary,
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 "&:hover": {
                   color: theme.palette.primary.main,
-                  bgcolor: "rgba(96, 165, 250, 0.15)",
-                  transform: "scale(1.1)",
+                  bgcolor: "rgba(96, 165, 250, 0.1)",
                 },
               }}
               aria-label="Toggle sidebar"
             >
-              <MenuIcon />
+              <MenuIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         )}
@@ -71,37 +60,34 @@ const ChatHeader = ({
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 1.5,
-            p: 1,
-            borderRadius: 2,
+            gap: 1,
+            px: 1,
+            py: 0.5,
+            borderRadius: 1.5,
             background: "rgba(96, 165, 250, 0.05)",
             border: "1px solid rgba(96, 165, 250, 0.1)",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              background: "rgba(96, 165, 250, 0.1)",
-              border: "1px solid rgba(96, 165, 250, 0.2)",
-            },
           }}
         >
           <img
             src={Logo}
             alt="InteliPlan Logo"
-            height="32"
+            height="24"
             style={{
-              filter: "drop-shadow(0 2px 4px rgba(96, 165, 250, 0.3))",
+              filter: "drop-shadow(0 1px 2px rgba(96, 165, 250, 0.3))",
             }}
           />
           <Box>
             <Typography
               variant="h6"
               sx={{
-                fontWeight: 800,
-                fontSize: "1.125rem",
+                fontWeight: 700,
+                fontSize: "0.875rem",
                 background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                letterSpacing: "-0.02em",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.2,
               }}
             >
               IntelliPlan
@@ -110,9 +96,9 @@ const ChatHeader = ({
               variant="caption"
               sx={{
                 color: theme.palette.text.secondary,
-                fontSize: "0.6875rem",
+                fontSize: "0.625rem",
                 fontWeight: 500,
-                letterSpacing: "0.05em",
+                letterSpacing: "0.03em",
                 textTransform: "uppercase",
               }}
             >
@@ -122,18 +108,16 @@ const ChatHeader = ({
         </Box>
       </Box>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         {showClearButton && (
           <Tooltip title="Clear conversation" placement="bottom">
             <IconButton
               onClick={onClearChat}
               sx={{
                 color: theme.palette.text.secondary,
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 "&:hover": {
                   color: theme.palette.error.main,
-                  bgcolor: "rgba(239, 68, 68, 0.15)",
-                  transform: "scale(1.1)",
+                  bgcolor: "rgba(239, 68, 68, 0.1)",
                 },
               }}
               size="small"
@@ -145,20 +129,15 @@ const ChatHeader = ({
         )}
         <Avatar
           sx={{
-            width: 36,
-            height: 36,
+            width: 28,
+            height: 28,
             background: "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
-            fontSize: "0.9rem",
+            fontSize: "0.75rem",
             fontWeight: 600,
-            boxShadow: "0 4px 12px rgba(96, 165, 250, 0.3)",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "scale(1.1)",
-              boxShadow: "0 6px 16px rgba(96, 165, 250, 0.4)",
-            },
+            boxShadow: "0 2px 6px rgba(96, 165, 250, 0.2)",
           }}
         >
-          <AccountCircleIcon />
+          <AccountCircleIcon fontSize="small" />
         </Avatar>
       </Box>
     </Box>

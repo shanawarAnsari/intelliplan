@@ -6,7 +6,13 @@ import { Box, Alert, Typography } from "@mui/material";
 import ChatMessage from "../ChatMessage";
 import LoadingAnimation from "../LoadingAnimation";
 
-const MessageList = ({ messages, error, isBotResponding, messagesEndRef }) => {
+const MessageList = ({
+  messages,
+  error,
+  isBotResponding,
+  messagesEndRef,
+  onUpdateFeedback,
+}) => {
   return (
     <>
       {error && (
@@ -29,6 +35,9 @@ const MessageList = ({ messages, error, isBotResponding, messagesEndRef }) => {
           message={message.text}
           isBot={message.isBot}
           timestamp={message.timestamp}
+          feedback={message.feedback}
+          messageIndex={message.messageIndex}
+          onUpdateFeedback={onUpdateFeedback}
         />
       ))}
 

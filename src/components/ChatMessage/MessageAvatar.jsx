@@ -14,15 +14,15 @@ const MessageAvatar = ({ isBot }) => {
       <Tooltip title="IntelliPlan Assistant">
         <Avatar
           sx={{
-            width: 32,
-            height: 32,
+            width: 26,
+            height: 26,
             bgcolor: theme.palette.secondary.main,
-            boxShadow: "0px 1px 3px rgba(0,0,0,0.12)",
+            boxShadow: "0px 1px 2px rgba(0,0,0,0.1)",
             flexShrink: 0,
           }}
           aria-label="Bot message"
         >
-          <SmartToyIcon sx={{ fontSize: 18 }} />
+          <SmartToyIcon sx={{ fontSize: 14 }} />
         </Avatar>
       </Tooltip>
     );
@@ -32,15 +32,15 @@ const MessageAvatar = ({ isBot }) => {
     <Tooltip title="Your message">
       <Avatar
         sx={{
-          width: 32,
-          height: 32,
+          width: 26,
+          height: 26,
           bgcolor: theme.palette.primary.dark,
-          boxShadow: "0px 1px 3px rgba(0,0,0,0.2)",
+          boxShadow: "0px 1px 2px rgba(0,0,0,0.15)",
           flexShrink: 0,
         }}
         aria-label="User message"
       >
-        <AccountCircleIcon sx={{ fontSize: 18 }} />
+        <AccountCircleIcon sx={{ fontSize: 14 }} />
       </Avatar>
     </Tooltip>
   );
