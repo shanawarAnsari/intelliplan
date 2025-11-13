@@ -1,7 +1,11 @@
 /**
- * Conversation History Drawer Component - Refactored
+ * Conversation History Drawer Component — with Compact Rail Dock (when closed)
+ * - Elegant compact rail (48px) that EXPANDS on hover to show labels
+ * - Bottom-left dock placement (less prominent)
+ * - Haptics via MUI ButtonBase ripple
+ * - Keyboard shortcut: Ctrl/Cmd + B to toggle
  */
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   IconButton,
@@ -13,17 +17,200 @@ import {
   Typography,
   Divider,
   Badge,
+  ButtonBase,
+  Stack,
+  Fade,
 } from "@mui/material";
-import { useConversation } from "../../contexts/ConversationContext";
+import { useConversation } from "../../../contexts/ConversationContext";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
-import kimberlyClarkLogo from "../../assets/KC_logo_for_dark.png";
-import { DRAWER_WIDTH, SORT_OPTIONS } from "../../utils/constants";
-import { saveConversations } from "../../utils/storage";
+import SearchIcon from "@mui/icons-material/Search";
+import kimberlyClarkLogo from "../../../assets/KC_logo_for_dark.png";
+import { DRAWER_WIDTH, SORT_OPTIONS } from "../../../utils/constants";
+import { saveConversations } from "../../../utils/storage";
 import SearchBar from "./SearchBar";
 import SortOptions from "./SortOptions";
 import ConversationItem from "./ConversationItem";
 import DeleteDialog from "./DeleteDialog";
+
+/**
+ * Compact rail dock shown only when the drawer is CLOSED
+ * - 48px wide by default; expands to 180px on hover
+ * - Bottom-left placement (bottom: 24px, left: 12px)
+ * - Buttons: Open (Menu), New, Search
+ */
+const CompactRailDock = ({ onOpen, onNew, onSearch }) => {
+  const theme = useTheme();
+  return (
+    <Fade in timeout={250}>
+      <Box
+        sx={{
+          position: "fixed",
+          left: 12,
+          top: "auto",
+          bottom: 24, // bottom-left dock
+          transform: "none",
+          zIndex: theme.zIndex.drawer + 1,
+        }}
+      >
+        <Box
+          sx={{
+            width: 48,
+            borderRadius: 2,
+            backdropFilter: "blur(12px)",
+            background:
+              "linear-gradient(135deg, rgba(9,42,205,0.90), rgba(9,42,205,0.75))", // #092acd
+            boxShadow:
+              "0 10px 28px rgba(9,42,205,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            overflow: "hidden",
+            transition: "width 220ms ease, box-shadow 220ms ease",
+            "&:hover": {
+              width: 180, // expand on hover
+              boxShadow:
+                "0 16px 40px rgba(9,42,205,0.45), inset 0 1px 0 rgba(255,255,255,0.18)",
+            },
+            // reveal labels when the container is hovered
+            "&:hover .rail-label": {
+              opacity: 1,
+              maxWidth: 200,
+              marginLeft: 8,
+            },
+          }}
+        >
+          <Stack direction="column" spacing={0.5} sx={{ p: 0.5 }}>
+            {/* Open (Menu) */}
+            <Tooltip title="Open Sidebar" placement="right">
+              <ButtonBase
+                onClick={onOpen}
+                focusRipple
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  width: "100%",
+                  borderRadius: 1.5,
+                  px: 1,
+                  py: 0.75,
+                  color: "#fff",
+                  gap: 0.5,
+                  transition: "background-color 160ms ease",
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
+                  "&.Mui-focusVisible": {
+                    outline: "2px solid rgba(255,255,255,0.35)",
+                    outlineOffset: 2,
+                  },
+                }}
+                aria-label="Open sidebar"
+              >
+                <ChevronRightIcon sx={{ fontSize: 22 }} />
+                <Typography
+                  variant="body2"
+                  className="rail-label"
+                  sx={{
+                    opacity: 0,
+                    maxWidth: 0,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    transition: "all 220ms ease",
+                    fontWeight: 700,
+                  }}
+                >
+                  Menu
+                </Typography>
+              </ButtonBase>
+            </Tooltip>
+
+            {/* New Chat */}
+            <Tooltip title="New Chat" placement="right">
+              <ButtonBase
+                onClick={onNew}
+                focusRipple
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  width: "100%",
+                  borderRadius: 1.5,
+                  px: 1,
+                  py: 0.75,
+                  color: "#fff",
+                  gap: 0.5,
+                  transition: "background-color 160ms ease",
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
+                  "&.Mui-focusVisible": {
+                    outline: "2px solid rgba(255,255,255,0.35)",
+                    outlineOffset: 2,
+                  },
+                }}
+                aria-label="New chat"
+              >
+                <AddIcon sx={{ fontSize: 22 }} />
+                <Typography
+                  variant="body2"
+                  className="rail-label"
+                  sx={{
+                    opacity: 0,
+                    maxWidth: 0,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    transition: "all 220ms ease",
+                    fontWeight: 700,
+                  }}
+                >
+                  New
+                </Typography>
+              </ButtonBase>
+            </Tooltip>
+
+            {/* Search */}
+            <Tooltip title="Search" placement="right">
+              <ButtonBase
+                onClick={onSearch}
+                focusRipple
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  width: "100%",
+                  borderRadius: 1.5,
+                  px: 1,
+                  py: 0.75,
+                  color: "#fff",
+                  gap: 0.5,
+                  transition: "background-color 160ms ease",
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
+                  "&.Mui-focusVisible": {
+                    outline: "2px solid rgba(255,255,255,0.35)",
+                    outlineOffset: 2,
+                  },
+                }}
+                aria-label="Search"
+              >
+                <SearchIcon sx={{ fontSize: 22 }} />
+                <Typography
+                  variant="body2"
+                  className="rail-label"
+                  sx={{
+                    opacity: 0,
+                    maxWidth: 0,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    transition: "all 220ms ease",
+                    fontWeight: 700,
+                  }}
+                >
+                  Search
+                </Typography>
+              </ButtonBase>
+            </Tooltip>
+          </Stack>
+        </Box>
+      </Box>
+    </Fade>
+  );
+};
 
 const ConversationHistory = ({ open, onToggleDrawer }) => {
   const theme = useTheme();
@@ -40,10 +227,23 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.RECENT);
 
+  // Keyboard shortcut: Ctrl/Cmd + B to toggle
+  useEffect(() => {
+    const handler = (e) => {
+      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (mod && (e.key === "b" || e.key === "B")) {
+        e.preventDefault();
+        onToggleDrawer();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onToggleDrawer]);
+
   // Filter and sort conversations
   const filteredConversations = useMemo(() => {
     let filtered = conversations;
-
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -53,18 +253,12 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           conv.messages?.[0]?.content?.toLowerCase().includes(query)
       );
     }
-
     // Sort
     if (sortBy === SORT_OPTIONS.ALPHABETICAL) {
-      filtered = [...filtered].sort((a, b) =>
-        (a.title || "").localeCompare(b.title || "")
-      );
+      filtered = [...filtered].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
     } else {
-      filtered = [...filtered].sort(
-        (a, b) => new Date(b.created) - new Date(a.created)
-      );
+      filtered = [...filtered].sort((a, b) => new Date(b.created) - new Date(a.created));
     }
-
     return filtered;
   }, [conversations, searchQuery, sortBy]);
 
@@ -80,20 +274,43 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
 
   const handleDeleteConversation = () => {
     if (!conversationToDelete) return;
-
-    const updatedConversations = conversations.filter(
-      (conv) => conv.id !== conversationToDelete.id
-    );
-
+    const updatedConversations = conversations.filter((conv) => conv.id !== conversationToDelete.id);
     setConversations(updatedConversations);
     saveConversations(updatedConversations);
-
     if (activeConversation?.id === conversationToDelete.id) {
       handleNewConversation();
     }
-
     setDeleteDialogOpen(false);
     setConversationToDelete(null);
+  };
+
+  // Actions wired to the compact rail
+  const openDrawerIfClosed = () => {
+    if (!open) onToggleDrawer();
+  };
+
+  const handleOpenFromRail = () => {
+    openDrawerIfClosed();
+  };
+
+  const handleNewFromRail = () => {
+    openDrawerIfClosed();
+    // slight delay lets the drawer appear before adding
+    setTimeout(() => {
+      handleNewConversation();
+    }, 0);
+  };
+
+  const handleSearchFromRail = () => {
+    openDrawerIfClosed();
+    // Optionally clear and try to focus the first input in the Drawer
+    setTimeout(() => {
+      try {
+        const paper = document.querySelector('.MuiDrawer-paper');
+        const input = paper?.querySelector('input');
+        input && input.focus();
+      } catch (_) { }
+    }, 300);
   };
 
   const drawerContent = (
@@ -109,7 +326,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       {/* Header with gradient accent */}
       <Box
         sx={{
-          py: 1.5,
+          py: 1,
           px: 2,
           display: "flex",
           alignItems: "center",
@@ -133,21 +350,21 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       >
         <Button
           variant="contained"
-          size="medium"
+          size="small"
           startIcon={<AddIcon />}
           onClick={handleNewConversation}
-          fullWidth
           sx={{
             textTransform: "none",
             borderRadius: theme.shape.borderRadius,
             fontWeight: 600,
-            py: 1.25,
-            background: "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
+            py: 0.75,
+            px: 3,
+            background: "linear-gradient(135deg, #14b8b8 0%, #1a8b8b 100%)",
             color: theme.palette.primary.contrastText,
             boxShadow: "0 4px 14px rgba(96, 165, 250, 0.3)",
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             "&:hover": {
-              background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
+              background: "linear-gradient(135deg, #1a8b8b 0%, #14b8b8 100%)",
               boxShadow: "0 6px 20px rgba(96, 165, 250, 0.4)",
               transform: "translateY(-2px)",
             },
@@ -158,6 +375,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         >
           New Chat
         </Button>
+
         <Tooltip title="Hide Sidebar">
           <IconButton
             onClick={onToggleDrawer}
@@ -221,7 +439,8 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
                     padding: "0 5px",
                     borderRadius: "9px",
                     fontWeight: 700,
-                    background: "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
+                    background:
+                      "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
                     boxShadow: "0 2px 8px rgba(96, 165, 250, 0.3)",
                   },
                 }}
@@ -372,6 +591,15 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       >
         {drawerContent}
       </Drawer>
+
+      {/* Compact Rail Dock — shows only when the sidebar is closed */}
+      {!open && (
+        <CompactRailDock
+          onOpen={handleOpenFromRail}
+          onNew={handleNewFromRail}
+          onSearch={handleSearchFromRail}
+        />
+      )}
 
       <DeleteDialog
         open={deleteDialogOpen}

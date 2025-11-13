@@ -3,9 +3,8 @@
  */
 import React from "react";
 import { Box, Typography, Button, useTheme, Fade } from "@mui/material";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import { SUGGESTED_PROMPTS } from "../utils/constants";
+import { TipsAndUpdatesOutlined } from "@mui/icons-material";
+import { SUGGESTED_PROMPTS } from "../../utils/constants";
 
 const EmptyState = ({ onGetStarted }) => {
   const theme = useTheme();
@@ -67,34 +66,13 @@ const EmptyState = ({ onGetStarted }) => {
               boxShadow: "0 4px 16px rgba(96, 165, 250, 0.2)",
             }}
           >
-            <ChatBubbleOutlineIcon
+            <TipsAndUpdatesOutlined
               sx={{
                 fontSize: 36,
                 background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
-              }}
-            />
-            {/* Sparkle icon */}
-            <AutoAwesomeIcon
-              sx={{
-                position: "absolute",
-                top: "8%",
-                right: "8%",
-                fontSize: 14,
-                color: "#60a5fa",
-                animation: "sparkle 2s ease-in-out infinite",
-                "@keyframes sparkle": {
-                  "0%, 100%": {
-                    opacity: 0.3,
-                    transform: "rotate(0deg) scale(0.8)",
-                  },
-                  "50%": {
-                    opacity: 1,
-                    transform: "rotate(180deg) scale(1.2)",
-                  },
-                },
               }}
             />
           </Box>
@@ -107,7 +85,7 @@ const EmptyState = ({ onGetStarted }) => {
             mb: 1.5,
             fontWeight: 700,
             fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
-            background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
+            background: "linear-gradient(135deg, #14b8b8 0%, #a78bfa 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -143,7 +121,7 @@ const EmptyState = ({ onGetStarted }) => {
           <Box
             component="span"
             sx={{
-              color: theme.palette.secondary.main,
+              color: theme.palette.primary.main,
               fontWeight: 600,
             }}
           >
@@ -153,7 +131,7 @@ const EmptyState = ({ onGetStarted }) => {
           <Box
             component="span"
             sx={{
-              color: theme.palette.primary.light,
+              color: theme.palette.primary.main,
               fontWeight: 600,
             }}
           >

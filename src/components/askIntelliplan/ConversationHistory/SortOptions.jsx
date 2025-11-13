@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { Box, Typography, Chip, useTheme } from "@mui/material";
-import { SORT_OPTIONS } from "../../utils/constants";
+import { SORT_OPTIONS } from "../../../utils/constants";
 
 const SortOptions = ({ sortBy, onSortChange }) => {
   const theme = useTheme();

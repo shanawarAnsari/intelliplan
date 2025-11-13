@@ -5,12 +5,12 @@ export const designTokens = {
   palette: {
     mode: "dark",
     primary: {
-      main: "#60a5fa", // Bright, modern blue
-      light: "#93C5FD",
-      dark: "#3B82F6",
+      main: "#14b8b8", // Bright, modern blue
+      light: "#6cc0c0",
+      dark: "##1a8b8b",
       contrastText: "#FFFFFF",
-      hover: "#3B82F6",
-      gradient: "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
+      hover: "#1a8b8b",
+      gradient: "linear-gradient(135deg, #14b8b8 0%, #1a8b8b 100%)",
     },
     secondary: {
       main: "#A78BFA", // Elegant purple
@@ -54,89 +54,84 @@ export const designTokens = {
       gradient: "linear-gradient(135deg, #ef4444 0%, #f87171 100%)",
     },
     info: {
-      main: "#60a5fa",
-      gradient: "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
+      main: "#14b8b8",
+      gradient: "linear-gradient(135deg, #14b8b8 0%, #1a8b8b 100%)",
     },
   },
   typography: {
-    fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontSize: 12,
     h1: {
-      fontWeight: 800,
-      letterSpacing: "-0.03em",
-      fontSize: "3rem",
+      fontSize: "2.125rem",
+      fontWeight: 600,
+      letterSpacing: "-0.025em",
     },
     h2: {
-      fontWeight: 800,
-      letterSpacing: "-0.03em",
-      fontSize: "2.5rem",
+      fontSize: "1.7rem",
+      fontWeight: 600,
+      letterSpacing: "-0.025em",
     },
     h3: {
-      fontWeight: 700,
+      fontSize: "1.275rem",
+      fontWeight: 600,
       letterSpacing: "-0.025em",
-      fontSize: "2rem",
     },
     h4: {
-      fontWeight: 700,
+      fontSize: "1.06rem",
+      fontWeight: 600,
       letterSpacing: "-0.025em",
-      fontSize: "1.5rem",
     },
     h5: {
+      fontSize: "0.935rem",
       fontWeight: 600,
-      letterSpacing: "-0.02em",
-      fontSize: "1.25rem",
+      letterSpacing: "-0.025em",
     },
     h6: {
+      fontSize: "0.85rem",
       fontWeight: 600,
       letterSpacing: "-0.015em",
-      fontSize: "1rem",
-    },
-    subtitle1: {
-      letterSpacing: 0,
-      fontWeight: 600,
-      fontSize: "1rem",
-    },
-    subtitle2: {
-      letterSpacing: 0,
-      fontWeight: 500,
-      fontSize: "0.875rem",
     },
     body1: {
+      fontSize: "0.744rem",
       letterSpacing: 0,
-      lineHeight: 1.7,
-      fontSize: "1rem",
     },
     body2: {
+      fontSize: "0.68rem",
       letterSpacing: 0,
-      lineHeight: 1.7,
-      fontSize: "0.875rem",
+    },
+    subtitle1: {
+      fontSize: "0.744rem",
+      letterSpacing: 0,
+    },
+    subtitle2: {
+      fontSize: "0.68rem",
+      letterSpacing: 0,
+      fontWeight: 500,
     },
     button: {
-      fontWeight: 600,
-      letterSpacing: "0.02em",
-      textTransform: "none",
-      fontSize: "0.9375rem",
+      fontSize: "0.744rem",
+      fontWeight: 500,
+      letterSpacing: 0,
     },
     caption: {
+      fontSize: "0.638rem",
       letterSpacing: 0,
-      lineHeight: 1.4,
-      fontSize: "0.75rem",
     },
     overline: {
-      letterSpacing: "0.08em",
-      fontWeight: 700,
-      textTransform: "uppercase",
-      fontSize: "0.625rem",
+      fontSize: "0.595rem",
+      letterSpacing: "0.05em",
+      fontWeight: 600,
     },
     chatMessage: {
-      fontSize: "0.9375rem",
-      lineHeight: 1.7,
+      fontSize: "0.723rem",
+      lineHeight: 1.6,
     },
     timestamp: {
-      fontSize: "0.6875rem",
+      fontSize: "0.553rem",
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 8,
   },
   shadows: [
     "none",
@@ -191,28 +186,6 @@ export const designTokens = {
             outlineColor: "primary.main",
             outlineOffset: "2px",
             boxShadow: "0 0 0 4px rgba(96, 165, 250, 0.2)",
-          },
-        },
-        contained: {
-          background: "linear-gradient(135deg, #60a5fa 0%, #3B82F6 100%)",
-          boxShadow: "0 4px 14px rgba(96, 165, 250, 0.3)",
-          "&:hover": {
-            background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
-            boxShadow: "0 6px 20px rgba(96, 165, 250, 0.4)",
-            transform: "translateY(-2px)",
-          },
-          "&:active": {
-            transform: "translateY(0)",
-          },
-        },
-        outlined: {
-          borderWidth: "2px",
-          borderColor: "rgba(96, 165, 250, 0.5)",
-          "&:hover": {
-            borderWidth: "2px",
-            borderColor: "rgba(96, 165, 250, 0.8)",
-            backgroundColor: "rgba(96, 165, 250, 0.1)",
-            transform: "translateY(-2px)",
           },
         },
         text: {

@@ -3,7 +3,7 @@
  */
 import React, { useState, useRef } from "react";
 import { TextField, Paper, Box, useTheme, Typography, Chip } from "@mui/material";
-import { MAX_MESSAGE_CHARS, CHAR_COUNTER_THRESHOLD } from "../../utils/constants";
+import { MAX_MESSAGE_CHARS, CHAR_COUNTER_THRESHOLD } from "../../../utils/constants";
 import ActionButtons from "./ActionButtons";
 
 const MessageInput = ({ onSendMessage, disabled }) => {

@@ -3,9 +3,8 @@
  */
 import React, { useState, useRef, useEffect } from "react";
 import { Box, useTheme } from "@mui/material";
-import { useConversation } from "../../contexts/ConversationContext";
-import { useScrollToBottom } from "../../hooks/useScrollToBottom";
-import ChatHeader from "./ChatHeader";
+import { useConversation } from "../../../contexts/ConversationContext";
+import { useScrollToBottom } from "../../../hooks/useScrollToBottom";
 import MessageList from "./MessageList";
 import MessageInput from "../MessageInput";
 import EmptyState from "../EmptyState";
@@ -71,14 +70,6 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         overflow: "hidden",
       }}
     >
-      {/* Header with glassmorphism */}
-      <ChatHeader
-        drawerOpen={drawerOpen}
-        onToggleDrawer={onToggleDrawer}
-        onClearChat={handleClearChat}
-        showClearButton={!isChatEmpty}
-      />
-
       {/* Chat Content Area */}
       <Box
         sx={{
@@ -135,22 +126,22 @@ const ChatBox = ({ drawerOpen, onToggleDrawer }) => {
         </Box>
 
         {/* Input at bottom when chat has messages */}
-        {(!isChatEmpty || messages.length > 0) && (
-          <Box
-            sx={{
-              py: 2,
-              background:
-                "linear-gradient(to top, rgba(10, 15, 28, 0.95) 0%, transparent 100%)",
-              backdropFilter: "blur(10px)",
-              position: "relative",
-            }}
-          >
-            <MessageInput
-              onSendMessage={handleSendMessage}
-              disabled={isBotResponding}
-            />
-          </Box>
-        )}
+        {/* {(!isChatEmpty || messages.length > 0) && ( */}
+        <Box
+          sx={{
+            py: 2,
+            background:
+              "linear-gradient(to top, rgba(10, 15, 28, 0.95) 0%, transparent 100%)",
+            backdropFilter: "blur(10px)",
+            position: "relative",
+          }}
+        >
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            disabled={isBotResponding}
+          />
+        </Box>
+        {/* )} */}
       </Box>
     </Box>
   );

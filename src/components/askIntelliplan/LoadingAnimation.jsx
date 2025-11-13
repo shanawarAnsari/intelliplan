@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import { prefersReducedMotion } from "../utils/a11y";
+import { prefersReducedMotion } from "../../utils/a11y";
 
 const LoadingAnimation = () => {
   const theme = useTheme();

@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { getFormattedDate } from "../../utils/formatters";
+import { getFormattedDate } from "../../../utils/formatters";
 
 const ConversationItem = ({ conversation, isActive, onSelect, onDelete, index }) => {
   const theme = useTheme();

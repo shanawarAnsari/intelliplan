@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
-import RestApiService from "../services/RestApiService";
+import { agentService } from "../services/agentService";
 import { loadConversations, saveConversations } from "../utils/storage";
 import { MESSAGE_ROLES } from "../utils/constants";
 import { generateConversationTitle } from "../utils/formatters";
@@ -111,7 +111,7 @@ export const ConversationProvider = ({ children }) => {
           timestamp: new Date(),
         };
 
-        const updatedMessages = [...activeConversation.messages, userMessage];
+        const updatedMessages = [userMessage];
 
         // Generate title from first message if this is a new conversation
         const conversationTitle =
@@ -129,7 +129,7 @@ export const ConversationProvider = ({ children }) => {
         setActiveConversation(updatedConversation);
 
         // Send message to REST API
-        const response = await RestApiService.sendConversationMessage(
+        const response = await agentService.sendMessage(
           message,
           updatedMessages,
           userInfo
