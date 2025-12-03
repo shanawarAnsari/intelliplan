@@ -293,20 +293,16 @@ const SalesForecastTable = () => {
     <Box
       sx={{
         p: 1,
-        backgroundColor: "#f8fafc",
-        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
       }}
     >
       <Card
-        elevation={0}
+        elevation={3}
         sx={{
-          mb: 2,
-          borderRadius: 2,
-          boxShadow:
-            "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+          borderRadius: 1,
+          background: '#111827',
         }}
       >
-        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+        <CardContent sx={{ pt: 1, "&:last-child": { pb: 1 } }}>
           <FilterSection
             search={search}
             setSearch={setSearch}
@@ -349,8 +345,8 @@ const SalesForecastTable = () => {
             setBusinessUnitFilter={setBusinessUnitFilter}
           />
 
-          <Box sx={{ mt: 1 }}>
-            <Divider sx={{ mb: 1 }} />
+          <Box>
+            <Divider sx={{ my: 1 }} />
             <DataTable
               columns={getFilteredVisibleColumns()}
               data={calculatedData}

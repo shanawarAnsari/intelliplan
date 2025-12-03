@@ -175,8 +175,8 @@ const DataTable = ({
                       {col.isUserInput
                         ? ""
                         : col.format && typeof totals[col.id] === "number"
-                        ? col.format(totals[col.id])
-                        : totals[col.id] || ""}
+                          ? col.format(totals[col.id])
+                          : totals[col.id] || ""}
                     </Box>
                   </TableCell>
                 );
@@ -218,16 +218,16 @@ const DataTable = ({
                           fontSize: "0.75rem",
                           fontWeight:
                             col.id === "COUNTRY" ||
-                            col.id === "BUSINESS_UNIT" ||
-                            col.id === "CATEGORY" ||
-                            col.id === "SUB_CATEGORY"
+                              col.id === "BUSINESS_UNIT" ||
+                              col.id === "CATEGORY" ||
+                              col.id === "SUB_CATEGORY"
                               ? 600
                               : 400,
                           color:
                             col.id === "BUSINESS_UNIT" ||
-                            col.id === "COUNTRY" ||
-                            col.id === "CATEGORY" ||
-                            col.id === "SUB_CATEGORY"
+                              col.id === "COUNTRY" ||
+                              col.id === "CATEGORY" ||
+                              col.id === "SUB_CATEGORY"
                               ? "#1e293b"
                               : "#475569",
                           backgroundColor: col.headerColor
@@ -255,7 +255,7 @@ const DataTable = ({
                               placeholder="0"
                               value={
                                 userInputs[
-                                  `${page * rowsPerPage + idx}-${col.id}`
+                                `${page * rowsPerPage + idx}-${col.id}`
                                 ] || ""
                               }
                               onChange={(e) => {
