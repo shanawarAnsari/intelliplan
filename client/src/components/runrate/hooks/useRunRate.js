@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { getRunRate } from "../../../services/runRateService";
 
 export const useRunRateData = () => {
-  const [data, setData] = useState(null); // Changed from [] to null
+  const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -14,8 +14,7 @@ export const useRunRateData = () => {
       setData(Array.isArray(result) ? result : []);
     } catch (err) {
       setError(err.message || "Failed to fetch run rate data");
-      setData([]); // Set to empty array on error
-      console.error("Error in useRunRateData:", err);
+      setData([]);
     } finally {
       setLoading(false);
     }

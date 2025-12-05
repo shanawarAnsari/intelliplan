@@ -64,7 +64,9 @@ export const tableColumns = [
   },
   {
     id: "TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH",
-    label: `Actual Shipments till date (${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })})`,
+    label: `Actual Shipments till date (${new Date().toLocaleDateString("en-US", {
+      timeZone: "America/New_York",
+    })})`,
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
@@ -103,7 +105,7 @@ export const tableColumns = [
     id: "LOW_SIDE_PERCENT",
     label: "Low Side Percentage",
     align: "right",
-    minWidth: 150,
+    minWidth: 100,
     format: (value) => "", // Don't populate this column
     headerColor: "#fef7e6",
     isUserInput: true, // Mark as user input field
@@ -112,7 +114,7 @@ export const tableColumns = [
     id: "HIGH_SIDE_PERCENT",
     label: "High Side Percentage",
     align: "right",
-    minWidth: 150,
+    minWidth: 100,
     format: (value) => "", // Don't populate this column
     headerColor: "#fef7e6",
     isUserInput: true, // Mark as user input field
@@ -139,7 +141,7 @@ function getCurrencyFormatting(value, maximumFractionDigits) {
   if (value === null || value === undefined || value === 0) return "$0";
   return typeof value === "number" && !isNaN(value)
     ? `$${value.toLocaleString(undefined, {
-      maximumFractionDigits: maximumFractionDigits,
-    })}`
+        maximumFractionDigits: maximumFractionDigits,
+      })}`
     : "$0";
 }
