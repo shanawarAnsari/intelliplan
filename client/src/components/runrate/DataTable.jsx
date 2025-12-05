@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -8,42 +8,9 @@ import {
   TableRow,
   TablePagination,
   TextField,
-  InputAdornment,
   Typography,
   Box,
-  Divider,
-  CircularProgress,
 } from "@mui/material";
-
-// Utility function to calculate totals for numeric columns
-const calculateTotals = (data, columns) => {
-  const totals = {};
-  columns?.forEach((col) => {
-    if (col.id === "COUNTRY") {
-      totals[col.id] = "TOTAL";
-    } else if (
-      col.id === "CATEGORY" ||
-      col.id === "SUB_CATEGORY" ||
-      col.id === "BUSINESS_UNIT"
-    ) {
-      totals[col.id] = "";
-    } else if (col.isUserInput) {
-      totals[col.id] = "";
-    } else if (col.id === "RUN_RATE_VS_FORECAST_MO") {
-      totals[col.id] =
-        (totals["RUN_RATE_FORECAST"] /
-          totals["TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH"]) *
-        100;
-    } else {
-      const sum = data?.reduce((acc, row) => {
-        const value = parseFloat(row[col.id]) || 0;
-        return acc + value;
-      }, 0);
-      totals[col.id] = sum;
-    }
-  });
-  return totals;
-};
 
 const DataTable = ({
   columns,
@@ -55,8 +22,49 @@ const DataTable = ({
   userInputs,
   onUserInputChange,
 }) => {
-  // Calculate totals for all data (not just current page)
-  const totals = calculateTotals(data, columns);
+  // Calculate totals for all data
+  const totals = useMemo(() => {
+    const totals = {};
+    columns?.forEach((col) => {
+      if (col.id === "COUNTRY") {
+        totals[col.id] = "TOTAL";
+      } else if (["CATEGORY", "SUB_CATEGORY", "BUSINESS_UNIT"].includes(col.id)) {
+        totals[col.id] = "";
+      } else if (col.isUserInput) {
+        totals[col.id] = "";
+      } else {
+        const sum = data?.reduce((acc, row) => {
+          const value = parseFloat(row[col.id]) || 0;
+          return acc + value;
+        }, 0);
+        totals[col.id] = sum;
+      }
+    });
+    return totals;
+  }, [data, columns]);
+
+  // Get paginated data
+  const paginatedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [data, page, rowsPerPage]);
+
+  // Handle user input
+  const handleUserInput = (rowIndex, columnId, value) => {
+    if (
+      value === "" ||
+      value === "-" ||
+      (!isNaN(value) && value >= -1000 && value <= 1000)
+    ) {
+      onUserInputChange(page * rowsPerPage + rowIndex, columnId, value);
+    }
+  };
+
+  // Get user input value
+  const getUserInputValue = (rowIndex, columnId) => {
+    const globalRowIndex = page * rowsPerPage + rowIndex;
+    return userInputs?.[`${globalRowIndex}-${columnId}`] || "";
+  };
 
   if (!data || data.length === 0) {
     return (
@@ -84,259 +92,173 @@ const DataTable = ({
     <>
       <TableContainer
         sx={{
+          overflowX: "auto",
+          border: "1px solid #e2e8f0",
           borderRadius: 1,
           backgroundColor: "#ffffff",
-          border: "1px solid #e2e8f0",
-          boxShadow:
-            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-          overflowX: "auto",
-          maxWidth: "100%",
+          "& .frozen-column": {
+            position: "sticky",
+            zIndex: 10,
+          },
+          "& .frozen-column-1": { left: 0 },
+          "& .frozen-column-2": { left: "120px" },
+          "& .frozen-column-3": { left: "240px" },
+          "& .frozen-column-4": {
+            left: "360px",
+            borderRight: "2px solid #514f4f1d",
+          },
         }}
       >
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
-              {columns.map((col) => {
-                const isBasicInfo = [
-                  "COUNTRY",
-                  "BUSINESS_UNIT",
-                  "CATEGORY",
-                  "SUB_CATEGORY",
-                ].includes(col.id);
-                return (
-                  <TableCell
-                    key={col.id}
-                    align={col.align}
-                    sx={{
-                      fontWeight: 600,
-                      backgroundColor: col.headerColor || "#1e293b",
-                      color: col.headerColor ? "#1e293b" : "#ffffff",
-                      borderBottom: col.headerColor
-                        ? "2px solid #ff9999"
-                        : "2px solid #0f172a",
-                      fontSize: "0.7rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      minWidth: col.minWidth,
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 10,
-                      py: 0.75,
-                      px: isBasicInfo ? 1 : 2,
-                      height: "32px",
-                    }}
-                  >
-                    {col.label}
-                  </TableCell>
-                );
-              })}
+              {columns.map((col, index) => (
+                <TableCell
+                  key={col.id}
+                  align={col.align}
+                  className={
+                    index < 4 ? `frozen-column frozen-column-${index + 1}` : ""
+                  }
+                  sx={{
+                    fontWeight: 600,
+                    backgroundColor: col.headerColor || "#1e293b",
+                    color: col.headerColor ? "#1e293b" : "#ffffff",
+                    borderBottom: col.headerColor
+                      ? "2px solid #ff9999"
+                      : "2px solid #0f172a",
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    minWidth: index < 4 ? 120 : col.minWidth || 120,
+                    width: index < 4 ? 120 : "auto",
+                    maxWidth: index < 4 ? 120 : "none",
+                    position: index < 4 ? "sticky" : "relative",
+                    top: 0,
+                    zIndex: index < 4 ? 15 : 5,
+                    py: 0.75,
+                    px: 1,
+                    height: "32px",
+                  }}
+                >
+                  {col.label}
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {/* Totals Row */}
             <TableRow
-              sx={{
-                backgroundColor: "#f1f5f9",
-                borderBottom: "2px solid #3b82f6",
-                "& .MuiTableCell-root": {
-                  fontWeight: 600,
-                  color: "#1e293b",
-                  fontSize: "0.75rem",
-                },
-              }}
+              sx={{ backgroundColor: "#f1f5f9", borderBottom: "2px solid #3b82f6" }}
             >
-              {columns.map((col) => {
-                const isBasicInfo = [
-                  "COUNTRY",
-                  "BUSINESS_UNIT",
-                  "CATEGORY",
-                  "SUB_CATEGORY",
-                ].includes(col.id);
-                return (
-                  <TableCell
-                    key={`total-${col.id}`}
-                    align={col.align}
-                    sx={{
-                      py: 0.75,
-                      px: isBasicInfo ? 1 : 2,
-                      height: "34px",
-                      verticalAlign: "middle",
-                      backgroundColor: "#f1f5f9",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent:
-                          col.align === "right" ? "flex-end" : "flex-start",
-                      }}
-                    >
-                      {col.isUserInput
-                        ? ""
-                        : col.format && typeof totals[col.id] === "number"
-                          ? col.format(totals[col.id])
-                          : totals[col.id] || ""}
-                    </Box>
-                  </TableCell>
-                );
-              })}
+              {columns.map((col, index) => (
+                <TableCell
+                  key={`total-${col.id}`}
+                  align={col.align}
+                  className={
+                    index < 4 ? `frozen-column frozen-column-${index + 1}` : ""
+                  }
+                  sx={{
+                    py: 0.75,
+                    px: index < 4 ? 1 : 2,
+                    height: "34px",
+                    backgroundColor: "#f1f5f9",
+                    fontWeight: 600,
+                    fontSize: "0.75rem",
+                    color: "#1e293b",
+                    position: index < 4 ? "sticky" : "relative",
+                    zIndex: index < 4 ? 10 : 0,
+                    width: index < 4 ? 120 : "auto",
+                    minWidth: index < 4 ? 120 : "auto",
+                    maxWidth: index < 4 ? 120 : "none",
+                  }}
+                >
+                  {col.isUserInput
+                    ? ""
+                    : col.format && typeof totals[col.id] === "number"
+                    ? col.format(totals[col.id])
+                    : totals[col.id] || ""}
+                </TableCell>
+              ))}
             </TableRow>
 
             {/* Data Rows */}
-            {data
-              ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row, idx) => (
-                <TableRow
-                  key={idx}
-                  sx={{
-                    backgroundColor: "#ffffff",
-                    "&:nth-of-type(even)": {
-                      backgroundColor: "#f8fafc",
-                    },
-                    "&:hover": {
-                      backgroundColor: "#e2e8f0",
-                      transform: "translateY(-1px)",
-                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                    },
-                    transition: "all 0.2s ease",
-                    cursor: "pointer",
-                  }}
-                >
-                  {columns.map((col) => {
-                    const isBasicInfo = [
-                      "COUNTRY",
-                      "BUSINESS_UNIT",
-                      "CATEGORY",
-                      "SUB_CATEGORY",
-                    ].includes(col.id);
-                    return (
-                      <TableCell
-                        key={col.id}
-                        align={col.align}
+            {paginatedData.map((row, idx) => (
+              <TableRow
+                key={`row-${idx}`}
+                sx={{
+                  backgroundColor: "#ffffff",
+                  "&:nth-of-type(even)": { backgroundColor: "#f8fafc" },
+                  "&:hover": { backgroundColor: "#e2e8f0" },
+                }}
+              >
+                {columns.map((col, colIndex) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align}
+                    className={
+                      colIndex < 4
+                        ? `frozen-column frozen-column-${colIndex + 1}`
+                        : ""
+                    }
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: colIndex < 4 ? 600 : 400,
+                      color: colIndex < 4 ? "#1e293b" : "#475569",
+                      backgroundColor: col.headerColor
+                        ? "#fef2f2"
+                        : colIndex < 4
+                        ? "#ffffff"
+                        : "transparent",
+                      borderBottom: "1px solid #e2e8f0",
+                      py: 0.75,
+                      px: colIndex < 4 ? 1 : 2,
+                      height: "32px",
+                      position: colIndex < 4 ? "sticky" : "relative",
+                      zIndex: colIndex < 4 ? 10 : 0,
+                      width: colIndex < 4 ? 120 : "auto",
+                      minWidth: colIndex < 4 ? 120 : "auto",
+                      maxWidth: colIndex < 4 ? 120 : "none",
+                    }}
+                  >
+                    {col.isUserInput ? (
+                      <TextField
+                        size="small"
+                        variant="outlined"
+                        placeholder="0"
+                        value={getUserInputValue(idx, col.id)}
+                        onChange={(e) =>
+                          handleUserInput(idx, col.id, e.target.value)
+                        }
                         sx={{
-                          fontSize: "0.75rem",
-                          fontWeight:
-                            col.id === "COUNTRY" ||
-                              col.id === "BUSINESS_UNIT" ||
-                              col.id === "CATEGORY" ||
-                              col.id === "SUB_CATEGORY"
-                              ? 600
-                              : 400,
-                          color:
-                            col.id === "BUSINESS_UNIT" ||
-                              col.id === "COUNTRY" ||
-                              col.id === "CATEGORY" ||
-                              col.id === "SUB_CATEGORY"
-                              ? "#1e293b"
-                              : "#475569",
-                          backgroundColor: col.headerColor
-                            ? "#fef2f2"
-                            : "transparent",
-                          borderBottom: "1px solid #e2e8f0",
-                          py: 0.75,
-                          px: isBasicInfo ? 1 : 2,
-                          height: "32px",
-                          verticalAlign: "middle",
+                          minWidth: 90,
+                          "& .MuiOutlinedInput-root": {
+                            height: "28px",
+                            fontSize: "0.75rem",
+                            backgroundColor: "#ffffff",
+                            borderRadius: 0.5,
+                            border: "1px solid #d1d5db",
+                          },
+                          "& .MuiOutlinedInput-input": {
+                            padding: "5px 10px",
+                            textAlign: "right",
+                            color: "#1f2937",
+                          },
                         }}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent:
-                              col.align === "right" ? "flex-end" : "flex-start",
-                          }}
-                        >
-                          {col.isUserInput ? (
-                            <TextField
-                              size="small"
-                              variant="outlined"
-                              placeholder="0"
-                              value={
-                                userInputs[
-                                `${page * rowsPerPage + idx}-${col.id}`
-                                ] || ""
-                              }
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                // Allow empty string, minus sign, or valid numbers
-                                if (
-                                  value === "" ||
-                                  value === "-" ||
-                                  (!isNaN(value) && value >= -1000 && value <= 1000)
-                                ) {
-                                  onUserInputChange(
-                                    page * rowsPerPage + idx,
-                                    col.id,
-                                    value
-                                  );
-                                }
-                              }}
-                              onBlur={(e) => {
-                                const value = parseFloat(e.target.value);
-                                if (!isNaN(value)) {
-                                  // Ensure value is within bounds
-                                  const clampedValue = Math.max(
-                                    -1000,
-                                    Math.min(1000, value)
-                                  );
-                                  onUserInputChange(
-                                    page * rowsPerPage + idx,
-                                    col.id,
-                                    clampedValue.toString()
-                                  );
-                                }
-                              }}
-                              sx={{
-                                minWidth: 90,
-                                "& .MuiOutlinedInput-root": {
-                                  height: "28px",
-                                  fontSize: "0.75rem",
-                                  backgroundColor: "#ffffff",
-                                  borderRadius: 0.5,
-                                  border: "1px solid #d1d5db",
-                                  "&:hover": {
-                                    borderColor: "#9ca3af",
-                                  },
-                                  "&.Mui-focused": {
-                                    borderColor: "#3b82f6",
-                                    boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.1)",
-                                  },
-                                },
-                                "& .MuiOutlinedInput-input": {
-                                  padding: "5px 10px",
-                                  textAlign: "right",
-                                  color: "#1f2937",
-                                  "&::placeholder": {
-                                    color: "#9ca3af",
-                                    opacity: 1,
-                                  },
-                                },
-                              }}
-                              type="number"
-                              inputProps={{
-                                min: -1000,
-                                max: 1000,
-                                step: 0.01,
-                              }}
-                            />
-                          ) : col.format ? (
-                            col.format(row[col.id])
-                          ) : (
-                            row[col.id] || ""
-                          )}
-                        </Box>
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
+                        type="number"
+                        inputProps={{ min: -1000, max: 1000, step: 0.01 }}
+                      />
+                    ) : col.format ? (
+                      col.format(row[col.id])
+                    ) : (
+                      row[col.id] || ""
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Divider sx={{ mt: 1.5 }} />
 
       <TablePagination
         component="div"
@@ -359,9 +281,7 @@ const DataTable = ({
             fontSize: "0.8rem",
             margin: 0,
           },
-          "& .MuiTablePagination-select": {
-            fontSize: "0.8rem",
-          },
+          "& .MuiTablePagination-select": { fontSize: "0.8rem" },
         }}
       />
     </>

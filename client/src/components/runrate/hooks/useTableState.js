@@ -100,11 +100,18 @@ export const useTableState = () => {
 
 // Hook for managing column visibility
 export const useColumnVisibility = (columns) => {
+  // Essential columns that cannot be hidden
+  const ESSENTIAL_COLUMNS = ["COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"];
+
   // Initially show all columns
   const [visibleColumns, setVisibleColumns] = useState(columns.map((col) => col.id));
 
   const handleVisibilityChange = (newVisibleColumns) => {
-    setVisibleColumns(newVisibleColumns);
+    // Ensure essential columns are always included
+    const finalVisibleColumns = [
+      ...new Set([...ESSENTIAL_COLUMNS, ...newVisibleColumns]),
+    ];
+    setVisibleColumns(finalVisibleColumns);
   };
 
   // Get only visible columns

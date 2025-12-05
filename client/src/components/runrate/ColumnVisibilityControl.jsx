@@ -28,6 +28,13 @@ const ColumnVisibilityControl = ({
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
+  // Essential columns that cannot be hidden
+  const ESSENTIAL_COLUMNS = ["COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"];
+
+  const isEssentialColumn = (columnId) => {
+    return ESSENTIAL_COLUMNS.includes(columnId);
+  };
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -37,30 +44,44 @@ const ColumnVisibilityControl = ({
   };
 
   const handleToggleColumn = (columnId) => {
+    // Prevent unchecking essential columns (first 4)
+    if (isEssentialColumn(columnId)) {
+      console.log(
+        `Attempted to toggle essential column: ${columnId} - Action blocked`
+      );
+      return; // Don't allow toggling essential columns
+    }
+
     const newVisibleColumns = visibleColumns.includes(columnId)
       ? visibleColumns.filter((id) => id !== columnId)
       : [...visibleColumns, columnId];
-    onVisibilityChange(newVisibleColumns);
+
+    // Ensure essential columns are always included
+    const finalVisibleColumns = [
+      ...new Set([...ESSENTIAL_COLUMNS, ...newVisibleColumns]),
+    ];
+    onVisibilityChange(finalVisibleColumns);
   };
 
   const handleSelectAll = () => {
     const allColumnIds = columns.map((col) => col.id);
-    onVisibilityChange(allColumnIds);
+    // Ensure essential columns are always included
+    const finalVisibleColumns = [
+      ...new Set([...ESSENTIAL_COLUMNS, ...allColumnIds]),
+    ];
+    onVisibilityChange(finalVisibleColumns);
   };
 
   const handleDeselectAll = () => {
-    // Keep the first 4 columns (Business Unit, Country, Category, Sub Category) always visible
-    const essentialColumns = columns?.slice(0, 4).map((col) => col.id);
-    onVisibilityChange(essentialColumns);
+    // Keep the essential columns always visible
+    onVisibilityChange(ESSENTIAL_COLUMNS);
   };
 
   const getColumnGroups = () => {
     return [
       {
         name: "Basic Information",
-        columns: columns.filter((col) =>
-          ["COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"].includes(col.id)
-        ),
+        columns: columns.filter((col) => ESSENTIAL_COLUMNS.includes(col.id)),
       },
       {
         name: "Forecast & Actuals",
@@ -158,14 +179,21 @@ const ColumnVisibilityControl = ({
             width: 350,
             maxHeight: 500,
             borderRadius: 2,
+            backgroundColor: "#7f1d1d",
             boxShadow:
-              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            border: "1px solid #e2e8f0",
+              "0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.15)",
+            border: "1px solid #991b1b",
           },
         }}
       >
         {/* Header */}
-        <Box sx={{ p: 2, borderBottom: "1px solid #e2e8f0" }}>
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: "1px solid #b91c1c",
+            backgroundColor: "#991b1b",
+          }}
+        >
           <Box
             sx={{
               display: "flex",
@@ -176,7 +204,7 @@ const ColumnVisibilityControl = ({
           >
             <Typography
               variant="h6"
-              sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#ffffff" }}
+              sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#fee2e2" }}
             >
               Column Visibility
             </Typography>
@@ -227,8 +255,8 @@ const ColumnVisibilityControl = ({
                 sx={{
                   px: 2,
                   py: 1,
-                  backgroundColor: "#4b5563",
-                  borderBottom: "1px solid #6b7280",
+                  backgroundColor: "#b91c1c",
+                  borderBottom: "1px solid #dc2626",
                 }}
               >
                 <Typography
@@ -243,9 +271,10 @@ const ColumnVisibilityControl = ({
                 >
                   {group.name}
                   <Chip
-                    label={`${group.columns.filter((col) => visibleColumns.includes(col.id))
+                    label={`${
+                      group.columns.filter((col) => visibleColumns.includes(col.id))
                         .length
-                      }/${group.columns.length}`}
+                    }/${group.columns.length}`}
                     size="small"
                     sx={{
                       ml: 1,
@@ -259,15 +288,10 @@ const ColumnVisibilityControl = ({
               </Box>
 
               {/* Group Items */}
-              <List dense sx={{ py: 0, backgroundColor: "#374151" }}>
+              <List dense sx={{ py: 0, backgroundColor: "#7f1d1d" }}>
                 {group.columns.map((column) => {
                   const isVisible = visibleColumns.includes(column.id);
-                  const isEssential = [
-                    "COUNTRY",
-                    "BUSINESS_UNIT",
-                    "CATEGORY",
-                    "SUB_CATEGORY",
-                  ].includes(column.id);
+                  const isEssential = isEssentialColumn(column.id);
 
                   return (
                     <ListItem key={column.id} disablePadding>
@@ -279,14 +303,19 @@ const ColumnVisibilityControl = ({
                           px: 2,
                           "&:hover": !isEssential
                             ? {
-                              backgroundColor: "rgba(255, 255, 255, 0.05)",
-                              transform: "translateX(2px)",
-                            }
+                                backgroundColor: "rgba(254, 226, 226, 0.15)",
+                                transform: "translateX(2px)",
+                              }
                             : {},
                           "&.Mui-disabled": {
-                            opacity: 0.6,
+                            opacity: 0.45,
+                            backgroundColor: "rgba(239, 68, 68, 0.2)",
+                            cursor: "not-allowed",
+                            "& .MuiSvgIcon-root": { color: "#fecaca" },
+                            "& .column-label": { color: "#fecaca", opacity: 1 },
                           },
                           transition: "all 0.2s ease",
+                          cursor: isEssential ? "not-allowed" : "pointer",
                         }}
                       >
                         <ListItemIcon sx={{ minWidth: 36 }}>
@@ -294,13 +323,24 @@ const ColumnVisibilityControl = ({
                             checked={isVisible}
                             disabled={isEssential}
                             size="small"
+                            onClick={(e) => {
+                              if (isEssential) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
                             sx={{
-                              color: "#9ca3af",
+                              color: isEssential ? "#9ca3af" : "#9ca3af",
                               "&.Mui-checked": {
-                                color: "#10b981",
+                                color: isEssential ? "#9ca3af" : "#10b981",
                               },
                               "&.Mui-disabled": {
-                                color: "#6b7280",
+                                color: "#9ca3af",
+                                opacity: 0.5,
+                              },
+                              "&.Mui-disabled .MuiSvgIcon-root": {
+                                color: "#9ca3af",
+                                opacity: 0.5,
                               },
                             }}
                           />
@@ -312,27 +352,36 @@ const ColumnVisibilityControl = ({
                             >
                               {isVisible ? (
                                 <VisibilityIcon
-                                  sx={{ fontSize: 14, color: "#10b981" }}
+                                  className="visibility-icon"
+                                  sx={{
+                                    fontSize: 14,
+                                    color: isEssential ? "#9ca3af" : "#10b981",
+                                  }}
                                 />
                               ) : (
                                 <VisibilityOffIcon
-                                  sx={{ fontSize: 14, color: "#ef4444" }}
+                                  className="visibility-icon"
+                                  sx={{
+                                    fontSize: 14,
+                                    color: isEssential ? "#9ca3af" : "#ef4444",
+                                  }}
                                 />
                               )}
                               <Typography
+                                className="column-label"
                                 variant="body2"
                                 sx={{
                                   fontSize: "0.8rem",
-                                  color: "#ffffff",
+                                  color: isEssential ? "#9ca3af" : "#ffffff",
                                   fontWeight: isVisible ? 500 : 400,
-                                  opacity: isVisible ? 1 : 0.7,
+                                  opacity: isEssential ? 1 : isVisible ? 1 : 0.7,
                                 }}
                               >
                                 {column.label}
                               </Typography>
                               {isEssential && (
                                 <Chip
-                                  label="Required"
+                                  label="Frozen"
                                   size="small"
                                   sx={{
                                     height: 16,
@@ -352,7 +401,7 @@ const ColumnVisibilityControl = ({
               </List>
 
               {groupIndex < getColumnGroups().length - 1 && (
-                <Divider sx={{ borderColor: "#6b7280" }} />
+                <Divider sx={{ borderColor: "#dc2626" }} />
               )}
             </Box>
           ))}
@@ -360,7 +409,7 @@ const ColumnVisibilityControl = ({
 
         {/* Footer */}
         <Box
-          sx={{ p: 2, borderTop: "1px solid #6b7280", backgroundColor: "#4b5563" }}
+          sx={{ p: 2, borderTop: "1px solid #dc2626", backgroundColor: "#991b1b" }}
         >
           <Button
             fullWidth
