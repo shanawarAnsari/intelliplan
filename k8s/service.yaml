@@ -1,0 +1,42 @@
+# Service definition for the client (frontend) application
+apiVersion: v1
+kind: Service
+metadata:
+  # Name used to reference this service within the cluster
+  name: intelliplan-client-service
+spec:
+  # Selector determines which pods this service routes traffic to
+  # It matches pods with the label "app: intelliplan-client"
+  selector:
+    app: intelliplan-client
+  ports:
+    # Protocol for network communication (TCP is standard for HTTP)
+    - protocol: TCP
+      # Port exposed by the service (other services/ingress connect to this)
+      port: 80
+      # Port on the container where the application is actually listening
+      targetPort: 80
+  # ClusterIP = service is only accessible within the Kubernetes cluster
+  # (not directly from the internet - requires Ingress for external access)
+  type: ClusterIP
+---
+# Service definition for the server (backend) application
+apiVersion: v1
+kind: Service
+metadata:
+  # Name used to reference this service within the cluster
+  name: intelliplan-server-service
+spec:
+  # Selector determines which pods this service routes traffic to
+  # It matches pods with the label "app: intelliplan-server"
+  selector:
+    app: intelliplan-server
+  ports:
+    # Protocol for network communication
+    - protocol: TCP
+      # Port exposed by the service (Ingress will forward API requests here)
+      port: 8080
+      # Port on the container where the server application is listening
+      targetPort: 8080
+  # ClusterIP = internal only, accessible through Ingress for external traffic
+  type: ClusterIP

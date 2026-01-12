@@ -1,0 +1,27 @@
+{
+  "name": "intelliplan-server",
+  "version": "1.0.0",
+  "description": "IntelliPlan Backend Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@azure/keyvault-secrets": "^4.9.0",
+    "@okta/jwt-verifier": "^4.0.1",
+    "async-mutex": "^0.5.0",
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-cache": "^5.1.2",
+    "snowflake-sdk": "^2.3.1",
+    "joi": "^17.13.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

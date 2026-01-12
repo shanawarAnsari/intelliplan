@@ -1,0 +1,104 @@
+# Deployment configuration for the client (frontend) application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Name of this deployment
+  name: intelliplan-client
+  # Labels help organize and select resources
+  labels:
+    app: intelliplan-client
+spec:
+  # Number of pod replicas to run (for high availability and load distribution)
+  replicas: 2
+  # Selector tells the deployment which pods it manages
+  selector:
+    matchLabels:
+      app: intelliplan-client
+  # Template defines how each pod should be created
+  template:
+    metadata:
+      # Labels applied to each pod (must match the selector above)
+      labels:
+        app: intelliplan-client
+    spec:
+      # List of containers to run in each pod
+      containers:
+        - name: client
+          # Docker image location in Azure Container Registry
+          image: crchpeus2crnpeus21.azurecr.io/intelliplan.kcc.com/client:latest
+          # Ports that the container exposes
+          ports:
+            - containerPort: 80
+          # Resource management for the container
+          resources:
+            # Requests: guaranteed resources allocated to the container
+            requests:
+              memory: "256Mi" # Minimum memory reserved
+              cpu: "200m" # Minimum CPU (200 millicores = 0.2 CPU core)
+            # Limits: maximum resources the container can use
+            limits:
+              memory: "512Mi" # Maximum memory allowed
+              cpu: "500m" # Maximum CPU (500 millicores = 0.5 CPU core)
+---
+# Deployment configuration for the server (backend) application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Name of this deployment
+  name: intelliplan-server
+  # Labels for organization
+  labels:
+    app: intelliplan-server
+spec:
+  # Running 2 replicas for redundancy and load balancing
+  replicas: 2
+  # Selector to identify managed pods
+  selector:
+    matchLabels:
+      app: intelliplan-server
+  # Pod template specification
+  template:
+    metadata:
+      # Labels must match the selector
+      labels:
+        app: intelliplan-server
+    spec:
+      containers:
+        - name: server
+          # Docker image from Azure Container Registry
+          image: crchpeus2crnpeus21.azurecr.io/intelliplan.kcc.com/server:latest
+          # Container port for the Node.js server
+          ports:
+            - containerPort: 8080
+          # Environment variables passed to the container
+          env:
+            # Port number the server should listen on
+            - name: PORT
+              value: "8080"
+            # Environment mode (production, development, etc.)
+            - name: NODE_ENV
+              value: "production"
+          # Resource allocation for the server (higher than client)
+          resources:
+            requests:
+              memory: "256Mi" # Minimum memory
+              cpu: "200m" # Minimum CPU
+            limits:
+              memory: "512Mi" # Maximum memory
+              cpu: "500m" # Maximum CPU (0.5 core)
+          # Liveness probe: checks if the container is running properly
+          # If this fails repeatedly, Kubernetes will restart the container
+          livenessProbe:
+            httpGet:
+              path: /api/health # Health check endpoint
+              port: 8080
+            initialDelaySeconds: 30 # Wait 30s after start before first check
+            periodSeconds: 10 # Check every 10 seconds
+          # Readiness probe: checks if the container is ready to receive traffic
+          # If this fails, the pod is removed from service endpoints temporarily
+          readinessProbe:
+            httpGet:
+              path: /api/health # Health check endpoint
+              port: 8080
+            initialDelaySeconds: 5 # Wait 5s after start before first check
+            periodSeconds: 5 # Check every 5 seconds

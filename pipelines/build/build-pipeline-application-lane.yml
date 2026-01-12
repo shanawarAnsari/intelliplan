@@ -1,0 +1,51 @@
+trigger:
+  batch: false
+  branches:
+    include:
+      - lane*
+      - '*-lane*'
+  paths:
+    exclude:
+      - pipelines/**
+
+resources:
+  repositories:
+    - repository: ado-templates
+      type: git
+      name: INF%20-%20IAC/res-ado-container-hosting-platform-shared
+      ref: refs/tags/v10.2.0
+      endpoint: ContainerHostingPlatform-Shared-Repositories
+
+pool: AKS-Web-EUS2-2022
+
+variables:
+  - group: chp-global-build
+  - group: chp-container-registry-nonprod
+  - group: chp-project
+  - group: chp-build
+  - name: agent-pool-build-windows
+    value: AKS-Web-EUS2-2022
+  - name: agent-pool-build-linux
+    value: AKS-Web-Linux-EUS2
+
+stages:
+  - template: templates/ado/build/stage-build-common-docker.yml@ado-templates
+    parameters:
+      image-display-name: Application
+      container-image-base-name: app
+      docker-file-path: .\Dockerfile
+      docker-build-context-path: .
+      container-image-repository: $(domain-base)/app
+      container-image-tag: $(Build.SourceBranchName)-$(Build.BuildNumber)
+      docker-base-build-arguments:
+        - name: BUILD_IMAGE
+          value: $(container-registry-name)/$(build-image-repository):$(build-image-tag)
+        - name: RUNTIME_IMAGE
+          value: $(container-registry-name)/$(runtime-image-repository):$(runtime-image-tag)
+        - name: FEED_ACCESSTOKEN
+          value: $(System.AccessToken)
+      pre-build-steps:
+        - checkout: self
+          displayName: Checkout - Project
+          clean: true
+          path: s\project
