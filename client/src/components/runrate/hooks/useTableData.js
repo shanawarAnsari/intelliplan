@@ -9,13 +9,14 @@ export const useTableData = (rawData, filters, runRateOption, userInputs) => {
     if (!rawData) return null;
     let data = rawData;
 
-    // Apply filters
-    if (filters.country) data = data.filter((r) => r.COUNTRY === filters.country);
-    if (filters.businessUnit?.length)
+    // Apply filters - only filter if countries are selected
+    if (filters.country?.length > 0)
+      data = data.filter((r) => filters.country.includes(r.COUNTRY));
+    if (filters.businessUnit?.length > 0)
       data = data.filter((r) => filters.businessUnit.includes(r.BUSINESS_UNIT));
-    if (filters.category?.length)
+    if (filters.category?.length > 0)
       data = data.filter((r) => filters.category.includes(r.CATEGORY));
-    if (filters.subCategory?.length)
+    if (filters.subCategory?.length > 0)
       data = data.filter((r) => filters.subCategory.includes(r.SUB_CATEGORY));
     if (filters.search) {
       const search = filters.search.toLowerCase();

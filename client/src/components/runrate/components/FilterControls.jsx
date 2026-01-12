@@ -32,9 +32,13 @@ const FilterControls = ({
         <Select
           labelId="country-select-label"
           id="country-select"
-          value={countryFilter}
+          multiple
+          value={countryFilter || []}
           label="Country"
           onChange={(e) => setCountryFilter(e.target.value)}
+          renderValue={(selected) =>
+            selected.length === 0 ? "" : `${selected.length} selected`
+          }
           MenuProps={{
             PaperProps: {
               sx: { fontSize: "0.8rem" },
@@ -43,6 +47,12 @@ const FilterControls = ({
         >
           {countries.map((country) => (
             <MenuItem key={country} value={country} sx={{ fontSize: "0.8rem" }}>
+              <input
+                type="checkbox"
+                checked={countryFilter?.includes(country) || false}
+                readOnly
+                style={{ marginRight: 8 }}
+              />
               {country}
             </MenuItem>
           ))}
