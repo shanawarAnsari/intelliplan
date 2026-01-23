@@ -1,21 +1,23 @@
 const snowflake = require('snowflake-sdk');
-const cacheManager = require('../../../../../ProjectAreaApi/dev_api_final/NodeJS_RGMGalaxy/libraries/cache/cacheManager');
+const cacheManager = require('../common/cache/cacheManager')
 
 let connectionPool;
-
 function getConnectionPool() {
   if (connectionPool != null) return connectionPool;
 
   let {
-    snowflakeAccount,
-    snowflakeWarehouse,
-    snowflakeDatabase,
-    username,
-    password } = cacheManager.getCache('key_vault_cache');
+    snowflakeURL,
+    snowflakeUser,
+    snowflakePassword,
+    snowflakeRole } = cacheManager.getCache('key_vault_cache');
+
   let snowflakeConfig = {
-    account: snowflakeAccount,
-    database: snowflakeDatabase,
-    warehouse: snowflakeWarehouse,
+    username: snowflakeUser,
+    password: snowflakePassword,
+    role: snowflakeRole,
+    warehouse: process.env.SNOWFLAKE_WAREHOUSE,
+    database: process.env.SNOWFLAKE_DATABASE,
+    account: snowflakeURL,
     validate: async (connection) => {
       return await connection.isValidAsync();
     }
@@ -28,7 +30,7 @@ function getConnectionPool() {
     idleTimeoutMillis: 120000
   }
   snowflake.configure({ logLevel: "WARN" });
-  return snowflake.createPool({ ...snowflakeConfig, username, password }, poolConfig);
+  return snowflake.createPool({ ...snowflakeConfig }, poolConfig);
 }
 
 module.exports = {

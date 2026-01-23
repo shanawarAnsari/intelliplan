@@ -1,37 +1,40 @@
-const { DefaultAzureCredential } = require('@azure/identity');
+const { ClientSecretCredential } = require('@azure/identity');
 const { SecretClient } = require('@azure/keyvault-secrets');
 require('dotenv').config();
 
 const vaultName = process.env.KEY_VAULT_NAME;
-const url = `https://${vaultName}.vault.azure.net`;
+const keyVaultUrl = `https://${vaultName}.vault.azure.net`;
 
-async function getkeysAndSecrets() {
-    const credential = new DefaultAzureCredential();
-    // const client = new SecretClient(url, credential);
-    try {
-        const secretKey = await client.getSecret('jwt-encryption-key');
-        const sqlServer = await client.getSecret('Server-Name');
-        const sqlDb = await client.getSecret('SQL-DB-NAME');
-        const subscriptionId = process.env.SUBSCRIPTION_ID;
-        const resourceGroup = process.env.RESOURCE_GROUP;
-        const factoryName = process.env.DATAFACTORY_NAME;
-        const pipeGeneratePrediction = process.env.GENERATE_PREDICTION_AFD_PIPELINE;
-        const pipeArchiveRates = process.env.ARCHIVE_RATE_ADF_PIPELINE;
+async function getKeysAndSecrets() {
+  const tenantId = process.env.AZURE_TENANT_ID;
+  const clientId = process.env.AZURE_CLIENT_ID;
+  const clientSecret = process.env.AZURE_CLIENT_SECRET;
 
-        let keysAndSecrets = {
-            secretKey: secretKey?.value,
-            sqlServer: sqlServer?.value,
-            sqlDb: sqlDb?.value,
-            subscriptionId: subscriptionId,
-            resourceGroup: resourceGroup,
-            factoryName: factoryName,
-            pipeGeneratePrediction: pipeGeneratePrediction,
-            pipeArchiveRates: pipeArchiveRates
-        };
-        return keysAndSecrets;
-    } catch (err) {
-        throw err;
-    }
+  if (!tenantId || !clientId || !clientSecret || !vaultName) {
+    throw new Error('Missing required Azure Service Principal credentials or Key Vault name.');
+  }
+
+  const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+  const client = new SecretClient(keyVaultUrl, credential);
+
+  try {
+    const snowflakePassword = await client.getSecret('SNOWFLAKE-CONNECTION-PASSWORD');
+    const snowflakeRole = await client.getSecret('SNOWFLAKE-CONNECTION-ROLE');
+    const snowflakeURL = await client.getSecret('SNOWFLAKE-CONNECTION-URL');
+    const snowflakeUser = await client.getSecret('SNOWFLAKE-CONNECTION-USER');
+    return {
+      snowflakePassword: snowflakePassword?.value,
+      snowflakeRole: snowflakeRole?.value,
+      snowflakeURL: snowflakeURL?.value,
+      snowflakeUser: snowflakeUser?.value,
+      snowflakeWarehouse: process.env.SNOWFLAKE_WAREHOUSE,
+      snowflakeDatabase: process.env.SNOWFLAKE_DATABASE,
+      secretKey: process.env.ENCRYPTION_KEY,
+    };
+  } catch (err) {
+    console.error('Error retrieving secrets from Key Vault:', err.message);
+    throw err;
+  }
 }
 
-module.exports = getkeysAndSecrets;
+module.exports = getKeysAndSecrets;

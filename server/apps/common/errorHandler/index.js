@@ -1,28 +1,28 @@
+// apps/common/errorHandler/index.js
 
+function safeStatusCode(code) {
+  return Number.isInteger(code) && code >= 100 && code <= 599 ? code : 500;
+}
 
 function errorHandler(err, req, res, next) {
-  if (err.isJoi) {
-    let errorDefinition = {
-      "type": "ValidationError",
-      "status": 400,
-      "details": err?.details.map(detail => detail.message),
-      "source": err?.validationSource,
-      "instance": req?.originalUrl
-    };
+  const statusCode = safeStatusCode(err.statusCode || err.status || 500);
 
-    res.status(400).json({ error: errorDefinition });
-  }
-  else {
-    let statusCode = err.code > 999 ? 500 : err.code;
-    let errorDefinition = {
-      "type": err?.data?.type,
-      "title": err?.name,
-      "status": err?.code ? err.code : 500,
-      "detail": err?.message,
-      "instance": req?.originalUrl
-    };
+  // Log the error (you can enhance this with Winston or other loggers)
+  console.error(`[${new Date().toISOString()}] Error:`, {
+    message: err.message,
+    stack: err.stack,
+    statusCode,
+    path: req.originalUrl,
+    method: req.method,
+  });
 
-    res.status(parseInt(statusCode < 999 ? statusCode : 500)).json({ error: errorDefinition });
-  }
+  res.status(statusCode).json({
+    success: false,
+    error: {
+      message: err.message || 'Internal Server Error',
+      code: statusCode,
+    },
+  });
 }
+
 module.exports = errorHandler;

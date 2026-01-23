@@ -4,7 +4,6 @@ const Joi = require('joi');
 const generateApiTokenReqValidation = Joi.object({
     accessToken: Joi.string().required().label('accessToken'),
     myGroup: Joi.array().items(Joi.string()).required().label('myGroup'),
-    myRole: Joi.array().items(Joi.string()).optional().label('myRole'),
-    myRegion: Joi.array().items(Joi.string()).required().label('myRegion')
+    myRole: Joi.array().items(Joi.string()).optional().label('myRole')
 })
 module.exports = generateApiTokenReqValidation;

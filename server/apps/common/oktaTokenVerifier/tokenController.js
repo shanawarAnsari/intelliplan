@@ -11,17 +11,16 @@ const tokenController = {
         const keyVaultSecrets = await getkeysAndSecrets();
         cacheManager.setCache("key_vault_cache", keyVaultSecrets);
       }
-      const { accessToken, myGroup, myRegion, myRole } = req.body;
+      const { accessToken, myGroup, myRole } = req.body;
       const { secretKey } = cacheManager.getCache('key_vault_cache');
       validateSchema(generateApiTokenReqValidation,
         'Generate Api Token Request Validation',
-        { accessToken, myGroup, myRegion, myRole });
+        { accessToken, myGroup, myRole });
 
       const apiToken = jwt.sign(
         {
           accessToken: accessToken,
           roles: myRole,
-          regions: myRegion,
           groups: myGroup,
           iat: Math.floor(Date.now() / 1000), //current time in seconds         
           exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from iat 
