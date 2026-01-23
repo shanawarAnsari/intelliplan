@@ -1,5 +1,7 @@
 import axios from "axios";
-const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import { CONFIG } from "../runtimeConfig"
+
+const BASE_URL = CONFIG.API_BASE_URL;
 
 export const getApi = async (url, data = null, headers = {}) => {
   try {
@@ -12,8 +14,7 @@ export const getApi = async (url, data = null, headers = {}) => {
         authorization: `Bearer ${localStorage.getItem("authToken")}`,
         ...headers,
       },
-      responseType: "json",
-      timeout: 30000, // 30 second timeout
+      responseType: "json"
     });
 
     if (response.status >= 200 && response.status < 300) {
@@ -44,8 +45,7 @@ export const postApi = async (url, data, headers = {}) => {
         authorization: `Bearer ${localStorage.getItem("authToken")}`,
         ...headers,
       },
-      responseType: "json",
-      timeout: 30000, // 30 second timeout
+      responseType: "json"
     });
 
     if (response.status >= 200 && response.status < 300) {

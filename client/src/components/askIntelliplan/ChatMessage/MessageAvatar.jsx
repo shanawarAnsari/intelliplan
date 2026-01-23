@@ -1,0 +1,49 @@
+/**
+ * Message Avatar Component
+ */
+import React from "react";
+import { Avatar, Tooltip, useTheme } from "@mui/material";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+
+const MessageAvatar = ({ isBot }) => {
+  const theme = useTheme();
+
+  if (isBot) {
+    return (
+      <Tooltip title="IntelliPlan Assistant">
+        <Avatar
+          sx={{
+            width: 26,
+            height: 26,
+            bgcolor: theme.palette.secondary.main,
+            boxShadow: "0px 1px 2px rgba(0,0,0,0.1)",
+            flexShrink: 0,
+          }}
+          aria-label="Bot message"
+        >
+          <SmartToyIcon sx={{ fontSize: 14 }} />
+        </Avatar>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip title="Your message">
+      <Avatar
+        sx={{
+          width: 26,
+          height: 26,
+          bgcolor: theme.palette.primary.main,
+          boxShadow: "0px 1px 2px rgba(0,0,0,0.15)",
+          flexShrink: 0,
+        }}
+        aria-label="User message"
+      >
+        <AccountCircleIcon sx={{ fontSize: 14 }} />
+      </Avatar>
+    </Tooltip>
+  );
+};
+
+export default MessageAvatar;

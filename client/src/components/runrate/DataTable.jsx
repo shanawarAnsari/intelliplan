@@ -24,21 +24,13 @@ const DataTable = ({
 }) => {
   const totals = useMemo(() => {
     const t = {};
-    // List of run rate columns to exclude from totals
-    const runRateColumns = [
-      "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS",
-      "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS",
-      "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
-      "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
-    ];
 
     columns?.forEach((col) => {
       if (col.id === "COUNTRY") {
         t[col.id] = "TOTAL";
       } else if (
         ["CATEGORY", "SUB_CATEGORY", "BUSINESS_UNIT"].includes(col.id) ||
-        col.isUserInput ||
-        runRateColumns.includes(col.id)
+        col.isUserInput
       ) {
         t[col.id] = "";
       } else if (col.id === "RUN_RATE_VS_FORECAST_MO") {
@@ -188,7 +180,7 @@ const DataTable = ({
                       fontSize: "0.75rem",
                       backgroundColor: "#f1f5f9",
                       color: "#1e293b",
-                      borderBottom: "1px solid #d1d5db",
+                      borderBottom: "1px solid #000A32",
                       width: idx < 4 ? colWidth : "auto",
                       minWidth: idx < 4 ? colWidth : "auto",
                       maxWidth: idx < 4 ? colWidth : "none",
@@ -200,8 +192,8 @@ const DataTable = ({
                     {col.isUserInput || totals[col.id] === ""
                       ? ""
                       : col.format && typeof totals[col.id] === "number"
-                      ? col.format(totals[col.id])
-                      : totals[col.id] || ""}
+                        ? col.format(totals[col.id])
+                        : totals[col.id] || ""}
                   </TableCell>
                 );
               })}
@@ -235,9 +227,9 @@ const DataTable = ({
                         backgroundColor: col.headerColor
                           ? "#fef2f2"
                           : colIdx < 4
-                          ? "#ffffff"
-                          : "transparent",
-                        borderBottom: "1px solid #f3f4f6",
+                            ? "#ffffff"
+                            : "transparent",
+                        borderBottom: "1px solid #D2d2d2",
                         width: colIdx < 4 ? colWidth : "auto",
                         minWidth: colIdx < 4 ? colWidth : "auto",
                         maxWidth: colIdx < 4 ? colWidth : "none",

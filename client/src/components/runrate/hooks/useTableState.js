@@ -42,7 +42,7 @@ export { calculateRemainingDays, calculateRemainingShipments };
 // Hook for managing table state (pagination, search, filters)
 export const useTableState = () => {
   const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState("US");
+  const [countryFilter, setCountryFilter] = useState(["US"]);
   const [categoryFilter, setCategoryFilter] = useState([]);
   const [subCategoryFilter, setSubCategoryFilter] = useState([]);
   const [page, setPage] = useState(0);
@@ -484,8 +484,8 @@ export const useDataAggregation = (filteredData, levelFilter) => {
       group.RUN_RATE_VS_FORECAST_MO =
         group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH > 0
           ? (group.RUN_RATE_FORECAST /
-              group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
-            100
+            group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
+          100
           : 0;
 
       // Remove helper fields

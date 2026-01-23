@@ -47,7 +47,7 @@ const ColumnVisibilityPopover = ({
       PaperProps={{
         sx: {
           p: 2,
-          width: 300,
+          width: 400,
           maxHeight: 400,
           borderRadius: 2,
         },
@@ -74,7 +74,7 @@ const ColumnVisibilityPopover = ({
               />
               <ListItemText
                 primary={
-                  <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                  <Typography variant="body2" sx={{ fontSize: "0.675rem" }}>
                     {column.label}
                   </Typography>
                 }

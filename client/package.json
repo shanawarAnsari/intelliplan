@@ -7,11 +7,13 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.7",
     "@mui/material": "^5.15.7",
+    "@okta/okta-auth-js": "^7.14.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "apexcharts": "^4.7.0",
     "axios": "^1.9.0",
+    "dompurify": "^3.3.0",
     "dotenv": "^16.5.0",
     "file-saver": "^2.0.5",
     "openai": "^4.98.0",
@@ -21,7 +23,8 @@
     "react-router-dom": "^7.8.2",
     "react-scripts": "5.0.1",
     "uuid": "^9.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zustand": "^5.0.8"
   },
   "scripts": {
     "start": "react-scripts start",

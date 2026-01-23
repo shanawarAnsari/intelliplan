@@ -174,17 +174,6 @@ const ColumnVisibilityControl = ({
           vertical: "top",
           horizontal: "left",
         }}
-        PaperProps={{
-          sx: {
-            width: 350,
-            maxHeight: 500,
-            borderRadius: 2,
-            backgroundColor: "#7f1d1d",
-            boxShadow:
-              "0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.15)",
-            border: "1px solid #991b1b",
-          },
-        }}
       >
         {/* Header */}
         <Box
@@ -271,10 +260,9 @@ const ColumnVisibilityControl = ({
                 >
                   {group.name}
                   <Chip
-                    label={`${
-                      group.columns.filter((col) => visibleColumns.includes(col.id))
-                        .length
-                    }/${group.columns.length}`}
+                    label={`${group.columns.filter((col) => visibleColumns.includes(col.id))
+                      .length
+                      }/${group.columns.length}`}
                     size="small"
                     sx={{
                       ml: 1,
@@ -303,9 +291,9 @@ const ColumnVisibilityControl = ({
                           px: 2,
                           "&:hover": !isEssential
                             ? {
-                                backgroundColor: "rgba(254, 226, 226, 0.15)",
-                                transform: "translateX(2px)",
-                              }
+                              backgroundColor: "rgba(254, 226, 226, 0.15)",
+                              transform: "translateX(2px)",
+                            }
                             : {},
                           "&.Mui-disabled": {
                             opacity: 0.45,
@@ -433,7 +421,7 @@ const ColumnVisibilityControl = ({
           </Button>
         </Box>
       </Popover>
-    </Box>
+    </Box >
   );
 };
 

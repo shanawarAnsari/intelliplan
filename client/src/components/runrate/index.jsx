@@ -37,7 +37,7 @@ const SalesForecastTable = () => {
   const { data: rawData, error, loading, refetch } = useRunRateData();
 
   const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState("US");
+  const [countryFilter, setCountryFilter] = useState(["US"]);
   const [businessUnitFilter, setBusinessUnitFilter] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState([]);
   const [subCategoryFilter, setSubCategoryFilter] = useState([]);
@@ -73,9 +73,9 @@ const SalesForecastTable = () => {
     () =>
       businessUnitFilter?.length > 0
         ? getFilteredValues(rawData, "CATEGORY", {
-            COUNTRY: countryFilter,
-            BUSINESS_UNIT: businessUnitFilter,
-          })
+          COUNTRY: countryFilter,
+          BUSINESS_UNIT: businessUnitFilter,
+        })
         : allCategories,
     [rawData, countryFilter, businessUnitFilter, allCategories]
   );
@@ -116,12 +116,15 @@ const SalesForecastTable = () => {
 
   const hasActiveFilters =
     search ||
+    countryFilter?.length > 0 ||
+    countryFilter?.length > 0 ||
     businessUnitFilter?.length > 0 ||
     categoryFilter?.length > 0 ||
     subCategoryFilter?.length > 0;
 
   const clearFilters = () => {
     setSearch("");
+    setCountryFilter(["US"])
     setBusinessUnitFilter([]);
     setCategoryFilter([]);
     setSubCategoryFilter([]);

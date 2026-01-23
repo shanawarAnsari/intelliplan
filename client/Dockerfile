@@ -1,36 +1,39 @@
-# Build arguments
-ARG BUILD_IMAGE=node:22-alpine
-ARG RUNTIME_IMAGE=nginx:alpine
-
-# Stage 1: Build the React application
-FROM ${BUILD_IMAGE} AS build
-
+# ---------- Stage 1: Build React app ----------
+FROM node:22-alpine AS build
 WORKDIR /app
 
-# Copy package files
+# Copy dependency manifests first to leverage Docker layer caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install deps; use npm ci if lockfile exists, else npm install
+# (remove the second part if you always have package-lock.json)
+RUN --mount=type=cache,target=/root/.npm \
+    (npm ci --no-audit --no-fund || npm install --no-audit --no-fund)
 
-# Copy source code
+# Copy the rest of the source
 COPY . .
 
-# Copy Docker-specific environment file
-COPY .env.docker .env
-
-# Build the application
+# Build the production bundle
 RUN npm run build
 
-# Stage 2: Serve with Nginx
-FROM ${RUNTIME_IMAGE} AS runner
+# ---------- Stage 2: Serve with Nginx ----------
+FROM nginx:alpine
 
-# Copy built files from build stage
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Copy custom nginx configuration
+# Use our SPA-friendly server block
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Copy build output to the default Nginx web root
+COPY --from=build /app/build/ /usr/share/nginx/html/
+
+# Copy your entrypoint script that generates /usr/share/nginx/html/env.js
+COPY entrypoint.sh /entrypoint.sh
+
+# Ensure executable and normalize line endings (prevents /bin/sh^M when edited on Windows)
+RUN chmod +x /entrypoint.sh && sed -i 's/\r$//' /entrypoint.sh
+
+# Expose HTTP
 EXPOSE 80
 
+# Use your entrypoint to generate env.js, then start nginx (CMD)
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

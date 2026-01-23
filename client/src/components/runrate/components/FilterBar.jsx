@@ -48,6 +48,7 @@ const FilterBar = ({
   const [columnsAnchor, setColumnsAnchor] = useState(null);
 
   const selectedFiltersCount =
+    (countryFilter?.length || 0) +
     (businessUnitFilter?.length || 0) +
     (categoryFilter?.length || 0) +
     (subCategoryFilter?.length || 0);
@@ -209,12 +210,22 @@ const FilterBar = ({
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Country</InputLabel>
             <Select
-              value={countryFilter}
+              multiple
+              value={countryFilter || []}
               label="Country"
               onChange={(e) => setCountryFilter(e.target.value)}
+              renderValue={(selected) =>
+                selected.length === 0 ? "" : `${selected.length} selected`
+              }
             >
               {countries.map((c) => (
                 <MenuItem key={c} value={c}>
+                  <input
+                    type="checkbox"
+                    checked={countryFilter?.includes(c) || false}
+                    readOnly
+                    style={{ marginRight: 8 }}
+                  />
                   {c}
                 </MenuItem>
               ))}
@@ -305,6 +316,12 @@ const FilterBar = ({
           },
         }}
       >
+        <FilterChip
+          items={countries}
+          selected={countryFilter || []}
+          onToggle={setCountryFilter}
+          label="Country"
+        />
         <FilterChip
           items={businessUnits}
           selected={businessUnitFilter || []}
@@ -401,6 +418,16 @@ const FilterBar = ({
               size="small"
             />
           )}
+          {countryFilter?.map((country) => (
+            <Chip
+              key={country}
+              label={`Country: ${country}`}
+              size="small"
+              onDelete={() =>
+                setCountryFilter(countryFilter.filter((c) => c !== country))
+              }
+            />
+          ))}
           {businessUnitFilter?.map((bu) => (
             <Chip
               key={bu}

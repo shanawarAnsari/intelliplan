@@ -39,3 +39,7 @@ Thumbs.db
 # dotenv environment variables file
 .env
 .env.test
+
+#folder
+build/
+public/env.local.js
