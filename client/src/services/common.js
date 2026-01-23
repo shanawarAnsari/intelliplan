@@ -1,7 +1,7 @@
 import axios from "axios";
-import { CONFIG } from "../runtimeConfig"
+import { CONFIG } from "../runtimeConfig";
 
-const BASE_URL = CONFIG.API_BASE_URL;
+const BASE_URL = "http://localhost:80/api";
 
 export const getApi = async (url, data = null, headers = {}) => {
   try {
@@ -14,7 +14,7 @@ export const getApi = async (url, data = null, headers = {}) => {
         authorization: `Bearer ${localStorage.getItem("authToken")}`,
         ...headers,
       },
-      responseType: "json"
+      responseType: "json",
     });
 
     if (response.status >= 200 && response.status < 300) {
@@ -45,7 +45,7 @@ export const postApi = async (url, data, headers = {}) => {
         authorization: `Bearer ${localStorage.getItem("authToken")}`,
         ...headers,
       },
-      responseType: "json"
+      responseType: "json",
     });
 
     if (response.status >= 200 && response.status < 300) {
