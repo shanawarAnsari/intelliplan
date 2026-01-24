@@ -1,5 +1,3 @@
-
-
 import React, { useState } from "react";
 import { Box, IconButton, Tooltip, Snackbar, Alert, useTheme } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -32,15 +30,16 @@ const BAD_CATEGORIES = [
 const MessageActions = ({
   message,
   isBot,
-  feedback,
+  feedback, // Now an object: { score, category, comment, submittedAt } or null
   onFeedbackChange,
-  onFeedbackSubmit
+  onFeedbackSubmit,
+  sessionId,
+  messageId,
 }) => {
   const theme = useTheme();
   const [copied, setCopied] = useState(false);
   const [snackbar, setSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pendingType, setPendingType] = useState(null);
@@ -53,7 +52,6 @@ const MessageActions = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-
   const handleFeedbackClick = (type) => {
     setPendingType(type);
     setDialogOpen(true);
@@ -64,20 +62,18 @@ const MessageActions = ({
     setPendingType(null);
   };
 
-
   const handleDialogSubmit = (formData) => {
-
     const payload = {
-      ...formData,
+      ...formData, // Includes type, score, category, comment, submittedAt
       message,
-      source: "message-actions",
+      sessionId,
+      messageId,
     };
 
+    if (onFeedbackChange) onFeedbackChange(formData.score); // Update UI feedback state
 
-    if (onFeedbackChange) onFeedbackChange(formData.type);
-
-
-    if (onFeedbackSubmit) onFeedbackSubmit(payload);
+    if (onFeedbackSubmit)
+      onFeedbackSubmit(payload); // Send full payload to context/API
     else console.log("Feedback payload:", payload);
 
     setSnackbarMessage("Thanks! Your feedback was submitted.");
@@ -99,6 +95,17 @@ const MessageActions = ({
     } else {
       handleCopy();
     }
+  };
+
+  // Helper to get tooltip text
+  const getFeedbackTooltip = (type) => {
+    if (!feedback) return type === "helpful" ? "Helpful" : "Not helpful";
+    const isPositive = feedback.score === 1;
+    const isHelpfulButton = type === "helpful";
+    if ((isPositive && isHelpfulButton) || (!isPositive && !isHelpfulButton)) {
+      return `Feedback: ${feedback.category}${feedback.comment ? ` - ${feedback.comment}` : ""}`;
+    }
+    return type === "helpful" ? "Helpful" : "Not helpful";
   };
 
   return (
@@ -123,7 +130,9 @@ const MessageActions = ({
             sx={{
               width: 24,
               height: 24,
-              color: copied ? theme.palette.success.main : theme.palette.text.secondary,
+              color: copied
+                ? theme.palette.success.main
+                : theme.palette.text.secondary,
               "&:hover": {
                 bgcolor: "rgba(96, 165, 250, 0.1)",
                 color: theme.palette.primary.main,
@@ -136,46 +145,64 @@ const MessageActions = ({
 
         {isBot && (
           <>
-            <Tooltip title="Helpful" placement="top">
-              <IconButton
-                size="small"
-                onClick={() => handleFeedbackClick("helpful")}
-                sx={{
-                  width: 24,
-                  height: 24,
-                  color:
-                    feedback === "helpful"
-                      ? theme.palette.success.main
-                      : theme.palette.text.secondary,
-                  "&:hover": {
-                    bgcolor: "rgba(16, 185, 129, 0.1)",
-                    color: theme.palette.success.main,
-                  },
-                }}
-              >
-                <ThumbUpIcon sx={{ fontSize: 14 }} />
-              </IconButton>
+            <Tooltip title={getFeedbackTooltip("helpful")} placement="top">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => handleFeedbackClick("helpful")}
+                  disabled={feedback !== null} // Disable if feedback already given
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    color:
+                      feedback?.score === 1
+                        ? theme.palette.success.main
+                        : theme.palette.text.secondary,
+                    "&:hover": {
+                      bgcolor: "transparent", // Keep transparent on hover to show tooltip
+                      color: theme.palette.success.main, // Maintain color
+                    },
+                    "&.Mui-disabled": {
+                      color:
+                        feedback?.score === 1
+                          ? theme.palette.success.main
+                          : theme.palette.text.secondary, // Keep color when disabled
+                    },
+                  }}
+                >
+                  <ThumbUpIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </span>
             </Tooltip>
 
-            <Tooltip title="Not helpful" placement="top">
-              <IconButton
-                size="small"
-                onClick={() => handleFeedbackClick("unhelpful")}
-                sx={{
-                  width: 24,
-                  height: 24,
-                  color:
-                    feedback === "unhelpful"
-                      ? theme.palette.error.main
-                      : theme.palette.text.secondary,
-                  "&:hover": {
-                    bgcolor: "rgba(239, 68, 68, 0.1)",
-                    color: theme.palette.error.main,
-                  },
-                }}
-              >
-                <ThumbDownIcon sx={{ fontSize: 14 }} />
-              </IconButton>
+            <Tooltip title={getFeedbackTooltip("unhelpful")} placement="top">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => handleFeedbackClick("unhelpful")}
+                  disabled={feedback !== null} // Disable if feedback already given
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    color:
+                      feedback?.score === 0
+                        ? theme.palette.error.main
+                        : theme.palette.text.secondary,
+                    "&:hover": {
+                      bgcolor: "transparent", // Keep transparent on hover to show tooltip
+                      color: theme.palette.error.main, // Maintain color
+                    },
+                    "&.Mui-disabled": {
+                      color:
+                        feedback?.score === 0
+                          ? theme.palette.error.main
+                          : theme.palette.text.secondary, // Keep color when disabled
+                    },
+                  }}
+                >
+                  <ThumbDownIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </span>
             </Tooltip>
           </>
         )}
@@ -206,7 +233,6 @@ const MessageActions = ({
         type={pendingType}
         categories={pendingType === "helpful" ? GOOD_CATEGORIES : BAD_CATEGORIES}
       />
-
 
       <Snackbar
         open={snackbar}

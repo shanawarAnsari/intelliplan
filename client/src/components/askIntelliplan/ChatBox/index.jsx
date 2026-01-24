@@ -1,4 +1,4 @@
-import { useUserStore } from '../../../store/userStore';
+import { useUserStore } from "../../../store/userStore";
 import React, { useState, useRef, useEffect } from "react";
 import { Box, useTheme } from "@mui/material";
 import { useConversation } from "../../../contexts/ConversationContext";
@@ -25,11 +25,12 @@ const ChatBox = () => {
   useEffect(() => {
     if (activeConversation && activeConversation.messages) {
       const formattedMessages = activeConversation.messages.map((msg, index) => ({
+        id: msg.id,
         text: msg.content,
         isBot: msg.role === "assistant",
         dataTable: msg.tableData,
         timestamp: msg.timestamp || new Date(),
-        feedback: msg.feedback || null,
+        feedback: msg.feedback || null, // Now object or null
         messageIndex: index,
       }));
       setMessages(formattedMessages);
@@ -120,6 +121,7 @@ const ChatBox = () => {
               isBotResponding={isBotResponding}
               messagesEndRef={messagesEndRef}
               onUpdateFeedback={updateMessageFeedback}
+              sessionId={activeConversation?.sessionId} // Pass session ID
             />
           )}
         </Box>

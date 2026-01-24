@@ -26,26 +26,21 @@ const buildPayload = (message, userInfo) => ({
     },
   ],
   maxTokens: config.maxTokens,
-  chatHistory: config.chatHistory
+  chatHistory: config.chatHistory,
 });
 
-const sendMessage = async (userMessage, userInfo) => {
+const sendMessage = async (userMessage, userInfo, sessionId) => {
   ensureAgentToken();
   const agentToken = JSON.parse(localStorage.getItem("agentToken"));
   const access_token = agentToken?.access_token;
 
   try {
-    const sid = uuidv4();
     const payload = buildPayload(userMessage, userInfo);
 
-    const response = await postApi(
-      `agent/ask`,
-      payload,
-      {
-        "X-Session-Id": sid,
-        Authorization: `Bearer ${access_token}`,
-      }
-    );
+    const response = await postApi(`agent/ask`, payload, {
+      "X-Session-Id": sessionId, // Use conversation sessionId
+      Authorization: `Bearer ${access_token}`,
+    });
 
     //  Check for token limit exceeded
     if (response?.tokenLimitExceeded) {
@@ -84,6 +79,27 @@ const sendMessage = async (userMessage, userInfo) => {
   }
 };
 
+const sendFeedback = async (payload) => {
+  ensureAgentToken();
+  const agentToken = JSON.parse(localStorage.getItem("agentToken"));
+  const access_token = agentToken?.access_token;
+
+  try {
+    const response = await postApi(
+      `agent/feedback`,
+      payload, // Send full payload including sessionId, messageId, score, category, comment, etc.
+      {
+        Authorization: `Bearer ${access_token}`,
+      },
+    );
+    return response;
+  } catch (error) {
+    console.error("sendFeedback error:", error);
+    throw error;
+  }
+};
+
 export const agentService = {
   sendMessage,
+  sendFeedback,
 };

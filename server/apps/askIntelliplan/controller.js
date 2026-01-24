@@ -17,6 +17,25 @@ const agentController = {
     const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
     res.status(200).json({ message: randomAnswer });
   },
+  feedback: async (req, res, next) => {
+    try {
+      const { sessionId, messageId, score } = req.body; // Change feedback to score
+      // Simple validation
+      if (
+        !sessionId ||
+        !messageId ||
+        typeof score !== "number" ||
+        ![0, 1].includes(score)
+      ) {
+        return res.status(400).json({ error: "Invalid feedback payload" });
+      }
+      // Return the feedback for confirmation (in a real app, you might save to DB)
+      res.status(200).json({ sessionId, messageId, score }); // Return score instead of feedback
+    } catch (error) {
+      console.error("Feedback error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
 };
 
 module.exports = agentController;

@@ -12,6 +12,7 @@ const MessageList = ({
   isBotResponding,
   messagesEndRef,
   onUpdateFeedback,
+  sessionId, // Add this prop
 }) => {
   return (
     <>
@@ -37,7 +38,8 @@ const MessageList = ({
           isBot={message.isBot}
           timestamp={message.timestamp}
           feedback={message.feedback}
-          messageIndex={message.messageIndex}
+          messageId={message.id} // Pass message ID instead of index
+          sessionId={sessionId}
           onUpdateFeedback={onUpdateFeedback}
         />
       ))}

@@ -68,7 +68,7 @@ export const ConversationProvider = ({ children }) => {
         setError(err.message);
       }
     },
-    [conversations]
+    [conversations],
   );
 
   /**
@@ -105,6 +105,7 @@ export const ConversationProvider = ({ children }) => {
       setError(null);
       try {
         const userMessage = {
+          id: uuidv4(),
           role: MESSAGE_ROLES.USER,
           content: message,
           timestamp: new Date(),
@@ -116,7 +117,9 @@ export const ConversationProvider = ({ children }) => {
         const updatedMessages = [...existing, userMessage];
         // Title from first message only
         const conversationTitle =
-          existing.length === 0 ? generateConversationTitle(message) : activeConversation.title;
+          existing.length === 0
+            ? generateConversationTitle(message)
+            : activeConversation.title;
         const updatedConversation = {
           ...activeConversation,
           title: conversationTitle,
@@ -127,7 +130,8 @@ export const ConversationProvider = ({ children }) => {
         // Send message to REST API
         const response = await agentService.sendMessage(
           message,
-          user
+          user,
+          activeConversation.sessionId,
         );
         if (!response?.success) {
           setError(response?.error || "Failed to send message");
@@ -137,6 +141,7 @@ export const ConversationProvider = ({ children }) => {
         // Add assistant message to the conversation
         if (response.answer) {
           const assistantMessage = {
+            id: uuidv4(),
             role: MESSAGE_ROLES.ASSISTANT,
             content: response.answer,
             tableData: response.tableData,
@@ -144,7 +149,7 @@ export const ConversationProvider = ({ children }) => {
             isImage: response.isImage || false,
             imageUrl: response.imageUrl || null,
             imageFileId: response.imageFileId || null,
-            feedback: null, // Initialize feedback as null
+            feedback: null, // Initialize feedback as null (will be 0 or 1 later)
           };
           const finalMessages = [...updatedMessages, assistantMessage];
           const finalConversation = {
@@ -160,7 +165,9 @@ export const ConversationProvider = ({ children }) => {
             const idx = prev.findIndex((c) => c.id === activeConversation.id);
             let updatedConvs;
             if (idx >= 0) {
-              updatedConvs = prev.map((c) => (c.id === activeConversation.id ? finalConversation : c));
+              updatedConvs = prev.map((c) =>
+                c.id === activeConversation.id ? finalConversation : c,
+              );
             } else {
               updatedConvs = [finalConversation, ...prev];
             }
@@ -177,22 +184,42 @@ export const ConversationProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    [activeConversation, userInfo]
+    [activeConversation, userInfo],
   );
 
   /**
-   * Update message feedback (like/dislike)
+   * Update message feedback - now accepts full payload and sends to API
    */
   const updateMessageFeedback = useCallback(
-    (messageIndex, feedbackType) => {
+    async (payload) => {
       if (!activeConversation) return;
 
+      const {
+        sessionId,
+        messageId,
+        score,
+        category,
+        comment,
+        submittedAt,
+        ...rest
+      } = payload;
+
       try {
+        // Find the message by messageId
+        const messageIndex = activeConversation.messages.findIndex(
+          (msg) => msg.id === messageId && msg.role === MESSAGE_ROLES.ASSISTANT,
+        );
+        if (messageIndex === -1) return;
+
+        // Send full payload to API
+        await agentService.sendFeedback(payload);
+
+        // Update the message feedback to full object
         const updatedMessages = activeConversation.messages.map((msg, idx) => {
-          if (idx === messageIndex && msg.role === MESSAGE_ROLES.ASSISTANT) {
+          if (idx === messageIndex) {
             return {
               ...msg,
-              feedback: msg.feedback === feedbackType ? null : feedbackType, // Toggle feedback
+              feedback: { score, category, comment, submittedAt }, // Store full feedback object
             };
           }
           return msg;
@@ -208,7 +235,7 @@ export const ConversationProvider = ({ children }) => {
         // Update conversations list and save to localStorage
         setConversations((prev) => {
           const updatedConversations = prev.map((conv) =>
-            conv.id === activeConversation.id ? updatedConversation : conv
+            conv.id === activeConversation.id ? updatedConversation : conv,
           );
           saveConversations(updatedConversations);
           return updatedConversations;
@@ -218,7 +245,7 @@ export const ConversationProvider = ({ children }) => {
         setError(err.message);
       }
     },
-    [activeConversation]
+    [activeConversation],
   );
 
   const value = {
