@@ -26,6 +26,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import kimberlyClarkLogo from "../../../assets/KC_logo_for_dark.png";
 import { DRAWER_WIDTH, SORT_OPTIONS } from "../../../utils/constants";
 import { saveConversations } from "../../../utils/storage";
@@ -223,6 +224,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
   } = useConversation();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.RECENT);
@@ -250,14 +252,18 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
       filtered = filtered.filter(
         (conv) =>
           conv.title?.toLowerCase().includes(query) ||
-          conv.messages?.[0]?.content?.toLowerCase().includes(query)
+          conv.messages?.[0]?.content?.toLowerCase().includes(query),
       );
     }
     // Sort
     if (sortBy === SORT_OPTIONS.ALPHABETICAL) {
-      filtered = [...filtered].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      filtered = [...filtered].sort((a, b) =>
+        (a.title || "").localeCompare(b.title || ""),
+      );
     } else {
-      filtered = [...filtered].sort((a, b) => new Date(b.created) - new Date(a.created));
+      filtered = [...filtered].sort(
+        (a, b) => new Date(b.created) - new Date(a.created),
+      );
     }
     return filtered;
   }, [conversations, searchQuery, sortBy]);
@@ -274,7 +280,9 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
 
   const handleDeleteConversation = () => {
     if (!conversationToDelete) return;
-    const updatedConversations = conversations.filter((conv) => conv.id !== conversationToDelete.id);
+    const updatedConversations = conversations.filter(
+      (conv) => conv.id !== conversationToDelete.id,
+    );
     setConversations(updatedConversations);
     saveConversations(updatedConversations);
     if (activeConversation?.id === conversationToDelete.id) {
@@ -282,6 +290,13 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     }
     setDeleteDialogOpen(false);
     setConversationToDelete(null);
+  };
+
+  const handleClearAllConversations = () => {
+    setConversations([]);
+    saveConversations([]);
+    handleNewConversation();
+    setClearAllDialogOpen(false);
   };
 
   // Actions wired to the compact rail
@@ -306,10 +321,10 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
     // Optionally clear and try to focus the first input in the Drawer
     setTimeout(() => {
       try {
-        const paper = document.querySelector('.MuiDrawer-paper');
-        const input = paper?.querySelector('input');
+        const paper = document.querySelector(".MuiDrawer-paper");
+        const input = paper?.querySelector("input");
         input && input.focus();
-      } catch (_) { }
+      } catch (_) {}
     }, 300);
   };
 
@@ -409,7 +424,16 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
           <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.06)" }} />
 
           {/* History Label with gradient */}
-          <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+          <Box
+            sx={{
+              px: 2,
+              pt: 2,
+              pb: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <Typography
               variant="caption"
               sx={{
@@ -441,6 +465,28 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
                 }}
               />
             </Typography>
+            {/* Clear All Conversations Button moved here */}
+            {filteredConversations.length > 0 && (
+              <Tooltip title="Clear All Conversations">
+                <IconButton
+                  onClick={() => setClearAllDialogOpen(true)}
+                  size="small"
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    "&:hover": {
+                      backgroundColor: "rgba(255, 99, 132, 0.12)",
+                      color: theme.palette.error.main,
+                      transform: "scale(1.1)",
+                    },
+                    ml: 1,
+                  }}
+                  aria-label="Clear all conversations"
+                >
+                  <DeleteSweepIcon />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
 
           {/* Conversations */}
@@ -601,6 +647,14 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         conversation={conversationToDelete}
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={handleDeleteConversation}
+      />
+      {/* Clear All Dialog */}
+      <DeleteDialog
+        open={clearAllDialogOpen}
+        conversation={null}
+        onClose={() => setClearAllDialogOpen(false)}
+        onConfirm={handleClearAllConversations}
+        isClearAll
       />
     </>
   );
