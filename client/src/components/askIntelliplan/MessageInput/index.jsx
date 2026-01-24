@@ -1,7 +1,7 @@
 /**
  * Message Input Component - Refactored
  */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react"; // Add useEffect
 import { TextField, Paper, Box, useTheme, Typography, Chip } from "@mui/material";
 import { MAX_MESSAGE_CHARS, CHAR_COUNTER_THRESHOLD } from "../../../utils/constants";
 import ActionButtons from "./ActionButtons";
@@ -12,6 +12,15 @@ const MessageInput = ({ onSendMessage, disabled }) => {
   const [isFocused, setIsFocused] = useState(false);
   const textFieldRef = useRef(null);
   const theme = useTheme();
+
+  // Auto-focus when enabled
+  useEffect(() => {
+    if (!disabled) {
+      requestAnimationFrame(() => {
+        textFieldRef.current?.focus();
+      });
+    }
+  }, [disabled]);
 
   const handleTextChange = (e) => {
     const text = e.target.value;
@@ -27,7 +36,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
       onSendMessage(message);
       setMessage("");
       setCharCount(0);
-      textFieldRef.current?.focus();
+      // Remove manual focus here, let useEffect handle it
     }
   };
 
@@ -54,7 +63,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
         backdropFilter: "blur(20px)",
         transition: "all 0.2s ease",
         position: "relative",
-        overflow: "hidden"
+        overflow: "hidden",
       }}
     >
       {/* Main Input Area */}
@@ -72,13 +81,14 @@ const MessageInput = ({ onSendMessage, disabled }) => {
           multiline
           maxRows={5}
           minRows={3}
-          placeholder="Type your message... (Shift+Enter for new line)"
+          placeholder="Type your message...(Tab to follow up, Shift+Enter for new line) "
           value={message}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           // onFocus={() => setIsFocused(true)}
           // onBlur={() => setIsFocused(false)}
           disabled={disabled}
+          autoFocus={true}
           variant="standard"
           InputProps={{
             disableUnderline: true,
