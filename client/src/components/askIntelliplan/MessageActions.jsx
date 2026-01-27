@@ -29,6 +29,7 @@ const BAD_CATEGORIES = [
 
 const MessageActions = ({
   message,
+  dataTable,
   isBot,
   feedback, // Now an object: { score, category, comment, submittedAt } or null
   onFeedbackChange,
@@ -40,13 +41,17 @@ const MessageActions = ({
   const [copied, setCopied] = useState(false);
   const [snackbar, setSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pendingType, setPendingType] = useState(null);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message);
+    navigator.clipboard.writeText(
+      message + JSON.stringify(dataTable || "", null, 2),
+    );
     setCopied(true);
+    setSnackbarSeverity("success");
     setSnackbarMessage("Copied to clipboard!");
     setSnackbar(true);
     setTimeout(() => setCopied(false), 2000);
@@ -62,7 +67,7 @@ const MessageActions = ({
     setPendingType(null);
   };
 
-  const handleDialogSubmit = (formData) => {
+  const handleDialogSubmit = async (formData) => {
     const payload = {
       ...formData, // Includes type, score, category, comment, submittedAt
       message,
@@ -72,12 +77,24 @@ const MessageActions = ({
 
     if (onFeedbackChange) onFeedbackChange(formData.score); // Update UI feedback state
 
-    if (onFeedbackSubmit)
-      onFeedbackSubmit(payload); // Send full payload to context/API
-    else console.log("Feedback payload:", payload);
+    try {
+      if (onFeedbackSubmit) {
+        await onFeedbackSubmit(payload); // Send full payload to context/API
+      } else {
+        console.log("Feedback payload:", payload);
+      }
 
-    setSnackbarMessage("Thanks! Your feedback was submitted.");
-    setSnackbar(true);
+      setSnackbarSeverity("success");
+      setSnackbarMessage("Thanks! Your feedback was submitted.");
+      setSnackbar(true);
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+      setSnackbarSeverity("error");
+      setSnackbarMessage(
+        error.message || "Failed to submit feedback. Please try again.",
+      );
+      setSnackbar(true);
+    }
 
     handleDialogClose();
   };
@@ -241,15 +258,21 @@ const MessageActions = ({
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          severity="success"
+          severity={snackbarSeverity}
           sx={{
             width: "100%",
             background: "rgba(31, 41, 55, 0.95)",
             backdropFilter: "blur(20px)",
-            border: "1px solid rgba(16, 185, 129, 0.3)",
+            border:
+              snackbarSeverity === "error"
+                ? "1px solid rgba(239, 68, 68, 0.3)"
+                : "1px solid rgba(16, 185, 129, 0.3)",
             color: theme.palette.text.primary,
             "& .MuiAlert-icon": {
-              color: theme.palette.success.main,
+              color:
+                snackbarSeverity === "error"
+                  ? theme.palette.error.main
+                  : theme.palette.success.main,
             },
           }}
         >
