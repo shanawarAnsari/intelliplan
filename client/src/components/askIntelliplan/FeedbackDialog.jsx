@@ -70,10 +70,8 @@ const FeedbackDialog = ({
     const categoriesText = selectedCategories.join(", "); // ✅ comma-separated
 
     const payload = {
-      type,
       score: score.toString(),
-      // categories: selectedCategories,     // ✅ array
-      categoriesText,                    // ✅ comma-separated string
+      categoriesText,
       comment,
       requestTime: (new Date().getTime()).toString(),
     };

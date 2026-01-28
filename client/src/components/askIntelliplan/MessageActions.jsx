@@ -39,7 +39,6 @@ const NEGATIVE_CATEGORIES = [
  */
 const MessageActions = ({
   message,
-  dataTable,
   isBot,
   feedback, // { score, categories:[], categoriesText:"a, b", comment, submittedAt } or null
   onFeedbackChange,
@@ -157,6 +156,7 @@ const MessageActions = ({
       message,
       sessionId,
       messageId,
+      id: messageId,
     };
 
     // Store full object so tooltip shows the categories later
