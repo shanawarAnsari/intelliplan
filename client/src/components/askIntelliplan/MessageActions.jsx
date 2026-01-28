@@ -39,6 +39,7 @@ const NEGATIVE_CATEGORIES = [
  */
 const MessageActions = ({
   message,
+  dataTable,
   isBot,
   feedback, // { score, categories:[], categoriesText:"a, b", comment, submittedAt } or null
   onFeedbackChange,
