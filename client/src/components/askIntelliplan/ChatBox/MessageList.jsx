@@ -1,7 +1,4 @@
-/**
- * Message List Component
- */
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Alert, Typography } from "@mui/material";
 import ChatMessage from "../ChatMessage";
 import LoadingAnimation from "../LoadingAnimation";
@@ -14,16 +11,38 @@ const MessageList = ({
   onUpdateFeedback,
   sessionId, // Add this prop
 }) => {
+  const [showError, setShowError] = useState(false);
+
+  // Show error when it changes
+  useEffect(() => {
+    if (error) {
+      setShowError(true);
+      // Auto-dismiss after 10 seconds
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const handleCloseError = () => {
+    setShowError(false);
+  };
+
   return (
     <>
-      {error && (
+      {showError && error && (
         <Alert
           severity="error"
+          onClose={handleCloseError}
           sx={{
-            mb: 2,
-            borderRadius: 2,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1300,
+            borderRadius: 0,
           }}
-          onClose={() => console.log("Error dismissed")}
         >
           <Typography variant="body2">{error}</Typography>
         </Alert>

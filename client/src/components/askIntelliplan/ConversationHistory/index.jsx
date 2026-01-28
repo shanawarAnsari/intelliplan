@@ -324,7 +324,7 @@ const ConversationHistory = ({ open, onToggleDrawer }) => {
         const paper = document.querySelector(".MuiDrawer-paper");
         const input = paper?.querySelector("input");
         input && input.focus();
-      } catch (_) {}
+      } catch (_) { }
     }, 300);
   };
 

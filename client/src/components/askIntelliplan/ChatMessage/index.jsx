@@ -1,6 +1,3 @@
-/**
- * ChatMessage Component - Refactored
- */
 import React from "react";
 import { Box, Typography, Paper, useTheme } from "@mui/material";
 import { formatTime } from "../../../utils/formatters";
@@ -58,9 +55,7 @@ const ChatMessage = ({
             sx={{
               p: 1.5,
               maxWidth: { xs: "100%", sm: "85%", md: "75%" },
-              background: isBot
-                ? "rgba(31, 41, 55, 0.7)"
-                : "rgba(31, 71, 55, 0.7)",
+              background: isBot ? "rgba(31, 41, 55, 0.7)" : "rgba(31, 71, 55, 0.7)",
               backdropFilter: "blur(20px)",
               color: isBot
                 ? theme.palette.text.primary
@@ -103,6 +98,7 @@ const ChatMessage = ({
           >
             <MessageActions
               message={message}
+              dataTable={dataTable}
               isBot={isBot}
               feedback={feedback}
               onFeedbackChange={handleFeedbackChange}

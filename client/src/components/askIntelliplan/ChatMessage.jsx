@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Paper, Avatar, useTheme } from "@mui/material";
+import { Paper, Avatar, useTheme } from "@mui/material";
+import { Box, Typography, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import MessageActions from "./MessageActions";
@@ -17,17 +19,56 @@ const ChatMessage = ({
   const theme = useTheme();
   const [feedback, setFeedback] = useState(initialFeedback);
 
-  // Sync local state with prop changes
   useEffect(() => {
     setFeedback(initialFeedback);
   }, [initialFeedback]);
 
-  const handleFeedbackChange = (newFeedback) => {
-    setFeedback(newFeedback);
-  };
+  const handleFeedbackChange = (newFeedback) => setFeedback(newFeedback);
+  const handleFeedbackSubmit = (payload) => onUpdateFeedback(payload);
 
-  const handleFeedbackSubmit = (payload) => {
-    onUpdateFeedback(payload);
+  const formattedTime = new Date(timestamp).toLocaleTimeString();
+  const renderTable = () => {
+    if (!dataTable) return null;
+
+    const columns = Object.keys(dataTable);
+    const rowCount = Object.keys(dataTable[columns[0]]).length;
+
+    return (
+      <Box
+        sx={{
+          overflowX: "auto",
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 1,
+          p: 1,
+          mb: 2,
+          backgroundColor: theme.palette.background.paper,
+          maxHeight: 480,
+        }}
+      >
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              {columns.map((col) => (
+                <TableCell key={col} sx={{ fontWeight: "bold", textWrap: "noWrap" }}>
+                  {col}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: rowCount }).map((_, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {columns.map((col) => (
+                  <TableCell key={`${col}-${rowIndex}`} sx={{ textWrap: "noWrap" }}>
+                    {(dataTable[col][rowIndex])?.toLocaleString()}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+    );
   };
 
   return (
@@ -46,68 +87,87 @@ const ChatMessage = ({
               bgcolor: theme.palette.primary.main,
               width: 32,
               height: 32,
+              flex: "0 0 auto",
             }}
           >
             <SmartToyIcon sx={{ fontSize: 18 }} />
           </Avatar>
         )}
-        <Paper
-          elevation={0}
+
+        {/* Column wrapper */}
+        <Box
           sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: isBot ? "flex-start" : "flex-end",
             maxWidth: "70%",
-            p: 1.5,
-            borderRadius: 2,
-            background: isBot
-              ? "rgba(31, 41, 55, 0.8)"
-              : "linear-gradient(135deg, rgba(96, 165, 250, 0.8), rgba(167, 139, 250, 0.8))",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            color: theme.palette.text.primary,
           }}
         >
-          <Typography variant="body1" sx={{ mb: 1 }}>
-            {message}
-          </Typography>
-          {dataTable && (
-            <Box sx={{ mt: 1 }}>
-              {/* Render dataTable if available, e.g., as a table */}
-              <pre>{JSON.stringify(dataTable, null, 2)}</pre>
+          <Paper
+            elevation={0}
+            sx={{
+              width: "fit-content",
+              maxWidth: "100%",
+              p: 1.5,
+              borderRadius: isBot ? "0px 12px 12px 12px" : "12px 0px 12px 12px",
+              background: isBot
+                ? "rgba(31, 41, 55, 0.8)"
+                : "rgba(31, 71, 55, 0.7)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: theme.palette.text.primary,
+            }}
+          >
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              {message}
+            </Typography>
+
+            {dataTable && renderTable()}
+
+
+            {/* ✅ Timestamp inside bubble for BOTH bot and user */}
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                mt: 1,
+                textAlign: "right",
+                color: theme.palette.text.secondary,
+              }}
+            >
+              {formattedTime}
+            </Typography>
+          </Paper>
+
+          {/* ✅ Bot actions under bubble */}
+          {isBot && (
+            <Box sx={{ mt: 0.5 }}>
+              <MessageActions
+                message={message}
+                isBot={isBot}
+                feedback={feedback}
+                onFeedbackChange={handleFeedbackChange}
+                onFeedbackSubmit={handleFeedbackSubmit}
+                sessionId={sessionId}
+                messageId={messageId}
+              />
             </Box>
           )}
-          <Typography
-            variant="caption"
-            sx={{ color: theme.palette.text.secondary, mt: 1 }}
-          >
-            {new Date(timestamp).toLocaleTimeString()}
-          </Typography>
-        </Paper>
+        </Box>
+
         {!isBot && (
           <Avatar
             sx={{
               bgcolor: theme.palette.secondary.main,
               width: 32,
               height: 32,
+              flex: "0 0 auto",
             }}
           >
             <PersonIcon sx={{ fontSize: 18 }} />
           </Avatar>
         )}
       </Box>
-      {isBot && (
-        <Box
-          sx={{ display: "flex", justifyContent: "flex-start", mt: 1, ml: "40px" }}
-        >
-          <MessageActions
-            message={message}
-            isBot={isBot}
-            feedback={feedback}
-            onFeedbackChange={handleFeedbackChange}
-            onFeedbackSubmit={handleFeedbackSubmit}
-            sessionId={sessionId}
-            messageId={messageId}
-          />
-        </Box>
-      )}
     </Box>
   );
 };

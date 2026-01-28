@@ -1,6 +1,3 @@
-/**
- * Delete Confirmation Dialog Component
- */
 import React from "react";
 import {
   Dialog,

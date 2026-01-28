@@ -16,6 +16,7 @@ const LoadingAnimation = () => {
         alignItems: "center",
         gap: 1.5,
         p: 1.5,
+        ml: 4,
         background: "rgba(31, 41, 55, 0.5)",
         backdropFilter: "blur(10px)",
         borderRadius: "12px",
@@ -69,7 +70,7 @@ const LoadingAnimation = () => {
           background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
+          backgroundClip: "text"
         }}
       >
         Agent is thinking...

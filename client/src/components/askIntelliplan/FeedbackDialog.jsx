@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
@@ -13,7 +14,10 @@ import {
   MenuItem,
   TextField,
   Chip,
+  Tooltip,
   useTheme,
+  Checkbox,
+  ListItemText
 } from "@mui/material";
 
 const FeedbackDialog = ({
@@ -21,38 +25,63 @@ const FeedbackDialog = ({
   onClose,
   onSubmit,
   type, // "helpful" | "unhelpful"
-  categories = [],
+  categories = [], // [{ value, tooltip }]
 }) => {
   const theme = useTheme();
 
-  const score = useMemo(() => (type === "helpful" ? 1 : 0), [type]);
+  const score = useMemo(() => {
+    if (type === "helpful") return 1;
+    if (type === "unhelpful") return 0;
+    return null;
+  }, [type]);
 
-  const [category, setCategory] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [comment, setComment] = useState("");
 
   useEffect(() => {
     if (open) {
-      setCategory("");
+      setSelectedCategories([]);
       setComment("");
     }
   }, [open, type]);
 
+  const tooltipByValue = useMemo(() => {
+    const map = {};
+    categories.forEach((c) => (map[c.value] = c.tooltip));
+    return map;
+  }, [categories]);
+
   const titleText =
-    type === "helpful" ? "Thanks! What worked well?" : "Sorry! What went wrong?";
-  const chipLabel = type === "helpful" ? "Helpful (1)" : "Not helpful (0)";
-  const chipColor = type === "helpful" ? "success" : "error";
+    type === "helpful"
+      ? "Thanks! What worked well?"
+      : "Sorry! What went wrong?";
+
+  const chipLabel =
+    type === "helpful"
+      ? "Helpful (1)"
+      : type === "unhelpful"
+        ? "Not helpful (0)"
+        : "Feedback";
+
+  const chipColor =
+    type === "helpful" ? "success" : type === "unhelpful" ? "error" : "default";
 
   const handleSubmit = () => {
+    const categoriesText = selectedCategories.join(", "); // ✅ comma-separated
+
     const payload = {
-      type, // "helpful" | "unhelpful"
-      score, // 1 | 0
-      category, // selected category
-      comment, // free text
-      submittedAt: new Date().toISOString(),
+      type,
+      score: score.toString(),
+      // categories: selectedCategories,     // ✅ array
+      categoriesText,                    // ✅ comma-separated string
+      comment,
+      requestTime: (new Date().getTime()).toString(),
     };
 
     onSubmit(payload);
   };
+
+  const isSubmitDisabled = selectedCategories.length === 0;
 
   return (
     <Dialog
@@ -62,30 +91,21 @@ const FeedbackDialog = ({
       fullWidth
       PaperProps={{
         sx: {
-          background: "rgba(17, 24, 39, 0.9)",
-          backdropFilter: "blur(16px)",
           border: "1px solid rgba(255, 255, 255, 0.08)",
-          borderRadius: 3,
+          borderRadius: 2,
           color: theme.palette.text.primary,
         },
       }}
     >
       <DialogTitle sx={{ pb: 1 }}>
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          gap={2}
-        >
+        <Box display="flex" alignItems="center" justifyContent="space-between" gap={2}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Feedback
           </Typography>
           <Chip label={chipLabel} color={chipColor} size="small" />
         </Box>
-        <Typography
-          variant="body2"
-          sx={{ mt: 0.5, color: theme.palette.text.secondary }}
-        >
+
+        <Typography variant="body2" sx={{ mt: 0.5, color: theme.palette.text.secondary }}>
           {titleText}
         </Typography>
       </DialogTitle>
@@ -94,11 +114,15 @@ const FeedbackDialog = ({
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <FormControl fullWidth size="small" sx={{ mt: 2 }}>
             <InputLabel id="feedback-category-label">Category</InputLabel>
+
+
             <Select
               labelId="feedback-category-label"
-              value={category}
+              multiple
+              value={selectedCategories}
               label="Category"
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => setSelectedCategories(e.target.value)}
+              renderValue={(selected) => selected.join(", ")} // ✅ simple + reliable
               sx={{
                 "& .MuiOutlinedInput-notchedOutline": {
                   borderColor: "rgba(255,255,255,0.16)",
@@ -106,11 +130,21 @@ const FeedbackDialog = ({
               }}
             >
               {categories.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
+                <MenuItem key={c.value} value={c.value}>
+                  <Checkbox checked={selectedCategories.includes(c.value)} />
+
+                  {/* Tooltip INSIDE MenuItem */}
+                  <Tooltip title={c.tooltip} placement="right" arrow>
+                    <ListItemText primary={c.value} />
+                  </Tooltip>
                 </MenuItem>
               ))}
             </Select>
+
+
+            <Typography variant="caption" sx={{ mt: 0.5, color: theme.palette.text.secondary }}>
+              Select one or more categories.
+            </Typography>
           </FormControl>
 
           <TextField
@@ -147,13 +181,17 @@ const FeedbackDialog = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!category}
+          disabled={isSubmitDisabled}
           sx={{
             background:
-              type === "helpful" ? "rgba(16,185,129,0.85)" : "rgba(239,68,68,0.85)",
+              type === "helpful"
+                ? "rgba(16,185,129,0.85)"
+                : "rgba(239,68,68,0.85)",
             "&:hover": {
               background:
-                type === "helpful" ? "rgba(16,185,129,1)" : "rgba(239,68,68,1)",
+                type === "helpful"
+                  ? "rgba(16,185,129,1)"
+                  : "rgba(239,68,68,1)",
             },
           }}
         >
