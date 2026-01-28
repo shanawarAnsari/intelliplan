@@ -21,12 +21,7 @@ const agentController = {
     try {
       const { sessionId, messageId, score } = req.body; // Change feedback to score
       // Simple validation
-      if (
-        !sessionId ||
-        !messageId ||
-        typeof score !== "number" ||
-        ![0, 1].includes(score)
-      ) {
+      if (!sessionId || !messageId) {
         return res.status(400).json({ error: "Invalid feedback payload" });
       }
       // Return the feedback for confirmation (in a real app, you might save to DB)

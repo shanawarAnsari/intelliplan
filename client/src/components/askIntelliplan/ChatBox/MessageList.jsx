@@ -20,7 +20,7 @@ const MessageList = ({
       // Auto-dismiss after 10 seconds
       const timer = setTimeout(() => {
         setShowError(false);
-      }, 10000);
+      }, 15000);
       return () => clearTimeout(timer);
     }
   }, [error]);

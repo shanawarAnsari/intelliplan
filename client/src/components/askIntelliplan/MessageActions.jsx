@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Box,
-  IconButton,
-  Tooltip,
-  Snackbar,
-  Alert,
-  useTheme,
-} from "@mui/material";
+import { Box, IconButton, Tooltip, Snackbar, Alert, useTheme } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
@@ -14,39 +7,78 @@ import ShareIcon from "@mui/icons-material/Share";
 import FeedbackDialog from "./FeedbackDialog";
 
 const POSITIVE_CATEGORIES = [
-  { value: "Data Looks Correct", tooltip: "The data presented appears accurate and aligns with expected values" },
-  { value: "No Missing Data", tooltip: "All relevant data points required for the request are present" },
-  { value: "Answered The Question", tooltip: "The output aligns correctly with the request and intended analysis." },
-  { value: "Accurate Calculations", tooltip: "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear correct." },
-  { value: "Performance", tooltip: "The response was timely, efficient, and processed without delays." },
-  { value: "Others", tooltip: "Any additional positive feedback not covered by the listed categories." },
+  {
+    value: "Data Looks Correct",
+    tooltip: "The data presented appears accurate and aligns with expected values",
+  },
+  {
+    value: "No Missing Data",
+    tooltip: "All relevant data points required for the request are present",
+  },
+  {
+    value: "Answered The Question",
+    tooltip: "The output aligns correctly with the request and intended analysis.",
+  },
+  {
+    value: "Accurate Calculations",
+    tooltip:
+      "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear correct.",
+  },
+  {
+    value: "Performance",
+    tooltip: "The response was timely, efficient, and processed without delays.",
+  },
+  {
+    value: "Others",
+    tooltip:
+      "Any additional positive feedback not covered by the listed categories.",
+  },
 ];
 
 const NEGATIVE_CATEGORIES = [
-  { value: "Incorrect Data", tooltip: "The data presented appears inaccurate or does not match expected values" },
-  { value: "Missing Data", tooltip: "Some expected data points are absent or incomplete." },
-  { value: "Unexpected Results", tooltip: "The output does not align with the request or intended analysis." },
-  { value: "Incorrect Calculations", tooltip: "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear incorrect." },
-  { value: "Performance", tooltip: "The response was slow, delayed, or did not perform efficiently" },
-  { value: "No Answer Found", tooltip: "No results were returned even after trying multiple versions of the prompt." },
-  { value: "Others", tooltip: "Any additional issues not addressed by the listed categories." },
+  {
+    value: "Incorrect Data",
+    tooltip:
+      "The data presented appears inaccurate or does not match expected values",
+  },
+  {
+    value: "Missing Data",
+    tooltip: "Some expected data points are absent or incomplete.",
+  },
+  {
+    value: "Unexpected Results",
+    tooltip: "The output does not align with the request or intended analysis.",
+  },
+  {
+    value: "Incorrect Calculations",
+    tooltip:
+      "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear incorrect.",
+  },
+  {
+    value: "Performance",
+    tooltip: "The response was slow, delayed, or did not perform efficiently",
+  },
+  {
+    value: "No Answer Found",
+    tooltip:
+      "No results were returned even after trying multiple versions of the prompt.",
+  },
+  {
+    value: "Others",
+    tooltip: "Any additional issues not addressed by the listed categories.",
+  },
 ];
 
-/**
- * Optional props for table copy:
- * - tableRef: a React ref to the <table> element you want to copy
- * - containerRef: a React ref to a container; the first <table> within will be copied
- */
 const MessageActions = ({
   message,
   isBot,
-  feedback, // { score, categories:[], categoriesText:"a, b", comment, submittedAt } or null
+  feedback,
   onFeedbackChange,
   onFeedbackSubmit,
   sessionId,
   messageId,
-  tableRef, // optional: React ref to a <table>
-  containerRef, // optional: React ref to a container that has a <table> inside
+  tableRef,
+  containerRef,
 }) => {
   const theme = useTheme();
   const [copied, setCopied] = useState(false);
@@ -56,8 +88,15 @@ const MessageActions = ({
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pendingType, setPendingType] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- helpers for table copy ---
+  const hasFeedback =
+    feedback &&
+    (feedback.score === 0 ||
+      feedback.score === 1 ||
+      feedback.score === "0" ||
+      feedback.score === "1");
+
   const findTableElement = () => {
     if (tableRef && tableRef.current) return tableRef.current;
     if (containerRef && containerRef.current) {
@@ -98,10 +137,9 @@ const MessageActions = ({
         });
         await navigator.clipboard.write([item]);
       } else if (navigator.clipboard?.writeText) {
-        // Fallback: at least copy TSV (works great for Excel/Sheets)
         await navigator.clipboard.writeText(tsv);
       } else {
-        return false; // will fallback outside
+        return false;
       }
       return true;
     } catch (err) {
@@ -110,25 +148,24 @@ const MessageActions = ({
     }
   };
 
-  // --- original handlers with enhancements ---
   const handleCopy = async () => {
     try {
       const tableCopied = await copyTableIfAvailable();
       if (!tableCopied) {
-        // fallback to message string
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(
             typeof message === "string" ? message : String(message),
           );
         } else {
-          // very old fallback (execCommand) omitted intentionally to keep component clean
           throw new Error("Clipboard API not supported");
         }
       }
 
       setCopied(true);
       setSnackbarSeverity("success");
-      setSnackbarMessage(tableCopied ? "Table copied to clipboard!" : "Copied to clipboard!");
+      setSnackbarMessage(
+        tableCopied ? "Table copied to clipboard!" : "Copied to clipboard!",
+      );
       setSnackbar(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -144,13 +181,9 @@ const MessageActions = ({
     setDialogOpen(true);
   };
 
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setPendingType(null);
-  };
-
   const handleDialogSubmit = async (formData) => {
-    // formData includes categories[] and categoriesText (comma-separated)
+    setIsSubmitting(true);
+
     const payload = {
       ...formData,
       message,
@@ -159,38 +192,48 @@ const MessageActions = ({
       id: messageId,
     };
 
-    // Store full object so tooltip shows the categories later
-    if (onFeedbackChange) {
-      onFeedbackChange({
-        score: formData.score,
-        categories: formData.categories,
-        categoriesText: formData.categoriesText,
-        comment: formData.comment,
-        submittedAt: formData.submittedAt,
-      });
-    }
-
-    // --- requested try/catch with snackbarSeverity ---
     try {
       if (onFeedbackSubmit) {
-        await onFeedbackSubmit(payload); // Send full payload to context/API
+        const result = await onFeedbackSubmit(payload);
+
+        if (result && result.success === false) {
+          throw new Error(result.error || "Failed to submit feedback");
+        }
       } else {
         console.log("Feedback payload:", payload);
       }
 
+      if (onFeedbackChange) {
+        onFeedbackChange({
+          score: parseInt(formData.score),
+          categoriesText: formData.categoriesText,
+          comment: formData.comment,
+          submittedAt: formData.requestTime,
+        });
+      }
+
       setSnackbarSeverity("success");
-      setSnackbarMessage("Thanks! Your feedback was submitted.");
+      setSnackbarMessage("Thanks! Your feedback was submitted successfully.");
       setSnackbar(true);
+
+      setDialogOpen(false);
+      setPendingType(null);
     } catch (error) {
       console.error("Failed to submit feedback:", error);
+
       setSnackbarSeverity("error");
       setSnackbarMessage(
-        error?.message || "Failed to submit feedback. Please try again.",
+        error.message || "Unable to send feedback. Please try again.",
       );
       setSnackbar(true);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    handleDialogClose();
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setPendingType(null);
   };
 
   const handleShare = async () => {
@@ -208,21 +251,21 @@ const MessageActions = ({
   const getFeedbackTooltip = (type) => {
     if (!feedback) return type === "helpful" ? "Helpful" : "Not helpful";
 
-    const isPositive = feedback.score === 1;
+    const isPositive = feedback.score === 1 || feedback.score === "1";
     const isHelpfulButton = type === "helpful";
-    const matches =
-      (isPositive && isHelpfulButton) || (!isPositive && !isHelpfulButton);
 
-    if (!matches) return type === "helpful" ? "Helpful" : "Not helpful";
+    if ((isPositive && isHelpfulButton) || (!isPositive && !isHelpfulButton)) {
+      const cats = feedback.categoriesText
+        ? feedback.categoriesText
+        : Array.isArray(feedback.categories)
+          ? feedback.categories.join(", ")
+          : "";
 
-    const cats = feedback.categoriesText
-      ? feedback.categoriesText
-      : Array.isArray(feedback.categories)
-        ? feedback.categories.join(", ")
-        : "";
+      const comment = feedback.comment ? ` - ${feedback.comment}` : "";
+      return cats ? `Feedback: ${cats}${comment}` : `Feedback submitted${comment}`;
+    }
 
-    const comment = feedback.comment ? ` - ${feedback.comment}` : "";
-    return cats ? `Feedback: ${cats}${comment}` : `Feedback submitted${comment}`;
+    return "";
   };
 
   const categoriesForDialog =
@@ -269,65 +312,103 @@ const MessageActions = ({
 
         {isBot && (
           <>
-            <Tooltip title={getFeedbackTooltip("helpful")} placement="top">
+            {!feedback || feedback?.score === 1 || feedback?.score === "1" ? (
+              <Tooltip title={getFeedbackTooltip("helpful")} placement="top">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleFeedbackClick("helpful")}
+                    disabled={hasFeedback}
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      color:
+                        feedback?.score === 1 || feedback?.score === "1"
+                          ? theme.palette.success.main
+                          : theme.palette.text.secondary,
+                      "&:hover": {
+                        bgcolor: "transparent",
+                        color: theme.palette.success.main,
+                      },
+                      "&.Mui-disabled": {
+                        color:
+                          feedback?.score === 1 || feedback?.score === "1"
+                            ? theme.palette.success.main
+                            : theme.palette.text.secondary,
+                      },
+                    }}
+                  >
+                    <ThumbUpIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            ) : (
               <span>
                 <IconButton
                   size="small"
-                  onClick={() => handleFeedbackClick("helpful")}
-                  disabled={feedback !== null}
+                  disabled={true}
                   sx={{
                     width: 24,
                     height: 24,
-                    color:
-                      feedback?.score === 1
-                        ? theme.palette.success.main
-                        : theme.palette.text.secondary,
-                    "&:hover": {
-                      bgcolor: "transparent",
-                      color: theme.palette.success.main,
-                    },
+                    color: theme.palette.text.secondary,
                     "&.Mui-disabled": {
-                      color:
-                        feedback?.score === 1
-                          ? theme.palette.success.main
-                          : theme.palette.text.secondary,
+                      color: theme.palette.text.secondary,
                     },
                   }}
                 >
                   <ThumbUpIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </span>
-            </Tooltip>
+            )}
 
-            <Tooltip title={getFeedbackTooltip("unhelpful")} placement="top">
+            {!feedback || feedback?.score === 0 || feedback?.score === "0" ? (
+              <Tooltip title={getFeedbackTooltip("unhelpful")} placement="top">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleFeedbackClick("unhelpful")}
+                    disabled={hasFeedback}
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      color:
+                        feedback?.score === 0 || feedback?.score === "0"
+                          ? theme.palette.error.main
+                          : theme.palette.text.secondary,
+                      "&:hover": {
+                        bgcolor: "transparent",
+                        color: theme.palette.error.main,
+                      },
+                      "&.Mui-disabled": {
+                        color:
+                          feedback?.score === 0 || feedback?.score === "0"
+                            ? theme.palette.error.main
+                            : theme.palette.text.secondary,
+                      },
+                    }}
+                  >
+                    <ThumbDownIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            ) : (
               <span>
                 <IconButton
                   size="small"
-                  onClick={() => handleFeedbackClick("unhelpful")}
-                  disabled={feedback !== null}
+                  disabled={true}
                   sx={{
                     width: 24,
                     height: 24,
-                    color:
-                      feedback?.score === 0
-                        ? theme.palette.error.main
-                        : theme.palette.text.secondary,
-                    "&:hover": {
-                      bgcolor: "transparent",
-                      color: theme.palette.error.main,
-                    },
+                    color: theme.palette.text.secondary,
                     "&.Mui-disabled": {
-                      color:
-                        feedback?.score === 0
-                          ? theme.palette.error.main
-                          : theme.palette.text.secondary,
+                      color: theme.palette.text.secondary,
                     },
                   }}
                 >
                   <ThumbDownIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </span>
-            </Tooltip>
+            )}
           </>
         )}
 
@@ -356,16 +437,18 @@ const MessageActions = ({
         onSubmit={handleDialogSubmit}
         type={pendingType}
         categories={categoriesForDialog}
+        isSubmitting={isSubmitting}
       />
 
       <Snackbar
         open={snackbar}
-        autoHideDuration={2000}
+        autoHideDuration={snackbarSeverity === "error" ? 6000 : 3000}
         onClose={() => setSnackbar(false)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
           severity={snackbarSeverity}
+          onClose={() => setSnackbar(false)}
           sx={{
             width: "100%",
             background: "rgba(31, 41, 55, 0.95)",

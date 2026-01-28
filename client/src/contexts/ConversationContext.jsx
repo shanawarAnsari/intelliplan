@@ -1,4 +1,3 @@
-// contexts/ConversationContext.jsx
 import React, {
   createContext,
   useContext,
@@ -21,24 +20,22 @@ export const ConversationProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const { user } = useUserStore();
-  // In a real app, this comes from auth
+
   const userInfo = {
     sub: "ahmadshanawar.ansari@kcc.com",
     email: "ahmadshanawar.ansari@kcc.com",
     adGroupName: "KC_GENAI_OKTA_NONPROD_INTELLIPLAN",
   };
 
-  // Initialize by loading saved conversations and start with a fresh one
   useEffect(() => {
     const loadSavedConversations = async () => {
       try {
         const parsedConversations = loadConversations();
         setConversations(parsedConversations);
 
-        // Start with a new active conversation (not yet persisted)
         const newConversation = {
           id: uuidv4(),
-          sessionId: uuidv4(), // ensure stable UUID per conversation
+          sessionId: uuidv4(),
           title: "New Conversation",
           messages: [],
           created: new Date(),
@@ -52,9 +49,6 @@ export const ConversationProvider = ({ children }) => {
     loadSavedConversations();
   }, []);
 
-  /**
-   * Select a conversation by ID
-   */
   const selectConversation = useCallback(
     (conversationId) => {
       try {
@@ -71,14 +65,11 @@ export const ConversationProvider = ({ children }) => {
     [conversations],
   );
 
-  /**
-   * Create a new conversation
-   */
   const createNewConversation = useCallback((title) => {
     try {
       const newConversation = {
         id: uuidv4(),
-        sessionId: uuidv4(), // new session id per conversation
+        sessionId: uuidv4(),
         title: title ?? "New Conversation",
         messages: [],
         created: new Date(),
@@ -93,13 +84,12 @@ export const ConversationProvider = ({ children }) => {
     }
   }, []);
 
-  /**
-   * Send a message in the active conversation
-   */
   const sendMessage = useCallback(
     async (message) => {
       if (!activeConversation) {
-        return null;
+        const errorMsg = "No active conversation";
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
       setIsLoading(true);
       setError(null);
@@ -113,9 +103,9 @@ export const ConversationProvider = ({ children }) => {
         const existing = Array.isArray(activeConversation.messages)
           ? activeConversation.messages
           : [];
-        // Append instead of resetting
+
         const updatedMessages = [...existing, userMessage];
-        // Title from first message only
+
         const conversationTitle =
           existing.length === 0
             ? generateConversationTitle(message)
@@ -125,20 +115,22 @@ export const ConversationProvider = ({ children }) => {
           title: conversationTitle,
           messages: updatedMessages,
         };
-        // Optimistic UI update
+
         setActiveConversation(updatedConversation);
-        // Send message to REST API
+
         const response = await agentService.sendMessage(
           message,
           user,
           activeConversation.sessionId,
         );
+
         if (!response?.success) {
-          setError(response?.error || "Failed to send message");
+          const errorMsg = response?.error || "Failed to send message";
+          setError(errorMsg);
           setIsLoading(false);
-          return response;
+          return { success: false, error: errorMsg };
         }
-        // Add assistant message to the conversation
+
         if (response.answer) {
           const assistantMessage = {
             id: uuidv4(),
@@ -149,7 +141,7 @@ export const ConversationProvider = ({ children }) => {
             isImage: response.isImage || false,
             imageUrl: response.imageUrl || null,
             imageFileId: response.imageFileId || null,
-            feedback: null, // Initialize feedback as null (will be 0 or 1 later)
+            feedback: null,
           };
           const finalMessages = [...updatedMessages, assistantMessage];
           const finalConversation = {
@@ -160,7 +152,6 @@ export const ConversationProvider = ({ children }) => {
 
           setActiveConversation(finalConversation);
 
-          // Update conversation list (add or replace) and persist
           setConversations((prev) => {
             const idx = prev.findIndex((c) => c.id === activeConversation.id);
             let updatedConvs;
@@ -175,51 +166,63 @@ export const ConversationProvider = ({ children }) => {
             return updatedConvs;
           });
         }
-        return response;
+        setIsLoading(false);
+        return { success: true, ...response };
       } catch (err) {
         console.error("Error sending message:", err);
-        setError(err.message);
-        return null;
-      } finally {
+        const errorMsg = err.message || "An unexpected error occurred";
+        setError(errorMsg);
         setIsLoading(false);
+        return { success: false, error: errorMsg };
       }
     },
-    [activeConversation, userInfo],
+    [activeConversation, user],
   );
 
-  /**
-   * Update message feedback - now accepts full payload and sends to API
-   */
   const updateMessageFeedback = useCallback(
     async (payload) => {
-      if (!activeConversation) return;
+      if (!activeConversation) {
+        const errorMsg = "No active conversation";
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
 
       const {
         sessionId,
         messageId,
         score,
-        category,
+        categoriesText,
         comment,
-        submittedAt,
+        requestTime,
         ...rest
       } = payload;
 
       try {
-        // Find the message by messageId
+        setError(null);
+
         const messageIndex = activeConversation.messages.findIndex(
           (msg) => msg.id === messageId && msg.role === MESSAGE_ROLES.ASSISTANT,
         );
-        if (messageIndex === -1) return;
+        if (messageIndex === -1) {
+          throw new Error("Message not found");
+        }
 
-        // Send full payload to API
-        await agentService.sendFeedback(payload);
+        const response = await agentService.sendFeedback(payload);
 
-        // Update the message feedback to full object
+        if (response === false || (response && response.success === false)) {
+          throw new Error(response?.error || "Failed to submit feedback");
+        }
+
         const updatedMessages = activeConversation.messages.map((msg, idx) => {
           if (idx === messageIndex) {
             return {
               ...msg,
-              feedback: { score, category, comment, submittedAt }, // Store full feedback object
+              feedback: {
+                score: parseInt(score),
+                categoriesText,
+                comment,
+                submittedAt: requestTime,
+              },
             };
           }
           return msg;
@@ -232,7 +235,6 @@ export const ConversationProvider = ({ children }) => {
 
         setActiveConversation(updatedConversation);
 
-        // Update conversations list and save to localStorage
         setConversations((prev) => {
           const updatedConversations = prev.map((conv) =>
             conv.id === activeConversation.id ? updatedConversation : conv,
@@ -240,9 +242,14 @@ export const ConversationProvider = ({ children }) => {
           saveConversations(updatedConversations);
           return updatedConversations;
         });
+
+        return { success: true };
       } catch (err) {
         console.error("Error updating message feedback:", err);
-        setError(err.message);
+        const errorMsg = err.message || "Failed to submit feedback";
+        setError(errorMsg);
+
+        throw new Error(errorMsg);
       }
     },
     [activeConversation],

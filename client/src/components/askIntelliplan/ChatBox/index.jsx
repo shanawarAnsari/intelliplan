@@ -30,7 +30,7 @@ const ChatBox = () => {
         isBot: msg.role === "assistant",
         dataTable: msg.tableData,
         timestamp: msg.timestamp || new Date(),
-        feedback: msg.feedback || null, // Now object or null
+        feedback: msg.feedback || null,
         messageIndex: index,
       }));
       setMessages(formattedMessages);
@@ -42,7 +42,11 @@ const ChatBox = () => {
   const handleSendMessage = async (text) => {
     const userMessage = { text, isBot: false, timestamp: new Date() };
     setMessages([...messages, userMessage]);
-    await sendMessage(text, user);
+    const response = await sendMessage(text, user);
+
+    if (!response?.success) {
+      console.error("Message send failed:", response?.error);
+    }
   };
 
   const handleQuickPrompt = (prompt) => {
@@ -70,7 +74,7 @@ const ChatBox = () => {
         overflow: "hidden",
       }}
     >
-      {/* Chat Content Area */}
+      {}
       <Box
         sx={{
           width: "100%",
@@ -83,7 +87,7 @@ const ChatBox = () => {
           px: { xs: 1.5, sm: 2 },
         }}
       >
-        {/* Messages area or empty state */}
+        {}
         <Box
           ref={messagesContainerRef}
           sx={{
@@ -121,7 +125,7 @@ const ChatBox = () => {
               isBotResponding={isBotResponding}
               messagesEndRef={messagesEndRef}
               onUpdateFeedback={updateMessageFeedback}
-              sessionId={activeConversation?.sessionId} // Pass session ID
+              sessionId={activeConversation?.sessionId}
             />
           )}
         </Box>
