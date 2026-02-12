@@ -17,19 +17,23 @@ import {
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import SelectAllIcon from "@mui/icons-material/SelectAll";
 import ClearIcon from "@mui/icons-material/Clear";
 
 const ColumnVisibilityControl = ({
   columns,
   visibleColumns,
   onVisibilityChange,
+  selectedLevels,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  // Essential columns that cannot be hidden
-  const ESSENTIAL_COLUMNS = ["COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"];
+  // Essential columns based on selected levels
+  const ESSENTIAL_COLUMNS = selectedLevels.filter((level) =>
+    ["REGION", "COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"].includes(
+      level,
+    ),
+  );
 
   const isEssentialColumn = (columnId) => {
     return ESSENTIAL_COLUMNS.includes(columnId);
@@ -44,12 +48,9 @@ const ColumnVisibilityControl = ({
   };
 
   const handleToggleColumn = (columnId) => {
-    // Prevent unchecking essential columns (first 4)
+    // Prevent unchecking essential columns
     if (isEssentialColumn(columnId)) {
-      console.log(
-        `Attempted to toggle essential column: ${columnId} - Action blocked`
-      );
-      return; // Don't allow toggling essential columns
+      return;
     }
 
     const newVisibleColumns = visibleColumns.includes(columnId)
@@ -61,20 +62,6 @@ const ColumnVisibilityControl = ({
       ...new Set([...ESSENTIAL_COLUMNS, ...newVisibleColumns]),
     ];
     onVisibilityChange(finalVisibleColumns);
-  };
-
-  const handleSelectAll = () => {
-    const allColumnIds = columns.map((col) => col.id);
-    // Ensure essential columns are always included
-    const finalVisibleColumns = [
-      ...new Set([...ESSENTIAL_COLUMNS, ...allColumnIds]),
-    ];
-    onVisibilityChange(finalVisibleColumns);
-  };
-
-  const handleDeselectAll = () => {
-    // Keep the essential columns always visible
-    onVisibilityChange(ESSENTIAL_COLUMNS);
   };
 
   const getColumnGroups = () => {
@@ -93,7 +80,7 @@ const ColumnVisibilityControl = ({
             "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
             "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
             "TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH",
-          ].includes(col.id)
+          ].includes(col.id),
         ),
       },
       {
@@ -103,7 +90,7 @@ const ColumnVisibilityControl = ({
             "SHIPMENTS_REMAINING_DAYS",
             "RUN_RATE_FORECAST",
             "RUN_RATE_VS_FORECAST_MO",
-          ].includes(col.id)
+          ].includes(col.id),
         ),
       },
       {
@@ -114,7 +101,7 @@ const ColumnVisibilityControl = ({
             "HIGH_SIDE_PERCENT",
             "LOW_SIDE_GS",
             "HIGH_SIDE_GS",
-          ].includes(col.id)
+          ].includes(col.id),
         ),
       },
     ].filter((group) => group.columns.length > 0);
@@ -183,54 +170,16 @@ const ColumnVisibilityControl = ({
             backgroundColor: "#991b1b",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 1,
-            }}
+          <Typography
+            variant="h6"
+            sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#fee2e2" }}
           >
-            <Typography
-              variant="h6"
-              sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#fee2e2" }}
-            >
-              Column Visibility
-            </Typography>
-            <Box sx={{ display: "flex", gap: 0.5 }}>
-              <IconButton
-                size="small"
-                onClick={handleSelectAll}
-                title="Show All"
-                sx={{
-                  color: "#ffffff",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.1)",
-                    transform: "scale(1.05)",
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <SelectAllIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={handleDeselectAll}
-                title="Hide All (except required)"
-                sx={{
-                  color: "#ffffff",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.1)",
-                    transform: "scale(1.05)",
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <ClearIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-          <Typography variant="body2" sx={{ color: "#e5e7eb", fontSize: "0.8rem" }}>
+            Column Visibility
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: "#e5e7eb", fontSize: "0.8rem", mt: 0.5 }}
+          >
             {visibleColumns.length} of {columns.length} columns visible
           </Typography>
         </Box>
@@ -260,9 +209,10 @@ const ColumnVisibilityControl = ({
                 >
                   {group.name}
                   <Chip
-                    label={`${group.columns.filter((col) => visibleColumns.includes(col.id))
-                      .length
-                      }/${group.columns.length}`}
+                    label={`${
+                      group.columns.filter((col) => visibleColumns.includes(col.id))
+                        .length
+                    }/${group.columns.length}`}
                     size="small"
                     sx={{
                       ml: 1,
@@ -291,9 +241,9 @@ const ColumnVisibilityControl = ({
                           px: 2,
                           "&:hover": !isEssential
                             ? {
-                              backgroundColor: "rgba(254, 226, 226, 0.15)",
-                              transform: "translateX(2px)",
-                            }
+                                backgroundColor: "rgba(254, 226, 226, 0.15)",
+                                transform: "translateX(2px)",
+                              }
                             : {},
                           "&.Mui-disabled": {
                             opacity: 0.45,
@@ -421,7 +371,7 @@ const ColumnVisibilityControl = ({
           </Button>
         </Box>
       </Popover>
-    </Box >
+    </Box>
   );
 };
 

@@ -68,7 +68,7 @@ const FilterBar = ({
   useEffect(() => {
     if (businessUnitFilter?.length > 0) {
       const validBusinessUnits = businessUnitFilter.filter((bu) =>
-        businessUnits.includes(bu)
+        businessUnits.includes(bu),
       );
       if (validBusinessUnits.length !== businessUnitFilter.length) {
         setBusinessUnitFilter(validBusinessUnits);
@@ -79,7 +79,7 @@ const FilterBar = ({
   useEffect(() => {
     if (categoryFilter?.length > 0) {
       const validCategories = categoryFilter.filter((cat) =>
-        categories.includes(cat)
+        categories.includes(cat),
       );
       if (validCategories.length !== categoryFilter.length) {
         setCategoryFilter(validCategories);
@@ -90,7 +90,7 @@ const FilterBar = ({
   useEffect(() => {
     if (subCategoryFilter?.length > 0) {
       const validSubCategories = subCategoryFilter.filter((sub) =>
-        subCategories.includes(sub)
+        subCategories.includes(sub),
       );
       if (validSubCategories.length !== subCategoryFilter.length) {
         setSubCategoryFilter(validSubCategories);
@@ -182,120 +182,302 @@ const FilterBar = ({
 
   return (
     <>
+      {/* Filter Container */}
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          justifyContent: "space-between",
-          gap: 1.5,
+          flexDirection: "column",
+          gap: 2,
+          mb: 2,
         }}
       >
-        <TextField
-          label="Search Products"
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ minWidth: { xs: "100%", md: 280 } }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <SearchIcon sx={{ fontSize: "1.2rem" }} />
-              </InputAdornment>
-            ),
+        {/* Search Row */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+            flexDirection: { xs: "column", sm: "row" },
           }}
-        />
-
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Country</InputLabel>
-            <Select
-              multiple
-              value={countryFilter || []}
-              label="Country"
-              onChange={(e) => setCountryFilter(e.target.value)}
-              renderValue={(selected) =>
-                selected.length === 0 ? "" : `${selected.length} selected`
-              }
-            >
-              {countries.map((c) => (
-                <MenuItem key={c} value={c}>
-                  <input
-                    type="checkbox"
-                    checked={countryFilter?.includes(c) || false}
-                    readOnly
-                    style={{ marginRight: 8 }}
-                  />
-                  {c}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Level</InputLabel>
-            <Select value={levelFilter} label="Level" onChange={handleLevelChange}>
-              <MenuItem value="BUSINESS_UNIT">Business Unit</MenuItem>
-              <MenuItem value="CATEGORY">Category</MenuItem>
-              <MenuItem value="SUB_CATEGORY">Sub Category</MenuItem>
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Run Rate</InputLabel>
-            <Select
-              value={runRateOption}
-              label="Run Rate"
-              onChange={(e) => setRunRateOption(e.target.value)}
-            >
-              <MenuItem value="13weeks">13 Weeks</MenuItem>
-              <MenuItem value="8weeks">8 Weeks</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Badge badgeContent={selectedFiltersCount || null} color="primary">
-            <Button
-              variant={selectedFiltersCount > 0 ? "contained" : "outlined"}
-              size="small"
-              startIcon={<TuneIcon />}
-              onClick={(e) => setFiltersAnchor(e.currentTarget)}
-            >
-              Filter
-            </Button>
-          </Badge>
-
-          {hasActiveFilters && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ClearIcon />}
-              onClick={clearFilters}
-            >
-              Clear
-            </Button>
-          )}
-
-          <Badge
-            badgeContent={columns.length - visibleColumns.length || null}
-            color="primary"
+        >
+          <TextField
+            placeholder="Search Products"
+            variant="outlined"
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{
+              flex: 1,
+              minWidth: { xs: "100%", sm: 300 },
+              maxWidth: { xs: "100%", sm: 400 },
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: "#1a2332",
+                borderRadius: 1.5,
+                fontSize: "0.9rem",
+                transition: "all 0.2s ease",
+                "& fieldset": {
+                  borderColor: "#3f4f63",
+                },
+                "&:hover fieldset": {
+                  borderColor: "#60a5fa",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#0087b9",
+                  boxShadow: "0 0 0 3px rgba(0, 135, 185, 0.1)",
+                },
+              },
+              "& .MuiOutlinedInput-input": {
+                color: "#e2e8f0",
+                fontSize: "0.9rem",
+                "&::placeholder": {
+                  color: "#94a3b8",
+                  opacity: 1,
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ fontSize: "1.3rem", color: "#94a3b8" }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+        {/* Filters and Actions Row */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            p: 1.5,
+            backgroundColor: "#0f172a",
+            borderRadius: 1.5,
+            border: "1px solid #1e293b",
+          }}
+        >
+          {/* Left Side - Filter Dropdowns */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1.5,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
           >
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ViewColumnIcon />}
-              onClick={(e) => setColumnsAnchor(e.currentTarget)}
-            >
-              Columns
-            </Button>
-          </Badge>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel sx={{ color: "#94a3b8", fontSize: "0.85rem" }}>
+                Country
+              </InputLabel>
+              <Select
+                multiple
+                value={countryFilter || []}
+                label="Country"
+                onChange={(e) => setCountryFilter(e.target.value)}
+                renderValue={(selected) =>
+                  selected.length === 0 ? "All" : `${selected.length} selected`
+                }
+                sx={{
+                  backgroundColor: "#1a2332",
+                  color: "#e2e8f0",
+                  fontSize: "0.9rem",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#3f4f63",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#60a5fa",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#0087b9",
+                  },
+                }}
+              >
+                {countries.map((c) => (
+                  <MenuItem key={c} value={c}>
+                    <input
+                      type="checkbox"
+                      checked={countryFilter?.includes(c) || false}
+                      readOnly
+                      style={{ marginRight: 8 }}
+                    />
+                    {c}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={onExport}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel sx={{ color: "#94a3b8", fontSize: "0.85rem" }}>
+                Aggregation Level
+              </InputLabel>
+              <Select
+                value={levelFilter}
+                label="Aggregation Level"
+                onChange={handleLevelChange}
+                sx={{
+                  backgroundColor: "#1a2332",
+                  color: "#e2e8f0",
+                  fontSize: "0.9rem",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#3f4f63",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#60a5fa",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#0087b9",
+                  },
+                }}
+              >
+                <MenuItem value="BUSINESS_UNIT">Business Unit</MenuItem>
+                <MenuItem value="CATEGORY">Category</MenuItem>
+                <MenuItem value="SUB_CATEGORY">Sub Category</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel sx={{ color: "#94a3b8", fontSize: "0.85rem" }}>
+                Run Rate Period
+              </InputLabel>
+              <Select
+                value={runRateOption}
+                label="Run Rate Period"
+                onChange={(e) => setRunRateOption(e.target.value)}
+                sx={{
+                  backgroundColor: "#1a2332",
+                  color: "#e2e8f0",
+                  fontSize: "0.9rem",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#3f4f63",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#60a5fa",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#0087b9",
+                  },
+                }}
+              >
+                <MenuItem value="13weeks">13 Weeks</MenuItem>
+                <MenuItem value="8weeks">8 Weeks</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Right Side - Action Buttons */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              alignItems: "center",
+            }}
           >
-            Export
-          </Button>
+            <Badge badgeContent={selectedFiltersCount || null} color="primary">
+              <Button
+                variant={selectedFiltersCount > 0 ? "contained" : "outlined"}
+                size="small"
+                startIcon={<TuneIcon sx={{ fontSize: "1rem" }} />}
+                onClick={(e) => setFiltersAnchor(e.currentTarget)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  px: 2,
+                  backgroundColor:
+                    selectedFiltersCount > 0 ? "#0087b9" : "rgba(0, 135, 185, 0.08)",
+                  color: selectedFiltersCount > 0 ? "#fff" : "#60a5fa",
+                  borderColor: "#60a5fa",
+                  border: selectedFiltersCount > 0 ? "none" : "1px solid #60a5fa",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor:
+                      selectedFiltersCount > 0 ? "#006a94" : "#0087b9",
+                    color: "#fff",
+                    borderColor: "#0087b9",
+                  },
+                }}
+              >
+                Filter
+              </Button>
+            </Badge>
+
+            <Badge
+              badgeContent={columns.length - visibleColumns.length || null}
+              color="primary"
+            >
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<ViewColumnIcon sx={{ fontSize: "1rem" }} />}
+                onClick={(e) => setColumnsAnchor(e.currentTarget)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  px: 2,
+                  color: "#cbd5e1",
+                  borderColor: "#475569",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(96, 165, 250, 0.1)",
+                    borderColor: "#60a5fa",
+                    color: "#60a5fa",
+                  },
+                }}
+              >
+                Columns
+              </Button>
+            </Badge>
+
+            {hasActiveFilters && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<ClearIcon sx={{ fontSize: "1rem" }} />}
+                onClick={clearFilters}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  px: 2,
+                  color: "#fca5a5",
+                  borderColor: "#7f1d1d",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(248, 113, 113, 0.12)",
+                    borderColor: "#f87171",
+                    color: "#f87171",
+                  },
+                }}
+              >
+                Clear
+              </Button>
+            )}
+
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<DownloadIcon sx={{ fontSize: "1rem" }} />}
+              onClick={onExport}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                px: 2,
+                backgroundColor: "#0087b9",
+                color: "#fff",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: "#006a94",
+                  boxShadow: "0 4px 12px rgba(0, 135, 185, 0.3)",
+                },
+              }}
+            >
+              Export
+            </Button>
+          </Box>
         </Box>
       </Box>
 
@@ -379,7 +561,7 @@ const FilterBar = ({
                 onVisibilityChange(
                   isVisible
                     ? visibleColumns.filter((id) => id !== col.id)
-                    : [...visibleColumns, col.id]
+                    : [...visibleColumns, col.id],
                 )
               }
               sx={{

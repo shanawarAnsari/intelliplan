@@ -26,8 +26,8 @@ const DataTable = ({
     const t = {};
 
     columns?.forEach((col) => {
-      if (col.id === "COUNTRY") {
-        t[col.id] = "TOTAL";
+      if (["REGION", "COUNTRY"].includes(col.id)) {
+        t[col.id] = col.id === "REGION" ? "TOTAL" : "";
       } else if (
         ["CATEGORY", "SUB_CATEGORY", "BUSINESS_UNIT"].includes(col.id) ||
         col.isUserInput
@@ -38,17 +38,17 @@ const DataTable = ({
         const totalForecast = data?.reduce(
           (acc, row) =>
             acc + (parseFloat(row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) || 0),
-          0
+          0,
         );
         const totalRunRate = data?.reduce(
           (acc, row) => acc + (parseFloat(row.RUN_RATE_FORECAST) || 0),
-          0
+          0,
         );
         t[col.id] = totalForecast > 0 ? (totalRunRate / totalForecast) * 100 : 0;
       } else {
         t[col.id] = data?.reduce(
           (acc, row) => acc + (parseFloat(row[col.id]) || 0),
-          0
+          0,
         );
       }
     });
@@ -57,7 +57,7 @@ const DataTable = ({
 
   const paginatedData = useMemo(
     () => data?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage) || [],
-    [data, page, rowsPerPage]
+    [data, page, rowsPerPage],
   );
 
   const handleInput = (rowIndex, columnId, value) => {
@@ -107,10 +107,11 @@ const DataTable = ({
             zIndex: 10,
           },
           "& .frozen-column-1": { left: 0 },
-          "& .frozen-column-2": { left: "80px" },
-          "& .frozen-column-3": { left: "160px" },
-          "& .frozen-column-4": {
-            left: "280px",
+          "& .frozen-column-2": { left: "100px" },
+          "& .frozen-column-3": { left: "180px" },
+          "& .frozen-column-4": { left: "300px" },
+          "& .frozen-column-5": {
+            left: "420px",
             borderRight: "2px solid #7e7e7e1b",
           },
         }}
@@ -120,16 +121,18 @@ const DataTable = ({
             <TableRow>
               {columns.map((col, idx) => {
                 // Determine width based on column position
-                let colWidth = 80; // Default for Country and Business Unit
-                if (idx === 2) colWidth = 120; // Category
-                if (idx === 3) colWidth = 140; // Sub Category
+                let colWidth = 100; // Default for Region
+                if (idx === 1) colWidth = 80; // Country
+                if (idx === 2) colWidth = 120; // Business Unit
+                if (idx === 3) colWidth = 120; // Category
+                if (idx === 4) colWidth = 140; // Sub Category
 
                 return (
                   <TableCell
                     key={col.id}
                     align={col.align}
                     className={
-                      idx < 4 ? `frozen-column frozen-column-${idx + 1}` : ""
+                      idx < 5 ? `frozen-column frozen-column-${idx + 1}` : ""
                     }
                     sx={{
                       fontWeight: 600,
@@ -137,16 +140,16 @@ const DataTable = ({
                       color: col.headerColor ? "#1e293b" : "#ffffff",
                       fontSize: "0.7rem",
                       textTransform: "uppercase",
-                      minWidth: idx < 4 ? colWidth : col.minWidth || 120,
-                      width: idx < 4 ? colWidth : "auto",
-                      maxWidth: idx < 4 ? colWidth : "none",
-                      position: idx < 4 ? "sticky" : "relative",
+                      minWidth: idx < 5 ? colWidth : col.minWidth || 120,
+                      width: idx < 5 ? colWidth : "auto",
+                      maxWidth: idx < 5 ? colWidth : "none",
+                      position: idx < 5 ? "sticky" : "relative",
                       top: 0,
-                      zIndex: idx < 4 ? 15 : 5,
+                      zIndex: idx < 5 ? 15 : 5,
                       borderBottom: "1px solid #d1d5db",
                       py: 0.75,
-                      px: idx === 3 ? 1.5 : 0.75,
-                      pr: idx === 3 ? 2 : undefined,
+                      px: idx === 4 ? 1.5 : 0.75,
+                      pr: idx === 4 ? 2 : undefined,
                     }}
                   >
                     {col.label}
@@ -164,16 +167,18 @@ const DataTable = ({
               }}
             >
               {columns.map((col, idx) => {
-                let colWidth = 80;
+                let colWidth = 100;
+                if (idx === 1) colWidth = 80;
                 if (idx === 2) colWidth = 120;
-                if (idx === 3) colWidth = 140;
+                if (idx === 3) colWidth = 120;
+                if (idx === 4) colWidth = 140;
 
                 return (
                   <TableCell
                     key={`total-${col.id}`}
                     align={col.align}
                     className={
-                      idx < 4 ? `frozen-column frozen-column-${idx + 1}` : ""
+                      idx < 5 ? `frozen-column frozen-column-${idx + 1}` : ""
                     }
                     sx={{
                       fontWeight: 600,
@@ -181,12 +186,12 @@ const DataTable = ({
                       backgroundColor: "#f1f5f9",
                       color: "#1e293b",
                       borderBottom: "1px solid #000A32",
-                      width: idx < 4 ? colWidth : "auto",
-                      minWidth: idx < 4 ? colWidth : "auto",
-                      maxWidth: idx < 4 ? colWidth : "none",
+                      width: idx < 5 ? colWidth : "auto",
+                      minWidth: idx < 5 ? colWidth : "auto",
+                      maxWidth: idx < 5 ? colWidth : "none",
                       py: 0.75,
-                      px: idx === 3 ? 1.5 : 0.75,
-                      pr: idx === 3 ? 2 : undefined,
+                      px: idx === 4 ? 1.5 : 0.75,
+                      pr: idx === 4 ? 2 : undefined,
                     }}
                   >
                     {col.isUserInput || totals[col.id] === ""
@@ -209,33 +214,35 @@ const DataTable = ({
                 }}
               >
                 {columns.map((col, colIdx) => {
-                  let colWidth = 80;
+                  let colWidth = 100;
+                  if (colIdx === 1) colWidth = 80;
                   if (colIdx === 2) colWidth = 120;
-                  if (colIdx === 3) colWidth = 140;
+                  if (colIdx === 3) colWidth = 120;
+                  if (colIdx === 4) colWidth = 140;
 
                   return (
                     <TableCell
                       key={col.id}
                       align={col.align}
                       className={
-                        colIdx < 4 ? `frozen-column frozen-column-${colIdx + 1}` : ""
+                        colIdx < 5 ? `frozen-column frozen-column-${colIdx + 1}` : ""
                       }
                       sx={{
                         fontSize: "0.75rem",
                         color: "#1e293b",
-                        fontWeight: colIdx < 4 ? 600 : 400,
+                        fontWeight: colIdx < 5 ? 600 : 400,
                         backgroundColor: col.headerColor
                           ? "#fef2f2"
-                          : colIdx < 4
+                          : colIdx < 5
                             ? "#ffffff"
                             : "transparent",
                         borderBottom: "1px solid #D2d2d2",
-                        width: colIdx < 4 ? colWidth : "auto",
-                        minWidth: colIdx < 4 ? colWidth : "auto",
-                        maxWidth: colIdx < 4 ? colWidth : "none",
+                        width: colIdx < 5 ? colWidth : "auto",
+                        minWidth: colIdx < 5 ? colWidth : "auto",
+                        maxWidth: colIdx < 5 ? colWidth : "none",
                         py: 0.75,
-                        px: colIdx === 3 ? 1.5 : 0.75,
-                        pr: colIdx === 3 ? 2 : undefined,
+                        px: colIdx === 4 ? 1.5 : 0.75,
+                        pr: colIdx === 4 ? 2 : undefined,
                       }}
                     >
                       {col.isUserInput ? (

@@ -43,16 +43,28 @@ export { calculateRemainingDays, calculateRemainingShipments };
 export const useTableState = () => {
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState(["US"]);
+  const [regionFilter, setRegionFilter] = useState([]);
+  const [businessUnitFilter, setBusinessUnitFilter] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState([]);
   const [subCategoryFilter, setSubCategoryFilter] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [userInputs, setUserInputs] = useState({});
   const [runRateOption, setRunRateOption] = useState("13weeks");
-  const [levelFilter, setLevelFilter] = useState("SUB_CATEGORY"); // New state for level filter
+  // New: Multi-select levels - default to all levels
+  const [selectedLevels, setSelectedLevels] = useState([
+    "REGION",
+    "COUNTRY",
+    "BUSINESS_UNIT",
+    "CATEGORY",
+    "SUB_CATEGORY",
+  ]);
 
   const clearFilters = () => {
     setSearch("");
+    setCountryFilter(["US"]);
+    setRegionFilter([]);
+    setBusinessUnitFilter([]);
     setCategoryFilter([]);
     setSubCategoryFilter([]);
   };
@@ -66,9 +78,16 @@ export const useTableState = () => {
 
   const resetPage = () => setPage(0);
 
-  // Changed to a function that accepts filters as parameters
-  const hasActiveFilters = (categoryFilter, subCategoryFilter, businessUnitFilter) =>
+  const hasActiveFilters = (
+    regionFilter,
+    countryFilter,
+    businessUnitFilter,
+    categoryFilter,
+    subCategoryFilter,
+  ) =>
     search ||
+    (Array.isArray(regionFilter) && regionFilter.length > 0) ||
+    (Array.isArray(countryFilter) && countryFilter.length > 0) ||
     (Array.isArray(businessUnitFilter) && businessUnitFilter.length > 0) ||
     (Array.isArray(categoryFilter) && categoryFilter.length > 0) ||
     (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0);
@@ -78,6 +97,10 @@ export const useTableState = () => {
     setSearch,
     countryFilter,
     setCountryFilter,
+    regionFilter,
+    setRegionFilter,
+    businessUnitFilter,
+    setBusinessUnitFilter,
     categoryFilter,
     setCategoryFilter,
     subCategoryFilter,
@@ -89,8 +112,8 @@ export const useTableState = () => {
     userInputs,
     runRateOption,
     setRunRateOption,
-    levelFilter,
-    setLevelFilter,
+    selectedLevels,
+    setSelectedLevels,
     clearFilters,
     handleUserInputChange,
     resetPage,
@@ -101,7 +124,13 @@ export const useTableState = () => {
 // Hook for managing column visibility
 export const useColumnVisibility = (columns) => {
   // Essential columns that cannot be hidden
-  const ESSENTIAL_COLUMNS = ["COUNTRY", "BUSINESS_UNIT", "CATEGORY", "SUB_CATEGORY"];
+  const ESSENTIAL_COLUMNS = [
+    "REGION",
+    "COUNTRY",
+    "BUSINESS_UNIT",
+    "CATEGORY",
+    "SUB_CATEGORY",
+  ];
 
   // Initially show all columns
   const [visibleColumns, setVisibleColumns] = useState(columns.map((col) => col.id));
@@ -134,7 +163,7 @@ export const useDataFiltering = (
   businessUnitFilter,
   categoryFilter,
   subCategoryFilter,
-  runRateOption
+  runRateOption,
 ) => {
   const [filteredData, setFilteredData] = useState(null); // Changed from originalData to null
 
@@ -154,7 +183,7 @@ export const useDataFiltering = (
 
     if (Array.isArray(businessUnitFilter) && businessUnitFilter.length > 0) {
       filtered = filtered?.filter((row) =>
-        businessUnitFilter.includes(row.BUSINESS_UNIT)
+        businessUnitFilter.includes(row.BUSINESS_UNIT),
       );
     }
 
@@ -164,7 +193,7 @@ export const useDataFiltering = (
 
     if (Array.isArray(subCategoryFilter) && subCategoryFilter.length > 0) {
       filtered = filtered?.filter((row) =>
-        subCategoryFilter.includes(row.SUB_CATEGORY)
+        subCategoryFilter.includes(row.SUB_CATEGORY),
       );
     }
 
@@ -176,7 +205,7 @@ export const useDataFiltering = (
           row.BUSINESS_UNIT?.toLowerCase().includes(searchLower) ||
           row.COUNTRY?.toLowerCase().includes(searchLower) ||
           row.CATEGORY?.toLowerCase().includes(searchLower) ||
-          row.SUB_CATEGORY?.toLowerCase().includes(searchLower)
+          row.SUB_CATEGORY?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -190,7 +219,7 @@ export const useDataFiltering = (
       };
 
       const totalForecast = parseNumericValue(
-        row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH
+        row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH,
       );
 
       // Use selected run rate option
@@ -205,13 +234,13 @@ export const useDataFiltering = (
           : parseNumericValue(row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS);
 
       const actualShipmentsTillDate = parseNumericValue(
-        row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH
+        row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH,
       );
 
       // Calculate SHIPMENTS_REMAINING_DAYS
       const shipmentsRemainingDays = calculateRemainingShipments(
         weekdayRate,
-        weekendRate
+        weekendRate,
       );
 
       // Calculate ACTUAL_SHIPMENTS_TILL_DATE_PLUS_REMAINING
@@ -229,16 +258,16 @@ export const useDataFiltering = (
         // Convert string values to numbers for proper display
         TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH: totalForecast,
         AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS: parseNumericValue(
-          row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS
+          row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS,
         ),
         AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS: parseNumericValue(
-          row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS
+          row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS,
         ),
         AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS: parseNumericValue(
-          row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS
+          row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS,
         ),
         AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS: parseNumericValue(
-          row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS
+          row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS,
         ),
         TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH: actualShipmentsTillDate,
         // Store the currently used rates for reference
@@ -339,7 +368,7 @@ export const useDataExport = (getVisibleColumnsFunc) => {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `run_rate_export_${new Date().toISOString().split("T")[0]}.csv`
+      `run_rate_export_${new Date().toISOString().split("T")[0]}.csv`,
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -484,8 +513,8 @@ export const useDataAggregation = (filteredData, levelFilter) => {
       group.RUN_RATE_VS_FORECAST_MO =
         group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH > 0
           ? (group.RUN_RATE_FORECAST /
-            group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
-          100
+              group.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH) *
+            100
           : 0;
 
       // Remove helper fields

@@ -8,6 +8,8 @@ import {
   ListItemButton,
   Checkbox,
   ListItemText,
+  Box,
+  Chip,
 } from "@mui/material";
 
 const ColumnVisibilityPopover = ({
@@ -17,7 +19,21 @@ const ColumnVisibilityPopover = ({
   columns,
   visibleColumns,
   onVisibilityChange,
+  selectedLevels,
 }) => {
+  const ESSENTIAL_COLUMNS = [
+    "REGION",
+    "COUNTRY",
+    "BUSINESS_UNIT",
+    "CATEGORY",
+    "SUB_CATEGORY",
+  ];
+
+  // Get level columns that are selected
+  const levelColumns = ESSENTIAL_COLUMNS.filter((col) =>
+    selectedLevels.includes(col),
+  );
+
   const handleToggle = (columnId) => {
     const currentIndex = visibleColumns.indexOf(columnId);
     const newVisibleColumns = [...visibleColumns];
@@ -30,6 +46,11 @@ const ColumnVisibilityPopover = ({
 
     onVisibilityChange(newVisibleColumns);
   };
+
+  // Filter columns: only show level columns that are selected + all metric columns
+  const displayColumns = columns.filter(
+    (col) => selectedLevels.includes(col.id) || !ESSENTIAL_COLUMNS.includes(col.id),
+  );
 
   return (
     <Popover
@@ -56,9 +77,12 @@ const ColumnVisibilityPopover = ({
       <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
         Show/Hide Columns
       </Typography>
+      <Typography variant="caption" sx={{ color: "#666", display: "block", mb: 1 }}>
+        Showing {displayColumns.length} available columns
+      </Typography>
       <Divider sx={{ mb: 1 }} />
       <List dense sx={{ py: 0 }}>
-        {columns.map((column) => (
+        {displayColumns.map((column) => (
           <ListItem key={column.id} disablePadding>
             <ListItemButton
               onClick={() => handleToggle(column.id)}
@@ -74,9 +98,24 @@ const ColumnVisibilityPopover = ({
               />
               <ListItemText
                 primary={
-                  <Typography variant="body2" sx={{ fontSize: "0.675rem" }}>
-                    {column.label}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontSize: "0.675rem" }}>
+                      {column.label}
+                    </Typography>
+                    {levelColumns.includes(column.id) && (
+                      <Chip
+                        label="Level"
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: "0.6rem",
+                          backgroundColor: "#dbeafe",
+                          color: "#1e40af",
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                  </Box>
                 }
               />
             </ListItemButton>

@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import { Box, TextField, Button, InputAdornment } from "@mui/material";
+import React, { useState, useEffect, useRef } from "react";
+import { Box, TextField, Button, InputAdornment, Grid, Chip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
-import ClearIcon from "@mui/icons-material/Clear";
 
 import SimplifiedFilterPopover from "./components/SimplifiedFilterPopover";
 import {
@@ -11,13 +10,15 @@ import {
 } from "./components/FilterButtons";
 import ColumnVisibilityPopover from "./components/ColumnVisibilityPopover";
 import FilterControls from "./components/FilterControls";
-import ActiveFiltersChips from "./components/ActiveFiltersChips";
+import LevelSelector from "./components/LevelSelector";
 
 const FilterSection = ({
   search,
   setSearch,
   countryFilter,
   setCountryFilter,
+  regionFilter,
+  setRegionFilter,
   categoryFilter,
   setCategoryFilter,
   subCategoryFilter,
@@ -33,97 +34,123 @@ const FilterSection = ({
   onVisibilityChange,
   runRateOption,
   setRunRateOption,
-  levelFilter,
-  setLevelFilter,
+  selectedLevels,
+  setSelectedLevels,
   businessUnits,
   businessUnitFilter,
   setBusinessUnitFilter,
+  regions,
 }) => {
   const [filtersAnchorEl, setFiltersAnchorEl] = useState(null);
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
+  const [localSearch, setLocalSearch] = useState(search);
+  const debounceTimer = useRef(null);
 
-  // Calculate total selected filters
-  const selectedBusinessUnitsCount = Array.isArray(businessUnitFilter)
-    ? businessUnitFilter.length
-    : businessUnitFilter
-    ? 1
-    : 0;
-
-  const totalSelectedFilters =
-    selectedBusinessUnitsCount +
-    (levelFilter === "CATEGORY" || levelFilter === "SUB_CATEGORY"
-      ? Array.isArray(categoryFilter)
-        ? categoryFilter.length
-        : 0
-      : 0) +
-    (levelFilter === "SUB_CATEGORY"
-      ? Array.isArray(subCategoryFilter)
-        ? subCategoryFilter.length
-        : 0
-      : 0);
-
-  // Handle level filter change
-  const handleLevelFilterChange = (e) => {
-    const newLevel = e.target.value;
-    setLevelFilter(newLevel);
-
-    if (newLevel === "BUSINESS_UNIT") {
-      setCategoryFilter([]);
-      setSubCategoryFilter([]);
-    } else if (newLevel === "CATEGORY") {
-      setSubCategoryFilter([]);
+  // Debounce search input (300ms delay)
+  useEffect(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
     }
-  };
+
+    debounceTimer.current = setTimeout(() => {
+      setSearch(localSearch);
+    }, 300);
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [localSearch, setSearch]);
+
+  // Update local search when prop changes (e.g., when filters are cleared)
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
+
+  const totalSelectedFilters = [
+    regionFilter,
+    countryFilter,
+    businessUnitFilter,
+    categoryFilter,
+    subCategoryFilter,
+  ].reduce((sum, filter) => sum + (Array.isArray(filter) ? filter.length : 0), 0);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-      {/* Top row - Search and Controls */}
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {/* Row 1: Search and Filters */}
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          justifyContent: "space-between",
-          alignItems: { md: "center" },
           gap: 1.5,
+          alignItems: "center",
+          flexDirection: { xs: "column", sm: "row" },
         }}
       >
+        {/* Search Bar - Left Side */}
         <TextField
-          label="Search Products"
+          placeholder="Search Products"
           variant="outlined"
           size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
           sx={{
-            minWidth: { xs: "100%", md: 280 },
+            flex: { xs: 1, sm: "0 0 350px" },
+            minWidth: { xs: "100%", sm: 300 },
             "& .MuiOutlinedInput-root": {
+              backgroundColor: "#1a2332",
               borderRadius: 1.5,
-              borderColor: "#fff",
-              fontSize: "0.85rem",
-              height: "36px",
+              fontSize: "0.9rem",
+              transition: "all 0.2s ease",
+              "& fieldset": {
+                borderColor: "#3f4f63",
+              },
+              "&:hover fieldset": {
+                borderColor: "#60a5fa",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#0087b9",
+                boxShadow: "0 0 0 3px rgba(0, 135, 185, 0.1)",
+              },
             },
-            "& .MuiInputLabel-root": {
-              fontSize: "0.85rem",
+            "& .MuiOutlinedInput-input": {
+              color: "#e2e8f0",
+              fontSize: "0.9rem",
+              "&::placeholder": {
+                color: "#94a3b8",
+                opacity: 1,
+              },
             },
           }}
           InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <SearchIcon sx={{ color: "#6b7280", fontSize: "1.2rem" }} />
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: "1.3rem", color: "#94a3b8" }} />
               </InputAdornment>
             ),
           }}
         />
 
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+        {/* Right Side - Filter Controls */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            alignItems: "center",
+            flexWrap: "wrap",
+            flex: 1,
+            justifyContent: { xs: "stretch", sm: "flex-end" },
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <LevelSelector
+            selectedLevels={selectedLevels}
+            onLevelsChange={setSelectedLevels}
+          />
+
           <FilterControls
-            countries={countries}
-            countryFilter={countryFilter}
-            setCountryFilter={setCountryFilter}
-            levelFilter={levelFilter}
-            setLevelFilter={setLevelFilter}
             runRateOption={runRateOption}
             setRunRateOption={setRunRateOption}
-            onLevelChange={handleLevelFilterChange}
           />
 
           {/* Filter Button */}
@@ -132,27 +159,6 @@ const FilterSection = ({
             hasSelection={totalSelectedFilters > 0}
             onClick={(e) => setFiltersAnchorEl(e.currentTarget)}
           />
-
-          {/* Clear Filters Button */}
-          {hasActiveFilters && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ClearIcon sx={{ fontSize: "1.1rem" }} />}
-              onClick={clearFilters}
-              sx={{
-                borderRadius: 1.5,
-                textTransform: "none",
-                color: "#6b7280",
-                borderColor: "#d1d5db",
-                fontSize: "0.8rem",
-                height: "36px",
-                px: 2,
-              }}
-            >
-              Clear
-            </Button>
-          )}
 
           {/* Column Visibility Button */}
           <CombinedColumnsButton
@@ -169,26 +175,200 @@ const FilterSection = ({
             sx={{
               borderRadius: 1.5,
               textTransform: "none",
-              background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-              boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.5)",
-              fontSize: "0.8rem",
-              height: "32px",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              height: "38px",
               px: 2,
+              background: "linear-gradient(135deg, #0087b9 0%, #006a94 100%)",
+              boxShadow: "0 4px 6px -1px rgba(0, 135, 185, 0.3)",
+              color: "#fff",
+              transition: "all 0.2s ease",
               "&:hover": {
-                boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.5)",
+                boxShadow: "0 10px 15px -3px rgba(0, 135, 185, 0.4)",
               },
             }}
           >
-            Export CSV
+            Export
           </Button>
         </Box>
       </Box>
+
+      {/* Row 2: Selected Filters - Full Width Scrollable */}
+      {hasActiveFilters && (
+        <Box
+          sx={{
+            p: 1.5,
+            backgroundColor: "#0f172a",
+            borderRadius: 1.5,
+            border: "1px solid #1e293b",
+            overflow: "auto",
+            "&::-webkit-scrollbar": {
+              height: "6px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "#0f172a",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#3f4f63",
+              borderRadius: "3px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "#475569",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              gap: 0.75,
+              flexWrap: "nowrap",
+              minWidth: "fit-content",
+            }}
+          >
+            {search && (
+              <Chip
+                label={`Search: "${search}"`}
+                onDelete={() => setSearch("")}
+                size="small"
+                sx={{
+                  backgroundColor: "rgba(0, 135, 185, 0.15)",
+                  color: "#60a5fa",
+                  borderColor: "#60a5fa",
+                  fontSize: "0.8rem",
+                  "& .MuiChip-deleteIcon": {
+                    color: "#60a5fa",
+                    "&:hover": {
+                      color: "#fff",
+                    },
+                  },
+                }}
+              />
+            )}
+            {regionFilter?.map((region) => (
+              <Chip
+                key={region}
+                label={`Region: ${region}`}
+                size="small"
+                onDelete={() =>
+                  setRegionFilter(regionFilter.filter((r) => r !== region))
+                }
+                sx={{
+                  backgroundColor: "rgba(0, 135, 185, 0.15)",
+                  color: "#60a5fa",
+                  borderColor: "#60a5fa",
+                  fontSize: "0.8rem",
+                  "& .MuiChip-deleteIcon": {
+                    color: "#60a5fa",
+                    "&:hover": {
+                      color: "#fff",
+                    },
+                  },
+                }}
+              />
+            ))}
+            {countryFilter?.map((country) => (
+              <Chip
+                key={country}
+                label={`Country: ${country}`}
+                size="small"
+                onDelete={() =>
+                  setCountryFilter(countryFilter.filter((c) => c !== country))
+                }
+                sx={{
+                  backgroundColor: "rgba(0, 135, 185, 0.15)",
+                  color: "#60a5fa",
+                  borderColor: "#60a5fa",
+                  fontSize: "0.8rem",
+                  "& .MuiChip-deleteIcon": {
+                    color: "#60a5fa",
+                    "&:hover": {
+                      color: "#fff",
+                    },
+                  },
+                }}
+              />
+            ))}
+            {businessUnitFilter?.map((bu) => (
+              <Chip
+                key={bu}
+                label={`BU: ${bu}`}
+                size="small"
+                onDelete={() =>
+                  setBusinessUnitFilter(businessUnitFilter.filter((b) => b !== bu))
+                }
+                sx={{
+                  backgroundColor: "rgba(0, 135, 185, 0.15)",
+                  color: "#60a5fa",
+                  borderColor: "#60a5fa",
+                  fontSize: "0.8rem",
+                  "& .MuiChip-deleteIcon": {
+                    color: "#60a5fa",
+                    "&:hover": {
+                      color: "#fff",
+                    },
+                  },
+                }}
+              />
+            ))}
+            {categoryFilter?.map((cat) => (
+              <Chip
+                key={cat}
+                label={`Category: ${cat}`}
+                size="small"
+                onDelete={() =>
+                  setCategoryFilter(categoryFilter.filter((c) => c !== cat))
+                }
+                sx={{
+                  backgroundColor: "rgba(0, 135, 185, 0.15)",
+                  color: "#60a5fa",
+                  borderColor: "#60a5fa",
+                  fontSize: "0.8rem",
+                  "& .MuiChip-deleteIcon": {
+                    color: "#60a5fa",
+                    "&:hover": {
+                      color: "#fff",
+                    },
+                  },
+                }}
+              />
+            ))}
+            {subCategoryFilter?.map((sub) => (
+              <Chip
+                key={sub}
+                label={`Sub: ${sub}`}
+                size="small"
+                onDelete={() =>
+                  setSubCategoryFilter(subCategoryFilter.filter((s) => s !== sub))
+                }
+                sx={{
+                  backgroundColor: "rgba(0, 135, 185, 0.15)",
+                  color: "#60a5fa",
+                  borderColor: "#60a5fa",
+                  fontSize: "0.8rem",
+                  "& .MuiChip-deleteIcon": {
+                    color: "#60a5fa",
+                    "&:hover": {
+                      color: "#fff",
+                    },
+                  },
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
 
       {/* Popovers */}
       <SimplifiedFilterPopover
         anchorEl={filtersAnchorEl}
         open={Boolean(filtersAnchorEl)}
         onClose={() => setFiltersAnchorEl(null)}
+        regions={regions}
+        regionFilter={regionFilter}
+        setRegionFilter={setRegionFilter}
+        countries={countries}
+        countryFilter={countryFilter}
+        setCountryFilter={setCountryFilter}
         businessUnits={businessUnits}
         businessUnitFilter={businessUnitFilter}
         setBusinessUnitFilter={setBusinessUnitFilter}
@@ -198,7 +378,7 @@ const FilterSection = ({
         setCategoryFilter={setCategoryFilter}
         subCategoryFilter={subCategoryFilter}
         setSubCategoryFilter={setSubCategoryFilter}
-        levelFilter={levelFilter}
+        selectedLevels={selectedLevels}
       />
 
       <ColumnVisibilityPopover
@@ -208,9 +388,10 @@ const FilterSection = ({
         columns={columns}
         visibleColumns={visibleColumns}
         onVisibilityChange={onVisibilityChange}
+        selectedLevels={selectedLevels}
       />
     </Box>
   );
 };
 
-export { FilterSection, ActiveFiltersChips };
+export { FilterSection };

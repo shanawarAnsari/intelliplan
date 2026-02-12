@@ -11,10 +11,13 @@ import {
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { tableColumns } from "./constants";
-import { useTableData } from "./hooks/useTableData";
-import FilterBar from "./components/FilterBar";
-import DataTable from "./DataTable";
 import { useRunRateData } from "./hooks/useRunRate";
+import {
+  aggregateDataByLevels,
+  getColumnsForLevels,
+} from "./utils/aggregationUtils";
+import { FilterSection } from "./FilterSection";
+import DataTable from "./DataTable";
 
 const getUniqueValues = (data, field) =>
   data ? [...new Set(data.map((r) => r[field]))].filter(Boolean).sort() : [];
@@ -23,11 +26,8 @@ const getFilteredValues = (data, field, filters = {}) => {
   if (!data) return [];
   let filtered = data;
   Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      filtered =
-        Array.isArray(value) && value.length
-          ? filtered.filter((r) => value.includes(r[key]))
-          : filtered.filter((r) => r[key] === value);
+    if (value && Array.isArray(value) && value.length > 0) {
+      filtered = filtered.filter((r) => value.includes(r[key]));
     }
   });
   return getUniqueValues(filtered, field);
@@ -37,117 +37,221 @@ const SalesForecastTable = () => {
   const { data: rawData, error, loading, refetch } = useRunRateData();
 
   const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState(["US"]);
+  const [regionFilter, setRegionFilter] = useState([]);
+  const [countryFilter, setCountryFilter] = useState([]);
   const [businessUnitFilter, setBusinessUnitFilter] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState([]);
   const [subCategoryFilter, setSubCategoryFilter] = useState([]);
-  const [levelFilter, setLevelFilter] = useState("SUB_CATEGORY");
+  const [selectedLevels, setSelectedLevels] = useState([
+    "REGION",
+    "COUNTRY",
+    "BUSINESS_UNIT",
+    "CATEGORY",
+    "SUB_CATEGORY",
+  ]);
   const [runRateOption, setRunRateOption] = useState("13weeks");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [userInputs, setUserInputs] = useState({});
   const [visibleColumns, setVisibleColumns] = useState(
-    tableColumns.map((c) => c.id)
+    tableColumns.map((c) => c.id),
   );
 
+  // Get unique values
+  const regions = useMemo(() => getUniqueValues(rawData, "REGION"), [rawData]);
   const countries = useMemo(() => getUniqueValues(rawData, "COUNTRY"), [rawData]);
-
-  // Get ALL options for initial display (not filtered by selections)
   const allBusinessUnits = useMemo(
-    () => getFilteredValues(rawData, "BUSINESS_UNIT", { COUNTRY: countryFilter }),
-    [rawData, countryFilter]
-  );
-
-  const allCategories = useMemo(
-    () => getFilteredValues(rawData, "CATEGORY", { COUNTRY: countryFilter }),
-    [rawData, countryFilter]
-  );
-
-  const allSubCategories = useMemo(
-    () => getFilteredValues(rawData, "SUB_CATEGORY", { COUNTRY: countryFilter }),
-    [rawData, countryFilter]
-  );
-
-  // Get filtered options based on user selections (for cascading filtering AFTER selection)
-  const availableCategories = useMemo(
     () =>
-      businessUnitFilter?.length > 0
-        ? getFilteredValues(rawData, "CATEGORY", {
-          COUNTRY: countryFilter,
-          BUSINESS_UNIT: businessUnitFilter,
-        })
-        : allCategories,
-    [rawData, countryFilter, businessUnitFilter, allCategories]
+      getFilteredValues(rawData, "BUSINESS_UNIT", {
+        REGION: regionFilter,
+        COUNTRY: countryFilter,
+      }),
+    [rawData, regionFilter, countryFilter],
+  );
+  const allCategories = useMemo(
+    () =>
+      getFilteredValues(rawData, "CATEGORY", {
+        REGION: regionFilter,
+        COUNTRY: countryFilter,
+        BUSINESS_UNIT: businessUnitFilter,
+      }),
+    [rawData, regionFilter, countryFilter, businessUnitFilter],
+  );
+  const allSubCategories = useMemo(
+    () =>
+      getFilteredValues(rawData, "SUB_CATEGORY", {
+        REGION: regionFilter,
+        COUNTRY: countryFilter,
+        BUSINESS_UNIT: businessUnitFilter,
+        CATEGORY: categoryFilter,
+      }),
+    [rawData, regionFilter, countryFilter, businessUnitFilter, categoryFilter],
   );
 
-  const availableSubCategories = useMemo(() => {
-    const filters = { COUNTRY: countryFilter };
-    if (businessUnitFilter?.length > 0) {
-      filters.BUSINESS_UNIT = businessUnitFilter;
-    }
-    if (categoryFilter?.length > 0) {
-      filters.CATEGORY = categoryFilter;
-    }
-    return businessUnitFilter?.length > 0 || categoryFilter?.length > 0
-      ? getFilteredValues(rawData, "SUB_CATEGORY", filters)
-      : allSubCategories;
-  }, [rawData, countryFilter, businessUnitFilter, categoryFilter, allSubCategories]);
+  // Filter data
+  const filteredData = useMemo(() => {
+    if (!rawData) return [];
+    let data = rawData;
 
-  const filters = useMemo(
-    () => ({
-      search,
-      country: countryFilter,
-      businessUnit: businessUnitFilter,
-      category: categoryFilter,
-      subCategory: subCategoryFilter,
-      level: levelFilter,
-    }),
-    [
-      search,
-      countryFilter,
-      businessUnitFilter,
-      categoryFilter,
-      subCategoryFilter,
-      levelFilter,
-    ]
+    if (search) {
+      const s = search.toLowerCase();
+      data = data.filter(
+        (r) =>
+          r.REGION?.toLowerCase().includes(s) ||
+          r.COUNTRY?.toLowerCase().includes(s) ||
+          r.BUSINESS_UNIT?.toLowerCase().includes(s) ||
+          r.CATEGORY?.toLowerCase().includes(s) ||
+          r.SUB_CATEGORY?.toLowerCase().includes(s),
+      );
+    }
+
+    if (regionFilter.length > 0)
+      data = data.filter((r) => regionFilter.includes(r.REGION));
+    if (countryFilter.length > 0)
+      data = data.filter((r) => countryFilter.includes(r.COUNTRY));
+    if (businessUnitFilter.length > 0)
+      data = data.filter((r) => businessUnitFilter.includes(r.BUSINESS_UNIT));
+    if (categoryFilter.length > 0)
+      data = data.filter((r) => categoryFilter.includes(r.CATEGORY));
+    if (subCategoryFilter.length > 0)
+      data = data.filter((r) => subCategoryFilter.includes(r.SUB_CATEGORY));
+
+    return data.map((row) => {
+      const parseNumeric = (val) => {
+        const p = parseFloat(val);
+        return isNaN(p) ? 0 : p;
+      };
+
+      const totalForecast = parseNumeric(
+        row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH,
+      );
+      const weekday13 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS);
+      const weekend13 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS);
+      const weekday8 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS);
+      const weekend8 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS);
+      const actualShips = parseNumeric(row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH);
+
+      const { remainingWeekdays, remainingWeekends } = (() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        let rwd = 0,
+          rwk = 0;
+        for (let d = day + 1; d <= lastDay; d++) {
+          const dow = new Date(year, month, d).getDay();
+          if (dow === 0 || dow === 6) rwk++;
+          else rwd++;
+        }
+        return { remainingWeekdays: rwd, remainingWeekends: rwk };
+      })();
+
+      const weekdayRate = runRateOption === "13weeks" ? weekday13 : weekday8;
+      const weekendRate = runRateOption === "13weeks" ? weekend13 : weekend8;
+      const shipmentsRemaining =
+        remainingWeekdays * weekdayRate + remainingWeekends * weekendRate;
+      const runRateForecast = actualShips + shipmentsRemaining;
+      const runRateVsForecast =
+        totalForecast > 0 ? (runRateForecast / totalForecast) * 100 : 0;
+
+      return {
+        ...row,
+        TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH: totalForecast,
+        AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS: weekday13,
+        AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS: weekend13,
+        AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS: weekday8,
+        AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS: weekend8,
+        TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH: actualShips,
+        SHIPMENTS_REMAINING_DAYS: shipmentsRemaining,
+        RUN_RATE_FORECAST: runRateForecast,
+        RUN_RATE_VS_FORECAST_MO: runRateVsForecast,
+        LOW_SIDE_GS: null,
+        HIGH_SIDE_GS: null,
+      };
+    });
+  }, [
+    rawData,
+    search,
+    regionFilter,
+    countryFilter,
+    businessUnitFilter,
+    categoryFilter,
+    subCategoryFilter,
+    runRateOption,
+  ]);
+
+  // Aggregate data based on selected levels
+  const aggregatedData = useMemo(
+    () => aggregateDataByLevels(filteredData, selectedLevels),
+    [filteredData, selectedLevels],
   );
 
-  const processedData = useTableData(rawData, filters, runRateOption, userInputs);
+  // Apply user inputs to aggregated data
+  const processedData = useMemo(() => {
+    if (!aggregatedData) return [];
+    return aggregatedData.map((row, idx) => {
+      const lowPercent = parseFloat(userInputs[`${idx}-LOW_SIDE_PERCENT`]) || 0;
+      const highPercent = parseFloat(userInputs[`${idx}-HIGH_SIDE_PERCENT`]) || 0;
+      const forecast = row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH || 0;
+
+      return {
+        ...row,
+        LOW_SIDE_GS:
+          forecast > 0 && lowPercent > 0
+            ? (forecast * lowPercent) / 100 - forecast
+            : 0,
+        HIGH_SIDE_GS:
+          forecast > 0 && highPercent > 0
+            ? (forecast * highPercent) / 100 - forecast
+            : 0,
+      };
+    });
+  }, [aggregatedData, userInputs]);
 
   const hasActiveFilters =
     search ||
-    countryFilter?.length > 0 ||
-    countryFilter?.length > 0 ||
-    businessUnitFilter?.length > 0 ||
-    categoryFilter?.length > 0 ||
-    subCategoryFilter?.length > 0;
+    regionFilter.length > 0 ||
+    countryFilter.length > 0 ||
+    businessUnitFilter.length > 0 ||
+    categoryFilter.length > 0 ||
+    subCategoryFilter.length > 0;
 
   const clearFilters = () => {
     setSearch("");
-    setCountryFilter(["US"])
+    setRegionFilter([]);
+    setCountryFilter([]);
     setBusinessUnitFilter([]);
     setCategoryFilter([]);
     setSubCategoryFilter([]);
   };
 
+  // Get columns for selected levels
+  const visibleColumnsForLevels = useMemo(
+    () => getColumnsForLevels(tableColumns, selectedLevels),
+    [selectedLevels],
+  );
+
   const getVisibleColumns = () => {
-    let cols = tableColumns.filter((c) => visibleColumns.includes(c.id));
-    if (levelFilter === "BUSINESS_UNIT")
-      cols = cols.filter((c) => !["CATEGORY", "SUB_CATEGORY"].includes(c.id));
-    else if (levelFilter === "CATEGORY")
-      cols = cols.filter((c) => c.id !== "SUB_CATEGORY");
-    return cols.filter((c) => {
-      if (runRateOption === "13weeks") {
-        return ![
-          "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
-          "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
-        ].includes(c.id);
-      }
-      return ![
-        "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS",
-        "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS",
-      ].includes(c.id);
-    });
+    let cols = visibleColumnsForLevels.filter((c) => visibleColumns.includes(c.id));
+    if (runRateOption === "13weeks") {
+      cols = cols.filter(
+        (c) =>
+          ![
+            "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
+            "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
+          ].includes(c.id),
+      );
+    } else {
+      cols = cols.filter(
+        (c) =>
+          ![
+            "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS",
+            "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS",
+          ].includes(c.id),
+      );
+    }
+    return cols;
   };
 
   const handleExport = () => {
@@ -158,7 +262,6 @@ const SalesForecastTable = () => {
       cols
         .map((c) => {
           let val;
-          // Handle user input columns - use the same key format as DataTable
           if (c.isUserInput) {
             val = userInputs[`${rowIndex}-${c.id}`] || "";
           } else {
@@ -170,7 +273,7 @@ const SalesForecastTable = () => {
             ? `"${str.replace(/"/g, '""')}"`
             : str;
         })
-        .join(",")
+        .join(","),
     );
     const csv = [headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -180,17 +283,19 @@ const SalesForecastTable = () => {
     link.click();
   };
 
-  useEffect(() => {
-    setPage(0);
-  }, [
-    search,
-    countryFilter,
-    businessUnitFilter,
-    categoryFilter,
-    subCategoryFilter,
-    runRateOption,
-    levelFilter,
-  ]);
+  useEffect(
+    () => setPage(0),
+    [
+      search,
+      regionFilter,
+      countryFilter,
+      businessUnitFilter,
+      categoryFilter,
+      subCategoryFilter,
+      selectedLevels,
+      runRateOption,
+    ],
+  );
 
   if (loading) {
     return (
@@ -242,31 +347,34 @@ const SalesForecastTable = () => {
     <Box sx={{ p: 1 }}>
       <Card elevation={3} sx={{ borderRadius: 1, background: "#111827" }}>
         <CardContent sx={{ pt: 1, "&:last-child": { pb: 1 } }}>
-          <FilterBar
+          <FilterSection
             search={search}
             setSearch={setSearch}
+            regions={regions}
+            regionFilter={regionFilter}
+            setRegionFilter={setRegionFilter}
             countries={countries}
             countryFilter={countryFilter}
             setCountryFilter={setCountryFilter}
-            levelFilter={levelFilter}
-            setLevelFilter={setLevelFilter}
-            runRateOption={runRateOption}
-            setRunRateOption={setRunRateOption}
-            businessUnits={allBusinessUnits}
-            businessUnitFilter={businessUnitFilter}
-            setBusinessUnitFilter={setBusinessUnitFilter}
-            categories={availableCategories}
             categoryFilter={categoryFilter}
             setCategoryFilter={setCategoryFilter}
-            subCategories={availableSubCategories}
             subCategoryFilter={subCategoryFilter}
             setSubCategoryFilter={setSubCategoryFilter}
+            categories={allCategories}
+            subCategories={allSubCategories}
             hasActiveFilters={hasActiveFilters}
             clearFilters={clearFilters}
             onExport={handleExport}
             columns={tableColumns}
             visibleColumns={visibleColumns}
             onVisibilityChange={setVisibleColumns}
+            runRateOption={runRateOption}
+            setRunRateOption={setRunRateOption}
+            selectedLevels={selectedLevels}
+            setSelectedLevels={setSelectedLevels}
+            businessUnits={allBusinessUnits}
+            businessUnitFilter={businessUnitFilter}
+            setBusinessUnitFilter={setBusinessUnitFilter}
           />
           <Divider sx={{ my: 1 }} />
           <DataTable
