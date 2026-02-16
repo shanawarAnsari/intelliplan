@@ -19,13 +19,9 @@ export const aggregateDataByLevels = (data, selectedLevels = []) => {
     "SUB_CATEGORY",
   ].filter((level) => selectedLevels.includes(level));
 
-  // If only SUB_CATEGORY or all levels selected, no aggregation needed
-  if (
-    orderedLevels.length === selectedLevels.length &&
-    selectedLevels.includes("SUB_CATEGORY")
-  ) {
-    return data;
-  }
+  // Always aggregate based on selected levels - groups rows that have identical values
+  // for all selected levels, even if all levels are selected or only SUB_CATEGORY is selected
+  // This ensures metrics are properly summed/averaged and duplicate rows are merged
 
   // Group data by selected levels
   const grouped = data.reduce((acc, row) => {
