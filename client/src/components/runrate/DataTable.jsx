@@ -22,6 +22,59 @@ const DataTable = ({
   userInputs,
   onUserInputChange,
 }) => {
+  // Essential level columns that should be frozen
+  const ESSENTIAL_LEVEL_COLUMNS = [
+    "REGION",
+    "COUNTRY",
+    "BUSINESS_UNIT",
+    "CATEGORY",
+    "SUB_CATEGORY",
+  ];
+
+  // Calculate how many columns should be frozen based on visible essential columns
+  const frozenColumnCount = useMemo(() => {
+    return (
+      columns?.filter((col) => ESSENTIAL_LEVEL_COLUMNS.includes(col.id)).length || 0
+    );
+  }, [columns]);
+
+  // Calculate cumulative left positions for frozen columns
+  const frozenColumnPositions = useMemo(() => {
+    const positions = {};
+    let cumulativeLeft = 0;
+
+    columns?.forEach((col, idx) => {
+      if (!ESSENTIAL_LEVEL_COLUMNS.includes(col.id)) return;
+
+      positions[idx] = cumulativeLeft;
+      cumulativeLeft += col.minWidth || 100;
+    });
+
+    return positions;
+  }, [columns]);
+
+  // Generate dynamic sx for frozen columns based on actual widths
+  const frozenColumnSx = useMemo(() => {
+    const sx = {
+      "& .frozen-column": {
+        position: "sticky",
+        zIndex: 10,
+      },
+    };
+
+    // Add dynamic left positions for each frozen column
+    Object.entries(frozenColumnPositions).forEach(([idx, leftValue]) => {
+      sx[`& .frozen-column-${idx}`] = {
+        left: `${leftValue}px`,
+        ...(idx === Math.max(...Object.keys(frozenColumnPositions).map(Number))
+          ? { borderRight: "2px solid #7e7e7e1b" }
+          : {}),
+      };
+    });
+
+    return sx;
+  }, [frozenColumnPositions]);
+
   const totals = useMemo(() => {
     const t = {};
 
@@ -102,54 +155,39 @@ const DataTable = ({
           border: "1px solid #e5e7eb",
           borderRadius: 1,
           backgroundColor: "#ffffff",
-          "& .frozen-column": {
-            position: "sticky",
-            zIndex: 10,
-          },
-          "& .frozen-column-1": { left: 0 },
-          "& .frozen-column-2": { left: "100px" },
-          "& .frozen-column-3": { left: "180px" },
-          "& .frozen-column-4": { left: "300px" },
-          "& .frozen-column-5": {
-            left: "420px",
-            borderRight: "2px solid #7e7e7e1b",
-          },
+          ...frozenColumnSx,
         }}
       >
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
               {columns.map((col, idx) => {
-                // Determine width based on column position
-                let colWidth = 100; // Default for Region
-                if (idx === 1) colWidth = 80; // Country
-                if (idx === 2) colWidth = 120; // Business Unit
-                if (idx === 3) colWidth = 120; // Category
-                if (idx === 4) colWidth = 140; // Sub Category
+                const isFrozen = ESSENTIAL_LEVEL_COLUMNS.includes(col.id);
+                const frozenIdx = columns
+                  .slice(0, idx)
+                  .filter((c) => ESSENTIAL_LEVEL_COLUMNS.includes(c.id)).length;
 
                 return (
                   <TableCell
                     key={col.id}
                     align={col.align}
-                    className={
-                      idx < 5 ? `frozen-column frozen-column-${idx + 1}` : ""
-                    }
+                    className={isFrozen ? `frozen-column frozen-column-${idx}` : ""}
                     sx={{
                       fontWeight: 600,
                       backgroundColor: col.headerColor || "#1e293b",
                       color: col.headerColor ? "#1e293b" : "#ffffff",
                       fontSize: "0.7rem",
                       textTransform: "uppercase",
-                      minWidth: idx < 5 ? colWidth : col.minWidth || 120,
-                      width: idx < 5 ? colWidth : "auto",
-                      maxWidth: idx < 5 ? colWidth : "none",
-                      position: idx < 5 ? "sticky" : "relative",
+                      minWidth: col.minWidth || 120,
+                      width: isFrozen ? col.minWidth : "auto",
+                      maxWidth: isFrozen ? col.minWidth : "none",
+                      position: isFrozen ? "sticky" : "relative",
                       top: 0,
-                      zIndex: idx < 5 ? 15 : 5,
+                      zIndex: isFrozen ? 15 : 5,
                       borderBottom: "1px solid #d1d5db",
                       py: 0.75,
-                      px: idx === 4 ? 1.5 : 0.75,
-                      pr: idx === 4 ? 2 : undefined,
+                      px: idx === frozenColumnCount - 1 ? 1.5 : 0.75,
+                      pr: idx === frozenColumnCount - 1 ? 2 : undefined,
                     }}
                   >
                     {col.label}
@@ -167,31 +205,25 @@ const DataTable = ({
               }}
             >
               {columns.map((col, idx) => {
-                let colWidth = 100;
-                if (idx === 1) colWidth = 80;
-                if (idx === 2) colWidth = 120;
-                if (idx === 3) colWidth = 120;
-                if (idx === 4) colWidth = 140;
+                const isFrozen = ESSENTIAL_LEVEL_COLUMNS.includes(col.id);
 
                 return (
                   <TableCell
                     key={`total-${col.id}`}
                     align={col.align}
-                    className={
-                      idx < 5 ? `frozen-column frozen-column-${idx + 1}` : ""
-                    }
+                    className={isFrozen ? `frozen-column frozen-column-${idx}` : ""}
                     sx={{
                       fontWeight: 600,
                       fontSize: "0.75rem",
                       backgroundColor: "#f1f5f9",
                       color: "#1e293b",
                       borderBottom: "1px solid #000A32",
-                      width: idx < 5 ? colWidth : "auto",
-                      minWidth: idx < 5 ? colWidth : "auto",
-                      maxWidth: idx < 5 ? colWidth : "none",
+                      width: isFrozen ? col.minWidth || 100 : "auto",
+                      minWidth: isFrozen ? col.minWidth || 100 : "auto",
+                      maxWidth: isFrozen ? col.minWidth || 100 : "none",
                       py: 0.75,
-                      px: idx === 4 ? 1.5 : 0.75,
-                      pr: idx === 4 ? 2 : undefined,
+                      px: idx === frozenColumnCount - 1 ? 1.5 : 0.75,
+                      pr: idx === frozenColumnCount - 1 ? 2 : undefined,
                     }}
                   >
                     {col.isUserInput || totals[col.id] === ""
@@ -214,35 +246,31 @@ const DataTable = ({
                 }}
               >
                 {columns.map((col, colIdx) => {
-                  let colWidth = 100;
-                  if (colIdx === 1) colWidth = 80;
-                  if (colIdx === 2) colWidth = 120;
-                  if (colIdx === 3) colWidth = 120;
-                  if (colIdx === 4) colWidth = 140;
+                  const isFrozen = ESSENTIAL_LEVEL_COLUMNS.includes(col.id);
 
                   return (
                     <TableCell
                       key={col.id}
                       align={col.align}
                       className={
-                        colIdx < 5 ? `frozen-column frozen-column-${colIdx + 1}` : ""
+                        isFrozen ? `frozen-column frozen-column-${colIdx}` : ""
                       }
                       sx={{
                         fontSize: "0.75rem",
                         color: "#1e293b",
-                        fontWeight: colIdx < 5 ? 600 : 400,
+                        fontWeight: isFrozen ? 600 : 400,
                         backgroundColor: col.headerColor
                           ? "#fef2f2"
-                          : colIdx < 5
+                          : isFrozen
                             ? "#ffffff"
                             : "transparent",
                         borderBottom: "1px solid #D2d2d2",
-                        width: colIdx < 5 ? colWidth : "auto",
-                        minWidth: colIdx < 5 ? colWidth : "auto",
-                        maxWidth: colIdx < 5 ? colWidth : "none",
+                        width: isFrozen ? col.minWidth || 100 : "auto",
+                        minWidth: isFrozen ? col.minWidth || 100 : "auto",
+                        maxWidth: isFrozen ? col.minWidth || 100 : "none",
                         py: 0.75,
-                        px: colIdx === 4 ? 1.5 : 0.75,
-                        pr: colIdx === 4 ? 2 : undefined,
+                        px: colIdx === frozenColumnCount - 1 ? 1.5 : 0.75,
+                        pr: colIdx === frozenColumnCount - 1 ? 2 : undefined,
                       }}
                     >
                       {col.isUserInput ? (
