@@ -49,6 +49,15 @@ const SalesForecastTable = () => {
     "CATEGORY",
     "SUB_CATEGORY",
   ]);
+
+  // Handler to reset userInputs
+  const resetUserInputs = () => setUserInputs({});
+
+  // Wrap setSelectedLevels to also reset userInputs
+  const handleSetSelectedLevels = (levels) => {
+    setSelectedLevels(levels);
+    resetUserInputs();
+  };
   const [runRateOption, setRunRateOption] = useState("13weeks");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -371,10 +380,12 @@ const SalesForecastTable = () => {
             runRateOption={runRateOption}
             setRunRateOption={setRunRateOption}
             selectedLevels={selectedLevels}
-            setSelectedLevels={setSelectedLevels}
+            setSelectedLevels={handleSetSelectedLevels}
             businessUnits={allBusinessUnits}
             businessUnitFilter={businessUnitFilter}
             setBusinessUnitFilter={setBusinessUnitFilter}
+            userInputs={userInputs}
+            resetUserInputs={resetUserInputs}
           />
           <Divider sx={{ my: 1 }} />
           <DataTable

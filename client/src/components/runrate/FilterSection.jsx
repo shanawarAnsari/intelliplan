@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, TextField, Button, InputAdornment, Grid, Chip } from "@mui/material";
+import { Box, TextField, Button, InputAdornment, Chip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 import SimplifiedFilterPopover from "./components/SimplifiedFilterPopover";
 import {
@@ -40,6 +41,8 @@ const FilterSection = ({
   businessUnitFilter,
   setBusinessUnitFilter,
   regions,
+  userInputs,
+  resetUserInputs,
 }) => {
   const [filtersAnchorEl, setFiltersAnchorEl] = useState(null);
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
@@ -131,11 +134,32 @@ const FilterSection = ({
           }}
         />
 
+        {/* Reset Inputs Icon Button - only show if userInputs has any value */}
+        {userInputs && Object.keys(userInputs).length > 0 && (
+          <Button
+            onClick={resetUserInputs}
+            variant="outlined"
+            color="inherit"
+            size="medium"
+            startIcon={<RefreshIcon sx={{ color: "#fff" }} />}
+            sx={{
+              minWidth: 0,
+              px: 1.2,
+              borderRadius: 1,
+              color: "#fff",
+              borderColor: "#fff",
+              height: 38,
+              ml: 0.5,
+            }}
+            title="Reset all input percentages"
+          />
+        )}
+
         {/* Right Side - Filter Controls */}
         <Box
           sx={{
             display: "flex",
-            gap: 1.5,
+            gap: 1,
             alignItems: "center",
             flexWrap: "wrap",
             flex: 1,
