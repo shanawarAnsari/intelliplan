@@ -1,62 +1,53 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { ThemeProviderWrapper } from "./contexts/ThemeContext";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import TopNavbar from "./components/navbar/TopNavbar";
-import SalesForecastTable from "./components/runrate";
-import AuthGuard from "./components/Login/AuthGuard";
-import LoginCallback from "./components/Login/callback";
-import LoginCallbackError from "./components/Login/LoginCallbackError";
 import LandingPage from "./components/LandingPage";
-import AskIntelliplan from "./components/askIntelliplan";
-import FeatureGuard from "./components/Login/FeatureGuard";
-import { checkRunRateAccess, checkAskIntelliplanAccess } from "../src/components/Login/featureAccessUtils";
-import { ensureAgentToken } from "./utils/agentToken";
 
-// NEW: public login starter that triggers oktaAuth.signInWithRedirect()
-import LoginStart from "./components/Login/LoginStart";
+// Demand Planning
+import DemandPlanningDashboard from "./components/demandPlanning/DemandPlanningDashboard";
+import SalesForecastTable from "./components/runrate";
+import AskIntelliplan from "./components/askIntelliplan";
+
+// Supply Planning
+import SupplyPlanningDashboard from "./components/supplyPlanning/SupplyPlanningDashboard";
+import AlertsDashboard from "./components/supplyPlanning/alertPrioritization/AlertsDashboard";
+import AlertsManagement from "./components/supplyPlanning/alertPrioritization/AlertsManagement";
+import ExecuteOverview from "./components/supplyPlanning/leftoverOptimization/ExecuteOverview";
+import STOManagement from "./components/supplyPlanning/leftoverOptimization/STOManagement";
+import STOActionsDashboard from "./components/supplyPlanning/stoCancelPush/STOActionsDashboard";
+import STOActions from "./components/supplyPlanning/stoCancelPush/STOActions";
 
 import "./styles/global.css";
 
 const App = () => {
-  useEffect(() => {
-    ensureAgentToken();
-  }, []);
-
   return (
     <ThemeProviderWrapper>
       <Router>
         <TopNavbar />
         <Routes>
-
-          {/* PUBLIC ROUTES */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginStart />} />
-          <Route path="/login/callback" element={<LoginCallback />} />
-          <Route path="/login/callbackError" element={<LoginCallbackError />} />
 
-          {/* PROTECTED ROUTES */}
-          <Route
-            path="/runrate"
-            element={
-              <AuthGuard>
-                <FeatureGuard checkFn={checkRunRateAccess}>
-                  <SalesForecastTable />
-                </FeatureGuard>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/ask-ai"
-            element={
-              <AuthGuard>
-                <FeatureGuard checkFn={checkAskIntelliplanAccess}>
-                  <AskIntelliplan />
-                </FeatureGuard>
-              </AuthGuard>
-            }
-          />
+          {/* Demand Planning */}
+          <Route path="/demand-planning" element={<DemandPlanningDashboard />}>
+            <Route index element={<Navigate to="runrate" replace />} />
+            <Route path="runrate" element={<SalesForecastTable />} />
+            <Route path="ask-ai" element={<AskIntelliplan />} />
+            <Route path="*" element={<Navigate to="runrate" replace />} />
+          </Route>
 
-          {/* FALLBACK */}
+          {/* Supply Planning */}
+          <Route path="/supply-planning" element={<SupplyPlanningDashboard />}>
+            <Route index element={<Navigate to="alerts-dashboard" replace />} />
+            <Route path="alerts-dashboard" element={<AlertsDashboard />} />
+            <Route path="alerts-management" element={<AlertsManagement />} />
+            <Route path="execute-overview" element={<ExecuteOverview />} />
+            <Route path="sto-management" element={<STOManagement />} />
+            <Route path="sto-actions-dashboard" element={<STOActionsDashboard />} />
+            <Route path="sto-actions" element={<STOActions />} />
+            <Route path="*" element={<Navigate to="alerts-dashboard" replace />} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
@@ -65,8 +56,3 @@ const App = () => {
 };
 
 export default App;
-
-
-// API_BASE_URL=http://localhost:80/api
-// OKTA_URL = https://kcc.oktapreview.com
-// OKTA_CLIENT_ID = 0oa2jeoztelhzt4r20h8
