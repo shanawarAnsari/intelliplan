@@ -133,7 +133,7 @@ export const ConversationProvider = ({ children }) => {
 
         if (response.answer) {
           const assistantMessage = {
-            id: uuidv4(),
+            id: response.raw?.id || uuidv4(),
             role: MESSAGE_ROLES.ASSISTANT,
             content: response.answer,
             tableData: response.tableData,

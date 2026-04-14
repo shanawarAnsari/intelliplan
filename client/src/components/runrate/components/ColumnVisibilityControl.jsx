@@ -234,10 +234,9 @@ const ColumnVisibilityControl = ({
                 >
                   {group.name}
                   <Chip
-                    label={`${
-                      group.columns.filter((c) => visibleColumns.includes(c.id))
+                    label={`${group.columns.filter((c) => visibleColumns.includes(c.id))
                         .length
-                    }/${group.columns.length}`}
+                      }/${group.columns.length}`}
                     size="small"
                     sx={{
                       ml: 1,
@@ -265,9 +264,9 @@ const ColumnVisibilityControl = ({
                           px: 2,
                           "&:hover": !isEssential
                             ? {
-                                backgroundColor: "rgba(254, 226, 226, 0.15)",
-                                transform: "translateX(2px)",
-                              }
+                              backgroundColor: "rgba(254, 226, 226, 0.15)",
+                              transform: "translateX(2px)",
+                            }
                             : {},
                           "&.Mui-disabled": {
                             opacity: 0.45,

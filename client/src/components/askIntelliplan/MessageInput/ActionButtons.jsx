@@ -100,7 +100,7 @@ const ActionButtons = ({ disabled, message, onSubmit }) => {
         }
         placement="top"
       >
-        <IconButton
+        <span> <IconButton
           type="submit"
           color="primary"
           disabled={!message.trim() || disabled}
@@ -125,6 +125,7 @@ const ActionButtons = ({ disabled, message, onSubmit }) => {
         >
           <SendIcon fontSize="small" />
         </IconButton>
+        </span>
       </Tooltip>
     </Box>
   );

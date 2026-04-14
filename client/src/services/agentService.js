@@ -1,7 +1,7 @@
-import { postApi } from "./common"; // your helper
+import { postApi } from "./common";
 import { ensureAgentToken } from "../utils/agentToken";
-import { v4 as uuidv4 } from "uuid";
 import { CONFIG } from "../runtimeConfig";
+
 let config = {
   model: "gpt-4.1-mini",
   maxTokens: 2000,
@@ -30,23 +30,21 @@ const buildPayload = (message, userInfo) => ({
 });
 
 const sendMessage = async (userMessage, userInfo, sessionId) => {
-  ensureAgentToken();
-  const agentToken = JSON.parse(localStorage.getItem("agentToken"));
-  const access_token = agentToken?.access_token;
+  const access_token = await ensureAgentToken();
 
   try {
     const payload = buildPayload(userMessage, userInfo);
 
     const response = await postApi(`agent/ask`, payload, {
-      "X-Session-Id": sessionId, // Use conversation sessionId
+      "X-Session-Id": sessionId,
       Authorization: `Bearer ${access_token}`,
     });
 
-    //  Check for token limit exceeded
+    // Token limit handling
     if (response?.tokenLimitExceeded) {
       return {
         success: true,
-        answer: response?.tokenLimitMessage || "Token limit exceeded! ",
+        answer: response?.tokenLimitMessage || "Token limit exceeded!",
         tableData: null,
         conversationId: null,
         raw: response,
@@ -65,7 +63,7 @@ const sendMessage = async (userMessage, userInfo, sessionId) => {
     return {
       success: true,
       answer: combinedAnswer || "No Answer found",
-      tableData: tableData,
+      tableData: tableData || null,
       conversationId: response?.conversationId || null,
       raw: response,
     };
@@ -79,18 +77,26 @@ const sendMessage = async (userMessage, userInfo, sessionId) => {
   }
 };
 
+// to survive the decodeURIComponent error when messages have % sign
+function sanitizeMessagePercent(message = "") {
+  if (typeof message !== "string") return message;
+  return message.replace(/%/g, " percent ");
+}
+
 const sendFeedback = async (payload) => {
-  ensureAgentToken();
-  const agentToken = JSON.parse(localStorage.getItem("agentToken"));
-  const access_token = agentToken?.access_token;
+  const access_token = await ensureAgentToken();
 
   try {
     const response = await postApi(
       `agent/feedback`,
-      payload, // Send full payload including sessionId, messageId, score, category, comment, etc.
+      {
+        ...payload,
+        message: sanitizeMessagePercent(payload.message),
+        ADGroup: CONFIG.AGENT_AD_GROUP_NAME,
+      },
       {
         Authorization: `Bearer ${access_token}`,
-      },
+      }
     );
     return response;
   } catch (error) {

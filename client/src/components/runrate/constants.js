@@ -3,7 +3,7 @@ export const tableColumns = [
     id: "REGION",
     label: "Region",
     align: "left",
-    minWidth: 100,
+    minWidth: 80,
     format: (value) => value,
   },
   {
@@ -71,7 +71,7 @@ export const tableColumns = [
   },
   {
     id: "TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH",
-    label: `Actual Shipments till date (${new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })})`,
+    label: `Actual Shipments till date (${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })})`,
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
@@ -146,7 +146,7 @@ function getCurrencyFormatting(value, maximumFractionDigits) {
   if (value === null || value === undefined || value === 0) return "$0";
   return typeof value === "number" && !isNaN(value)
     ? `$${value.toLocaleString(undefined, {
-        maximumFractionDigits: maximumFractionDigits,
-      })}`
+      maximumFractionDigits: maximumFractionDigits,
+    })}`
     : "$0";
 }

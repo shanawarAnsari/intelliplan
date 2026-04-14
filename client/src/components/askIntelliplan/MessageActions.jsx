@@ -1,75 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, IconButton, Tooltip, Snackbar, Alert, useTheme } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ShareIcon from "@mui/icons-material/Share";
+import FileDownload from "@mui/icons-material/FileDownload";
 import FeedbackDialog from "./FeedbackDialog";
+import { useUserStore } from "../../store/userStore";
+
+// CSV utilities (adjust path)
+import {
+  isExportableData,
+  downloadCsvFromData,
+} from "../../utils/csvExport";
 
 const POSITIVE_CATEGORIES = [
-  {
-    value: "Data Looks Correct",
-    tooltip: "The data presented appears accurate and aligns with expected values",
-  },
-  {
-    value: "No Missing Data",
-    tooltip: "All relevant data points required for the request are present",
-  },
-  {
-    value: "Answered The Question",
-    tooltip: "The output aligns correctly with the request and intended analysis.",
-  },
-  {
-    value: "Accurate Calculations",
-    tooltip:
-      "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear correct.",
-  },
-  {
-    value: "Performance",
-    tooltip: "The response was timely, efficient, and processed without delays.",
-  },
-  {
-    value: "Others",
-    tooltip:
-      "Any additional positive feedback not covered by the listed categories.",
-  },
+  { value: "Data Looks Correct", tooltip: "The data presented appears accurate and aligns with expected values" },
+  { value: "No Missing Data", tooltip: "All relevant data points required for the request are present" },
+  { value: "Answered The Question", tooltip: "The output aligns correctly with the request and intended analysis." },
+  { value: "Accurate Calculations", tooltip: "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear correct." },
+  { value: "Performance", tooltip: "The response was timely, efficient, and processed without delays." },
+  { value: "Others", tooltip: "Any additional positive feedback not covered by the listed categories." },
 ];
 
 const NEGATIVE_CATEGORIES = [
-  {
-    value: "Incorrect Data",
-    tooltip:
-      "The data presented appears inaccurate or does not match expected values",
-  },
-  {
-    value: "Missing Data",
-    tooltip: "Some expected data points are absent or incomplete.",
-  },
-  {
-    value: "Unexpected Results",
-    tooltip: "The output does not align with the request or intended analysis.",
-  },
-  {
-    value: "Incorrect Calculations",
-    tooltip:
-      "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear incorrect.",
-  },
-  {
-    value: "Performance",
-    tooltip: "The response was slow, delayed, or did not perform efficiently",
-  },
-  {
-    value: "No Answer Found",
-    tooltip:
-      "No results were returned even after trying multiple versions of the prompt.",
-  },
-  {
-    value: "Others",
-    tooltip: "Any additional issues not addressed by the listed categories.",
-  },
+  { value: "Incorrect Data", tooltip: "The data presented appears inaccurate or does not match expected values" },
+  { value: "Missing Data", tooltip: "Some expected data points are absent or incomplete." },
+  { value: "Unexpected Results", tooltip: "The output does not align with the request or intended analysis." },
+  { value: "Incorrect Calculations", tooltip: "The calculations (e.g., Forecast Accuracy, Bias, unit conversions) appear incorrect." },
+  { value: "Performance", tooltip: "The response was slow, delayed, or did not perform efficiently" },
+  { value: "No Answer Found", tooltip: "No results were returned even after trying multiple versions of the prompt." },
+  { value: "Others", tooltip: "Any additional issues not addressed by the listed categories." },
 ];
 
 const MessageActions = ({
+  dataTable,
   message,
   isBot,
   feedback,
@@ -81,97 +46,89 @@ const MessageActions = ({
   containerRef,
 }) => {
   const theme = useTheme();
+  const { user } = useUserStore();
   const [copied, setCopied] = useState(false);
   const [snackbar, setSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
-
+  // Feedback dialog state (bot only)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pendingType, setPendingType] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isShareSupported, setIsShareSupported] = useState(false);
 
-  const hasFeedback =
-    feedback &&
-    (feedback.score === 0 ||
-      feedback.score === 1 ||
-      feedback.score === "0" ||
-      feedback.score === "1");
+  const safeMessage = typeof message === "string" ? message : String(message ?? "");
 
-  const findTableElement = () => {
-    if (tableRef && tableRef.current) return tableRef.current;
-    if (containerRef && containerRef.current) {
-      return containerRef.current.querySelector("table");
-    }
-    return null;
-  };
-
-  const tableToTSV = (tableEl) => {
-    const rows = Array.from(tableEl.querySelectorAll("tr"));
-    return rows
-      .map((tr) => {
-        const cells = Array.from(tr.cells || []);
-        return cells
-          .map((cell) =>
-            (cell.innerText || "")
-              .replace(/\t/g, " ")
-              .replace(/\r?\n|\r/g, " ")
-              .trim(),
-          )
-          .join("\t");
-      })
-      .join("\n");
-  };
-
-  const copyTableIfAvailable = async () => {
-    const tableEl = findTableElement();
-    if (!tableEl) return false;
-
-    const html = tableEl.outerHTML;
-    const tsv = tableToTSV(tableEl);
-
+  useEffect(() => {
+    // Run on client only to avoid SSR hydration mismatches
     try {
-      if (navigator.clipboard && window.ClipboardItem) {
-        const item = new ClipboardItem({
-          "text/html": new Blob([html], { type: "text/html" }),
-          "text/plain": new Blob([tsv], { type: "text/plain" }),
-        });
-        await navigator.clipboard.write([item]);
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(tsv);
-      } else {
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.error("Table copy failed, falling back to message text:", err);
-      return false;
+      const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
+      const isFirefox = /firefox/i.test(ua);
+      const hasWebShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+      // Hide on Firefox even if navigator.share is polyfilled, to avoid UX traps.
+      // If you want to allow Firefox for Android (which may support it in some versions),
+      // you could narrow the check: const isFirefoxDesktop = isFirefox && !/android/i.test(ua);
+      setIsShareSupported(hasWebShare && !isFirefox);
+    } catch {
+      setIsShareSupported(false);
     }
-  };
+  }, []);
 
   const handleCopy = async () => {
     try {
-      const tableCopied = await copyTableIfAvailable();
-      if (!tableCopied) {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(
-            typeof message === "string" ? message : String(message),
-          );
-        } else {
-          throw new Error("Clipboard API not supported");
-        }
+      const parts = [];
+      if (safeMessage.trim()) {
+        parts.push(safeMessage.trim());
       }
-
+      const textToCopy = parts.length > 0 ? parts.join("\n\n") : "";
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setSnackbarSeverity("success");
-      setSnackbarMessage(
-        tableCopied ? "Table copied to clipboard!" : "Copied to clipboard!",
-      );
+      setSnackbarMessage(isBot ? "Copied response!" : "Copied question!");
       setSnackbar(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Copy failed:", error);
       setSnackbarSeverity("error");
-      setSnackbarMessage("Failed to copy to clipboard.");
+      setSnackbarMessage("Failed to copy.");
+      setSnackbar(true);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          text: safeMessage,
+          title: "IntelliPlan Message",
+        });
+      } catch (err) {
+        console.error("Share failed:", err);
+      }
+    }
+  };
+
+  // Download CSV (dynamic shapes supported)
+  const handleDownloadCsv = () => {
+    try {
+      // Customize if needed (e.g., lock header order or filename)
+      // const options = {
+      //   filename: "forecast_export.csv",
+      //   columns: ["SELLING_SKU", "FORECAST_MONTH", "CONSTRAINED_DP_DC_GSU_TOTAL_FORECAST"],
+      //   newline: "\r\n", // CRLF for Excel
+      //   flatten: true,    // keep true to handle nested objects if they appear
+      //   decodeHtml: true, // decode entities like N&amp;#x2F;A → N/A
+      // };
+      const options = {};
+      downloadCsvFromData(dataTable, options);
+      setSnackbarSeverity("success");
+      setSnackbarMessage("CSV download started.");
+      setSnackbar(true);
+    } catch (err) {
+      console.error("CSV export failed:", err);
+      setSnackbarSeverity("error");
+      setSnackbarMessage(err?.message || "CSV export failed.");
       setSnackbar(true);
     }
   };
@@ -186,7 +143,8 @@ const MessageActions = ({
 
     const payload = {
       ...formData,
-      message,
+      user_email: user?.email,
+      message: safeMessage,
       sessionId,
       messageId,
       id: messageId,
@@ -195,7 +153,6 @@ const MessageActions = ({
     try {
       if (onFeedbackSubmit) {
         const result = await onFeedbackSubmit(payload);
-
         if (result && result.success === false) {
           throw new Error(result.error || "Failed to submit feedback");
         }
@@ -205,7 +162,7 @@ const MessageActions = ({
 
       if (onFeedbackChange) {
         onFeedbackChange({
-          score: parseInt(formData.score),
+          score: parseInt(formData.score, 10),
           categoriesText: formData.categoriesText,
           comment: formData.comment,
           submittedAt: formData.requestTime,
@@ -222,9 +179,7 @@ const MessageActions = ({
       console.error("Failed to submit feedback:", error);
 
       setSnackbarSeverity("error");
-      setSnackbarMessage(
-        error.message || "Unable to send feedback. Please try again.",
-      );
+      setSnackbarMessage(error?.message || "Unable to send feedback. Please try again.");
       setSnackbar(true);
     } finally {
       setIsSubmitting(false);
@@ -234,18 +189,6 @@ const MessageActions = ({
   const handleDialogClose = () => {
     setDialogOpen(false);
     setPendingType(null);
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: message, title: "IntelliPlan Message" });
-      } catch (err) {
-        console.error("Share failed:", err);
-      }
-    } else {
-      handleCopy();
-    }
   };
 
   const getFeedbackTooltip = (type) => {
@@ -269,14 +212,11 @@ const MessageActions = ({
   };
 
   const categoriesForDialog =
-    pendingType === "helpful"
-      ? POSITIVE_CATEGORIES
-      : pendingType === "unhelpful"
-        ? NEGATIVE_CATEGORIES
-        : [];
+    pendingType === "helpful" ? POSITIVE_CATEGORIES : pendingType === "unhelpful" ? NEGATIVE_CATEGORIES : [];
 
   return (
     <>
+      {/* ACTION BAR */}
       <Box
         sx={{
           display: "flex",
@@ -290,6 +230,7 @@ const MessageActions = ({
           boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
         }}
       >
+        {/* Copy */}
         <Tooltip title="Copy" placement="top">
           <IconButton
             size="small"
@@ -297,28 +238,29 @@ const MessageActions = ({
             sx={{
               width: 24,
               height: 24,
-              color: copied
-                ? theme.palette.success.main
-                : theme.palette.text.secondary,
+              color: copied ? theme.palette.success.main : theme.palette.text.secondary,
               "&:hover": {
                 bgcolor: "rgba(96, 165, 250, 0.1)",
                 color: theme.palette.primary.main,
               },
             }}
+            aria-label="copy-message"
           >
             <ContentCopyIcon sx={{ fontSize: 14 }} />
           </IconButton>
         </Tooltip>
 
+        {/* Feedback buttons: BOT ONLY */}
         {isBot && (
           <>
+            {/* Thumbs up */}
             {!feedback || feedback?.score === 1 || feedback?.score === "1" ? (
               <Tooltip title={getFeedbackTooltip("helpful")} placement="top">
                 <span>
                   <IconButton
                     size="small"
                     onClick={() => handleFeedbackClick("helpful")}
-                    disabled={hasFeedback}
+                    disabled={!!(feedback && (feedback.score === 0 || feedback.score === 1 || feedback.score === "0" || feedback.score === "1"))}
                     sx={{
                       width: 24,
                       height: 24,
@@ -337,6 +279,7 @@ const MessageActions = ({
                             : theme.palette.text.secondary,
                       },
                     }}
+                    aria-label="thumbs-up"
                   >
                     <ThumbUpIcon sx={{ fontSize: 14 }} />
                   </IconButton>
@@ -346,7 +289,7 @@ const MessageActions = ({
               <span>
                 <IconButton
                   size="small"
-                  disabled={true}
+                  disabled
                   sx={{
                     width: 24,
                     height: 24,
@@ -355,19 +298,21 @@ const MessageActions = ({
                       color: theme.palette.text.secondary,
                     },
                   }}
+                  aria-label="thumbs-up-disabled"
                 >
                   <ThumbUpIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </span>
             )}
 
+            {/* Thumbs down */}
             {!feedback || feedback?.score === 0 || feedback?.score === "0" ? (
               <Tooltip title={getFeedbackTooltip("unhelpful")} placement="top">
                 <span>
                   <IconButton
                     size="small"
                     onClick={() => handleFeedbackClick("unhelpful")}
-                    disabled={hasFeedback}
+                    disabled={!!(feedback && (feedback.score === 0 || feedback.score === 1 || feedback.score === "0" || feedback.score === "1"))}
                     sx={{
                       width: 24,
                       height: 24,
@@ -386,6 +331,7 @@ const MessageActions = ({
                             : theme.palette.text.secondary,
                       },
                     }}
+                    aria-label="thumbs-down"
                   >
                     <ThumbDownIcon sx={{ fontSize: 14 }} />
                   </IconButton>
@@ -395,7 +341,7 @@ const MessageActions = ({
               <span>
                 <IconButton
                   size="small"
-                  disabled={true}
+                  disabled
                   sx={{
                     width: 24,
                     height: 24,
@@ -404,6 +350,7 @@ const MessageActions = ({
                       color: theme.palette.text.secondary,
                     },
                   }}
+                  aria-label="thumbs-down-disabled"
                 >
                   <ThumbDownIcon sx={{ fontSize: 14 }} />
                 </IconButton>
@@ -412,7 +359,8 @@ const MessageActions = ({
           </>
         )}
 
-        <Tooltip title="Share" placement="top">
+        {/* Share */}
+        {isShareSupported && <Tooltip title="Share" placement="top">
           <IconButton
             size="small"
             onClick={handleShare}
@@ -425,21 +373,48 @@ const MessageActions = ({
                 color: theme.palette.secondary.main,
               },
             }}
+            aria-label="share"
           >
             <ShareIcon sx={{ fontSize: 14 }} />
           </IconButton>
-        </Tooltip>
+        </Tooltip>}
+
+        {/* Download CSV (dynamic) */}
+        {isBot && isExportableData(dataTable) && (
+          <Tooltip title="Download CSV" placement="top">
+            <IconButton
+              size="small"
+              onClick={handleDownloadCsv}
+              sx={{
+                width: 24,
+                height: 24,
+                color: theme.palette.text.secondary,
+                "&:hover": {
+                  bgcolor: "rgba(34,197,94,0.10)",
+                  color: theme.palette.success.main,
+                },
+              }}
+              aria-label="download-csv"
+            >
+              <FileDownload sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
-      <FeedbackDialog
-        open={dialogOpen}
-        onClose={handleDialogClose}
-        onSubmit={handleDialogSubmit}
-        type={pendingType}
-        categories={categoriesForDialog}
-        isSubmitting={isSubmitting}
-      />
+      {/* Feedback dialog: BOT ONLY */}
+      {isBot && (
+        <FeedbackDialog
+          open={dialogOpen}
+          onClose={handleDialogClose}
+          onSubmit={handleDialogSubmit}
+          type={pendingType}
+          categories={categoriesForDialog}
+          isSubmitting={isSubmitting}
+        />
+      )}
 
+      {/* Snackbar */}
       <Snackbar
         open={snackbar}
         autoHideDuration={snackbarSeverity === "error" ? 6000 : 3000}

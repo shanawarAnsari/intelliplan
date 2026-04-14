@@ -10,7 +10,7 @@ export const CHAR_COUNTER_THRESHOLD = 0.8; // Show counter at 80%
 // Suggested prompts for empty state
 export const SUGGESTED_PROMPTS = [
   "Hi, How do I get started?",
-  "Hey, What can you help me with..?",
+  "Hey, What are the top 3 SKUs?",
 ];
 
 // Sort options

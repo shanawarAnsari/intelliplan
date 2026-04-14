@@ -8,7 +8,7 @@
 export const formatTime = (date) => {
   if (!date) return "";
   const dateObj = new Date(date);
-  return dateObj.toLocaleTimeString([], {
+  return dateObj.toLocaleDateString([], {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,

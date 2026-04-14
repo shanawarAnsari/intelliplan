@@ -30,7 +30,7 @@ const LoginCallbackError = () => {
               color: "#d32f2f",
             }}
           >
-            <LockRounded fontSize="inherit" /> { }
+            <LockRounded fontSize="inherit" />
           </Box>
           <Box sx={{ padding: 2 }}>
             <Alert
@@ -48,11 +48,11 @@ const LoginCallbackError = () => {
           </Box>
           <Box sx={{ textAlign: "center", padding: 2 }}>
 
-            <Typography variant="body1" sx={{ marginBottom: 1 }}>
+            <Typography sx={{ color: '#E2e2e2', marginBottom: 1 }}>
               You are not allowed to access this app due to a policy set by the
               administrator.
             </Typography>
-            <Typography variant="body2" sx={{ color: "#757575" }}>
+            <Typography sx={{ color: "#C2c2c2" }}>
               To request access, please contact your administrator.
             </Typography>
           </Box>

@@ -5,7 +5,6 @@ import {
   CardContent,
   Divider,
   Alert,
-  CircularProgress,
   Typography,
   Button,
 } from "@mui/material";
@@ -18,6 +17,7 @@ import {
 } from "./utils/aggregationUtils";
 import { FilterSection } from "./FilterSection";
 import DataTable from "./DataTable";
+import { Loader } from "../../utils/Loader";
 
 const getUniqueValues = (data, field) =>
   data ? [...new Set(data.map((r) => r[field]))].filter(Boolean).sort() : [];
@@ -49,6 +49,15 @@ const SalesForecastTable = () => {
     "CATEGORY",
     "SUB_CATEGORY",
   ]);
+
+  // Handler to reset userInputs
+  const resetUserInputs = () => setUserInputs({});
+
+  // Wrap setSelectedLevels to also reset userInputs
+  const handleSetSelectedLevels = (levels) => {
+    setSelectedLevels(levels);
+    resetUserInputs();
+  };
   const [runRateOption, setRunRateOption] = useState("13weeks");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -139,7 +148,7 @@ const SalesForecastTable = () => {
         const lastDay = new Date(year, month + 1, 0).getDate();
         let rwd = 0,
           rwk = 0;
-        for (let d = day + 1; d <= lastDay; d++) {
+        for (let d = day; d <= lastDay; d++) {
           const dow = new Date(year, month, d).getDay();
           if (dow === 0 || dow === 6) rwk++;
           else rwd++;
@@ -299,18 +308,14 @@ const SalesForecastTable = () => {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: 400,
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={60} />
-        <Typography variant="h6" color="text.secondary">
+      <Box sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        <Loader />
+        <Typography variant="h6" color="text.secondary" sx={{ mt: -12 }}>
           Loading Run Rate Data...
         </Typography>
       </Box>
@@ -371,10 +376,12 @@ const SalesForecastTable = () => {
             runRateOption={runRateOption}
             setRunRateOption={setRunRateOption}
             selectedLevels={selectedLevels}
-            setSelectedLevels={setSelectedLevels}
+            setSelectedLevels={handleSetSelectedLevels}
             businessUnits={allBusinessUnits}
             businessUnitFilter={businessUnitFilter}
             setBusinessUnitFilter={setBusinessUnitFilter}
+            userInputs={userInputs}
+            resetUserInputs={resetUserInputs}
           />
           <Divider sx={{ my: 1 }} />
           <DataTable

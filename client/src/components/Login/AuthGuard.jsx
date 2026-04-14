@@ -1,69 +1,69 @@
-import React from "react";
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { oktaAuth } from "./oktaConfig";
-import { useUserStore } from "../../store/userStore";
-import { Box, CircularProgress } from "@mui/material";
-import LoginCallbackError from "./LoginCallbackError";
-import { hasValidAccess } from "./accessUtils";
+import React, { useEffect, useState } from 'react';
+import { oktaAuth, setOriginalUri } from './oktaConfig';
+import { useUserStore } from '../../store/userStore';
+import { useLocation, Navigate } from 'react-router-dom';
+import { Loader } from '../../utils/Loader';
 
 const AuthGuard = ({ children }) => {
-  const navigate = useNavigate();
   const location = useLocation();
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const isLoggedIn = useUserStore((state) => state.isLoggedIn);
-  const authToken = useUserStore((state) => state.authToken);
-  const user = useUserStore((state) => state.user);
-  const isUserLoading = useUserStore((state) => state.isUserLoading);
-  useEffect(() => {
-    let isMounted = true;
+  const { isLoggedIn, isUserLoading } = useUserStore();
 
-    if (
-      !authToken &&
-      !isLoggedIn &&
-      !isUserLoading &&
-      !location.pathname.includes("/login/callback") &&
-      !isRedirecting
-    ) {
-      setIsRedirecting(true);
-      oktaAuth.token.getWithRedirect({
-        responseType: ["token", "id_token"],
-        state: "defaultrandomstring",
-        scopes: ["openid", "profile", "email", "groups"],
-        prompt: "login",
-      });
+  const [checking, setChecking] = useState(true);
+  const [shouldRedirectHome, setShouldRedirectHome] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      try {
+        // If global store already says logged in, stop checking.
+        if (isLoggedIn) {
+          if (!cancelled) setChecking(false);
+          return;
+        }
+
+        // Only query Okta when store has settled (not loading)
+        const authn = await oktaAuth.isAuthenticated();
+
+        if (cancelled) return;
+
+        if (authn) {
+          // Okta says authenticated → allow rendering; store will catch up.
+          setChecking(false);
+        } else {
+          // Not authenticated → remember path and prepare redirect to HOME
+          setOriginalUri(location.pathname); // keep only the SPA path
+          setShouldRedirectHome(true);
+          setChecking(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setOriginalUri(location.pathname);
+          setShouldRedirectHome(true);
+          setChecking(false);
+        }
+      }
+    }
+    if (isUserLoading) {
+      setChecking(true);
+      return;
     }
 
+    run();
+
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [location, isLoggedIn, authToken, isUserLoading, isRedirecting]);
+  }, [isLoggedIn, isUserLoading, location.pathname]);
 
-  if (isUserLoading || isRedirecting || (!isLoggedIn && !authToken)) {
-    return (
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-  let authTokenlocal = localStorage.getItem("authToken")
-  if (!authTokenlocal && isLoggedIn && !location.pathname.includes("/login/callback")) {
+  if (checking) return <Loader />;
 
-    // Remove all localStorage keys except authToken
-    Object.keys(localStorage).forEach(key => {
-      if (key !== 'authToken') {
-        localStorage.removeItem(key);
-      }
-    });
-
-    return <LoginCallbackError />;
+  // Final decision: if unauthenticated, go HOME instead of showing a blank
+  if (shouldRedirectHome || !isLoggedIn) {
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
-  if (!hasValidAccess(user) && isLoggedIn) {
-    return <LoginCallbackError />;
-  }
-
-  return children;
+  return <>{children}</>;
 };
 
 export default AuthGuard;

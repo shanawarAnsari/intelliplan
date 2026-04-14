@@ -1,103 +1,84 @@
 import React, { useEffect, useState } from "react";
-import { oktaAuth } from "./oktaConfig";
+import { oktaAuth, resolveOriginalUri } from "./oktaConfig";
 import { useNavigate } from "react-router-dom";
-import { Box, CircularProgress } from "@mui/material";
+import { Box } from "@mui/material";
 import { useUserStore } from "../../store/userStore";
 import { generateApiToken } from "../../services/apiTokenGen";
 import { hasValidAccess, isAdminUser } from "./accessUtils";
+import { Loader } from "../../utils/Loader";
 
 const LoginCallback = () => {
   const navigate = useNavigate();
-  const [showAccessErrorAfterDelay, setShowAccessErrorAfterDelay] = useState(false);
-  const [callbackProgress, setCallbackProgress] = useState(true);
+  const [busy, setBusy] = useState(true);
 
   const {
-    isLoggedIn,
     setIsLoggedIn,
-    isUserLoading,
     setIsUserLoading,
     setUser,
     setAuthToken,
     setIsUserAdmin,
-  } = useUserStore((state) => state);
+  } = useUserStore();
 
   useEffect(() => {
-    setCallbackProgress(true);
-    if (!isLoggedIn && !isUserLoading) {
+    let alive = true;
+
+    (async () => {
       setIsUserLoading(true);
 
-      oktaAuth.token.parseFromUrl()
-        .then(async (res) => {
-          const tokens = res.tokens;
-          oktaAuth.tokenManager.setTokens(tokens);
-          const token = oktaAuth.tokenManager.getTokensSync();
-          const authToken = token.accessToken?.accessToken || token.idToken?.idToken || "";
-          setAuthToken(authToken);
+      try {
+        // 0) Ensure this is truly a login redirect. If not, bounce home.
+        const isRedirect = oktaAuth.isLoginRedirect();
+        if (!isRedirect) {
+          navigate("/", { replace: true });
+          return;
+        }
 
-          oktaAuth.token.getUserInfo()
-            .then((userResp) => {
-              setUser(userResp);
-              setIsLoggedIn(true);
+        // 1) Parse tokens from the current URL and store them
+        const { tokens } = await oktaAuth.token.parseFromUrl();
+        oktaAuth.tokenManager.setTokens(tokens);
 
-              if (isAdminUser(userResp)) {
-                setIsUserAdmin(true);
-              }
+        // 2) Get tokens back from TokenManager for your app use
+        const tm = oktaAuth.tokenManager.getTokensSync();
+        const bearer = tm.accessToken?.accessToken || tm.idToken?.idToken || "";
+        setAuthToken(bearer);
 
-              if (hasValidAccess(userResp)) {
-                generateApiToken(authToken, userResp.mygroup, userResp.myrole)
-                  .then((res) => {
-                    localStorage.setItem('authToken', res.jwtApiToken);
-                    setIsUserLoading(false);
-                    setCallbackProgress(false);
-                    navigate('/');
-                  })
-                  .catch((err) => {
-                    console.error('API token generation error:', err);
-                    setIsUserLoading(false);
-                    setCallbackProgress(false);
-                    setShowAccessErrorAfterDelay(true);
-                  });
-              } else {
-                setIsUserLoading(false);
-                setCallbackProgress(false);
-                setShowAccessErrorAfterDelay(true);
-              }
-            })
-            .catch((error) => {
-              console.error("User info error:", error);
-              setIsLoggedIn(false);
-              setIsUserLoading(false);
-              setCallbackProgress(false);
-              setShowAccessErrorAfterDelay(true);
-            });
-        })
-        .catch((err) => {
-          console.error("Token parsing error:", err);
-          setIsLoggedIn(false);
+        // 3) Load user profile from /userinfo (requires profile/email scopes)
+        const userInfo = await oktaAuth.token.getUserInfo();
+        setUser(userInfo);
+        if (isAdminUser(userInfo)) setIsUserAdmin(true);
+
+        // 4) Optional: app token exchange
+        if (hasValidAccess(userInfo)) {
+          const { jwtApiToken } = await generateApiToken(bearer, userInfo.mygroup, userInfo.myrole);
+          localStorage.setItem("authToken", jwtApiToken ?? "");
+          setIsLoggedIn(true);
           setIsUserLoading(false);
-          setCallbackProgress(false);
-          setShowAccessErrorAfterDelay(true);
-        });
-    } else {
-      navigate("/");
-    }
-  }, []);
+        } else {
+          throw new Error("ACCESS_DENIED");
+        }
 
-  useEffect(() => {
-    let timer;
-    if (showAccessErrorAfterDelay) {
-      timer = setTimeout(() => {
-        navigate("/login/callbackError");
-      }, 2500);
-    }
-    return () => clearTimeout(timer);
-  }, [showAccessErrorAfterDelay]);
+        // 5) Navigate to the original page (or home) using React Router
+        const to = resolveOriginalUri("/");
+        navigate(to, { replace: true });
+      } catch (err) {
+        console.error("[LoginCallback] Error:", err);
+        setIsLoggedIn(false);
+        setIsUserLoading(false);
+        navigate("/login/callbackError", { replace: true });
+      } finally {
+        if (alive) setBusy(false);
+      }
+    })();
 
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-      <CircularProgress color="primary" />
-    </Box>
-  );
+    return () => { alive = false; };
+  }, [navigate, setAuthToken, setIsLoggedIn, setIsUserAdmin, setIsUserLoading, setUser]);
+
+  if (busy) {
+    return (
+      <Loader />
+    );
+  }
+  return null;
 };
 
 export default LoginCallback;

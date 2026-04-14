@@ -34,7 +34,7 @@ const LevelSelector = ({ selectedLevels, onLevelsChange }) => {
         "& .MuiOutlinedInput-root": {
           borderRadius: 1.5,
           fontSize: "0.85rem",
-          height: "36px",
+          height: "32px",
         },
         "& .MuiInputLabel-root": {
           fontSize: "0.85rem",

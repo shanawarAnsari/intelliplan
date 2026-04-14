@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, TextField, Button, InputAdornment, Grid, Chip } from "@mui/material";
+import { Box, TextField, Button, IconButton, Tooltip, InputAdornment, Chip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 import SimplifiedFilterPopover from "./components/SimplifiedFilterPopover";
 import {
@@ -40,6 +41,8 @@ const FilterSection = ({
   businessUnitFilter,
   setBusinessUnitFilter,
   regions,
+  userInputs,
+  resetUserInputs,
 }) => {
   const [filtersAnchorEl, setFiltersAnchorEl] = useState(null);
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
@@ -131,11 +134,13 @@ const FilterSection = ({
           }}
         />
 
+
+
         {/* Right Side - Filter Controls */}
         <Box
           sx={{
             display: "flex",
-            gap: 1.5,
+            gap: 1,
             alignItems: "center",
             flexWrap: "wrap",
             flex: 1,
@@ -143,6 +148,25 @@ const FilterSection = ({
             width: { xs: "100%", sm: "auto" },
           }}
         >
+
+          {userInputs && Object.keys(userInputs).length > 0 && (
+            <Tooltip title="Reset all input percentages" arrow>
+              <IconButton
+                onClick={resetUserInputs}
+                color="inherit"
+                aria-label="Reset all input percentages"
+                size="medium"
+                sx={{
+                  border: '1px solid #fff',
+                  borderRadius: '10px',
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
+                }}
+              >
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           <LevelSelector
             selectedLevels={selectedLevels}
             onLevelsChange={setSelectedLevels}
