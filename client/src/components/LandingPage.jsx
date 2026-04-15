@@ -1,234 +1,524 @@
-import React from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Paper,
-} from "@mui/material";
-import { Login as Person2, TrendingUp, Inventory2 } from "@mui/icons-material";
+﻿import React from "react";
+import { Box, Typography, Button, Chip, Divider } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import InventoryRoundedIcon from "@mui/icons-material/InventoryRounded";
 import landingBg from "../assets/landing.png";
-import { useUserStore } from "../store/userStore";
-import { oktaAuth } from "./Login/oktaConfig";
+import Logo from "../assets/Intelliplan-logo.png";
+import KCLogo from "../assets/KC_logo_for_dark.png";
+import DemandIcon from "../assets/demand.png";
+import SupplyIcon from "../assets/supply.png";
 
-const CARD_WIDTH = 350;
-const CARD_HEIGHT = 240;
+const BRAND = "#1B938A";
+const BRAND2 = "#6AE3FF";
+
+const FONT =
+  "'Inter', 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+const stats = [
+  { value: "10x", label: "Faster Simulations" },
+  { value: "Real-time", label: "AI Insights" },
+  { value: "85%", label: "Alert Resolution Rate" },
+  { value: "40%", label: "Leftover Stock Reduction" },
+  { value: "3x", label: "Faster STO Decisions" },
+];
+
+const domains = [
+  {
+    title: "Demand Planning",
+    description:
+      "Forecast demand with AI-powered run-rate simulations. Access the Run Rate Simulator and Ask Intelliplan AI to drive confident, data-backed decisions.",
+    imgIcon: DemandIcon,
+    accent: BRAND2,
+    route: "/demand-planning",
+    badge: "AI + Simulation",
+    modules: ["Run Rate Simulator", "Ask Intelliplan AI"],
+  },
+  {
+    title: "Supply Planning",
+    description:
+      "Optimize your supply network with intelligent alert management, leftover inventory optimization, and STO scheduling tools.",
+    imgIcon: SupplyIcon,
+    accent: "#A78BFA",
+    route: "/supply-planning",
+    badge: "Inventory + Logistics",
+    modules: ["Alert Prioritization", "Leftover Optimization", "STO Cancel/Push"],
+  },
+];
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, isUserLoading } = useUserStore();
-
-  const features = [
-    {
-      title: "Demand Planning",
-      description:
-        "Simulate run rates and get AI-powered insights for demand forecasting.",
-      icon: <TrendingUp sx={{ fontSize: 48, mb: 1 }} />,
-      route: "/demand-planning",
-    },
-    {
-      title: "Supply Planning",
-      description:
-        "Monitor alerts and review executive-level supply chain performance.",
-      icon: <Inventory2 sx={{ fontSize: 48, mb: 1 }} />,
-      route: "/supply-planning",
-    },
-  ];
-
-  const handleLogin = () => {
-    // Keep originalUri stable (avoid using full URL when looping)
-    oktaAuth.signInWithRedirect({ originalUri: window.location.pathname });
-  };
-
-  const showLoginBanner = !isLoggedIn && !isUserLoading;
 
   return (
     <Box
       sx={{
-        minHeight: "93vh",
-        backgroundImage: `url(${landingBg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        minHeight: "calc(100vh - 56px)",
+        bgcolor: "#04111e",
         color: "#fff",
-        display: "flex",
-        flexDirection: "column",
+        fontFamily: FONT,
+        overflowX: "hidden",
       }}
     >
-      {/* Hero */}
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          pl: { xs: 2, md: 8 },
-          pr: { xs: 2 },
-        }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-          Simulate Better, Plan Smarter!
-        </Typography>
-        <Typography variant="subtitle1" sx={{ mb: 6, maxWidth: 500 }}>
-          Intelliplan helps you analyze and simulate supply chain performance with
-          confidence.
-        </Typography>
-      </Box>
-
-      {/* Cards + Login Overlay */}
+      {/* HERO */}
       <Box
         sx={{
           position: "relative",
+          minHeight: "78vh",
           display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
           justifyContent: "center",
-          mb: 12,
+          textAlign: "center",
+          px: { xs: 3, md: 6 },
+          overflow: "hidden",
         }}
       >
-        {showLoginBanner && (
-          <Paper
-            elevation={0}
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url(${landingBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.1,
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 80% 55% at 50% 0%, rgba(27,147,138,0.24) 0%, transparent 70%), radial-gradient(ellipse 55% 35% at 80% 100%, rgba(106,227,255,0.1) 0%, transparent 60%)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            top: "8%",
+            left: "5%",
+            width: 320,
+            height: 320,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(27,147,138,0.13) 0%, transparent 70%)",
+            filter: "blur(45px)",
+            pointerEvents: "none",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: "6%",
+            right: "4%",
+            width: 260,
+            height: 260,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)",
+            filter: "blur(45px)",
+            pointerEvents: "none",
+          }}
+        />
+
+        <Box sx={{ position: "relative", zIndex: 1, maxWidth: 740 }}>
+          <Chip
+            icon={
+              <AutoAwesomeRoundedIcon
+                sx={{ fontSize: "0.78rem !important", color: BRAND2 }}
+              />
+            }
+            label="Demand & Supply Intelligence · Powered by AI"
+            size="small"
             sx={{
-              position: "absolute",
-              top: -38,
-              px: 3,
-              py: 2,
-              borderRadius: 4,
-              background: "rgba(255, 255, 255, 0.15)",
-              backdropFilter: "blur(12px)",
-              color: "#fff",
-              border: "1.5px solid rgba(255, 255, 255, 0.28)",
-              display: "flex",
-              alignItems: "center",
-              gap: 2.5,
-              zIndex: 3,
-              boxShadow:
-                "0 8px 32px rgba(0,0,0,0.35), inset 0 0 20px rgba(255,255,255,0.18)",
-              transition: "all 0.3s ease",
+              mb: 2.5,
+              px: 0.8,
+              fontFamily: FONT,
+              fontWeight: 700,
+              fontSize: "0.68rem",
+              letterSpacing: "0.05em",
+              color: BRAND2,
+              background: "rgba(106,227,255,0.08)",
+              border: "1px solid rgba(106,227,255,0.25)",
+              backdropFilter: "blur(8px)",
+              "& .MuiChip-icon": { ml: 0.5 },
+            }}
+          />
+
+          <Typography
+            component="h1"
+            sx={{
+              fontFamily: FONT,
+              fontWeight: 900,
+              fontSize: { xs: "2.3rem", sm: "3.1rem", md: "3.7rem" },
+              lineHeight: 1.08,
+              letterSpacing: "-1.8px",
+              mb: 2,
+              background: "linear-gradient(135deg, #ffffff 30%, #6AE3FF 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
             }}
           >
-            {/* Left Icon */}
-            <Box
+            Simulate Better.{" "}
+            <Box component="span" sx={{ color: BRAND, WebkitTextFillColor: BRAND }}>
+              Plan Smarter.
+            </Box>
+          </Typography>
+
+          <Typography
+            sx={{
+              fontFamily: FONT,
+              fontSize: { xs: "0.92rem", md: "1.05rem" },
+              opacity: 0.6,
+              maxWidth: 520,
+              mx: "auto",
+              lineHeight: 1.75,
+              mb: 4,
+            }}
+          >
+            Intelliplan unifies Demand and Supply planning into a single intelligent
+            workspace — powered by AI, built for Kimberly-Clark.
+          </Typography>
+
+          <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+            <Button
+              onClick={() => navigate("/demand-planning")}
+              startIcon={<TrendingUpRoundedIcon sx={{ fontSize: "1rem !important" }} />}
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backdropFilter: "blur(6px)",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                px: 3,
+                py: 1.1,
+                borderRadius: "10px",
+                fontFamily: FONT,
+                fontWeight: 700,
+                fontSize: "0.84rem",
+                textTransform: "none",
+                background: `linear-gradient(135deg, ${BRAND} 0%, #14756e 100%)`,
+                color: "#fff",
+                boxShadow: "0 6px 24px rgba(27,147,138,0.4)",
+                "&:hover": { filter: "brightness(1.1)" },
               }}
             >
-              <Person2 sx={{ fontSize: 24, color: "#fff" }} />
-            </Box>
-
-            <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, letterSpacing: "0.3px" }}
-              >
-                You’re not signed in
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ opacity: 0.8, fontSize: "0.7rem" }}
-              >
-                Login to access all features
-              </Typography>
-            </Box>
-
+              Demand Planning
+            </Button>
             <Button
-              variant="contained"
-              onClick={handleLogin}
+              onClick={() => navigate("/supply-planning")}
+              startIcon={<InventoryRoundedIcon sx={{ fontSize: "1rem !important" }} />}
               sx={{
-                borderRadius: 3,
-                px: 2.5,
-                py: 0.6,
+                px: 3,
+                py: 1.1,
+                borderRadius: "10px",
+                fontFamily: FONT,
                 fontWeight: 700,
-                fontSize: "0.75rem",
-                background: "linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%)",
-                color: "#000",
+                fontSize: "0.84rem",
                 textTransform: "none",
-                ml: 2,
-                boxShadow: "0 4px 14px rgba(255,255,255,0.45)",
+                color: "#fff",
+                border: "1px solid rgba(167,139,250,0.4)",
+                background: "rgba(167,139,250,0.08)",
+                backdropFilter: "blur(10px)",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #f3f3f3 0%, #dcdcdc 100%)",
+                  background: "rgba(167,139,250,0.16)",
+                  borderColor: "rgba(167,139,250,0.65)",
                 },
               }}
             >
-              Login using OKTA SSO
+              Supply Planning
             </Button>
-          </Paper>
-        )}
+          </Box>
+        </Box>
 
-        {/* Always render the grid to preserve layout height */}
-        <Grid
-          container
-          spacing={4}
-          justifyContent="center"
-          // When logged out, blur and block interaction—height stays the same.
+        <Box
           sx={{
-            mt: 3,
-            transition: "filter 0.2s ease, opacity 0.2s ease",
-            filter: showLoginBanner ? "blur(2px)" : "none",
-            opacity: showLoginBanner ? 0.8 : 1,
-            pointerEvents: showLoginBanner ? "none" : "auto",
-            // Optional: reserve predictable vertical space on small screens too
-            px: { xs: 2, md: 0 },
+            position: "absolute",
+            bottom: 22,
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 0.5,
+            opacity: 0.25,
           }}
         >
-          {features.map((feature, index) => (
-            <Grid item key={index}>
-              <Card
+          <Box sx={{ width: 1.5, height: 30, borderRadius: 4, background: "#fff" }} />
+          <Typography sx={{ fontFamily: FONT, fontSize: "0.56rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+            Scroll
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* STATS BAR */}
+      <Box
+        sx={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.02)",
+          backdropFilter: "blur(12px)",
+          py: 2.8,
+          px: { xs: 3, md: 8 },
+          display: "flex",
+          justifyContent: "center",
+          gap: { xs: 3.5, md: 8 },
+          flexWrap: "wrap",
+        }}
+      >
+        {stats.map((s, i) => (
+          <React.Fragment key={s.label}>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography
                 sx={{
-                  width: CARD_WIDTH,
-                  height: CARD_HEIGHT,
-                  borderRadius: 4,
-                  backgroundColor: "rgba(255,255,255,0.15)",
-                  backdropFilter: "blur(12px)",
-                  color: "#fff",
-                  textAlign: "center",
-                  p: 2,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-8px)",
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
-                  },
+                  fontFamily: FONT,
+                  fontWeight: 900,
+                  fontSize: { xs: "1.5rem", md: "1.85rem" },
+                  color: BRAND2,
+                  lineHeight: 1,
+                  letterSpacing: "-0.5px",
                 }}
               >
-                {feature.icon}
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: "bold", mb: 1 }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography sx={{ mb: 2, fontSize: "0.75rem" }}>
-                    {feature.description}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      borderRadius: 3,
-                      backgroundColor: "#fff",
-                      color: "#000",
-                      fontWeight: "bold",
-                      "&:hover": { backgroundColor: "#f0f0f0" },
-                    }}
-                    onClick={() => navigate(feature.route)}
-                  >
-                    Explore
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+                {s.value}
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: FONT,
+                  fontSize: "0.67rem",
+                  opacity: 0.45,
+                  mt: 0.4,
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {s.label}
+              </Typography>
+            </Box>
+            {i < stats.length - 1 && (
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderColor: "rgba(255,255,255,0.07)", display: { xs: "none", md: "block" } }}
+              />
+            )}
+          </React.Fragment>
+        ))}
+      </Box>
+
+      {/* DOMAIN CARDS */}
+      <Box sx={{ py: { xs: 7, md: 10 }, px: { xs: 3, md: 10 } }}>
+        <Box sx={{ textAlign: "center", mb: 6 }}>
+          <Typography
+            sx={{
+              fontFamily: FONT,
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              letterSpacing: "0.18em",
+              color: BRAND,
+              textTransform: "uppercase",
+              mb: 1.2,
+            }}
+          >
+            Planning Domains
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: FONT,
+              fontWeight: 900,
+              fontSize: { xs: "1.7rem", md: "2.3rem" },
+              letterSpacing: "-0.7px",
+              lineHeight: 1.15,
+            }}
+          >
+            Choose your planning domain
+          </Typography>
+          <Typography sx={{ fontFamily: FONT, opacity: 0.45, mt: 1.2, fontSize: "0.88rem" }}>
+            Two specialized workspaces. One unified platform.
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            gap: { xs: 2.5, md: 4 },
+            justifyContent: "center",
+            flexWrap: "wrap",
+            maxWidth: 920,
+            mx: "auto",
+          }}
+        >
+          {domains.map((domain) => (
+            <Box
+              key={domain.title}
+              onClick={() => navigate(domain.route)}
+              sx={{
+                flex: "1 1 380px",
+                maxWidth: 440,
+                borderRadius: "20px",
+                border: "1px solid rgba(255,255,255,0.07)",
+                background:
+                  "linear-gradient(150deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.012) 100%)",
+                backdropFilter: "blur(20px)",
+                p: { xs: 3, md: 4 },
+                cursor: "pointer",
+                transition: "all 0.28s ease",
+                position: "relative",
+                overflow: "hidden",
+                "&:hover": {
+                  transform: "translateY(-7px)",
+                  border: `1px solid ${domain.accent}45`,
+                  boxShadow: `0 28px 70px ${domain.accent}15`,
+                  "& .top-line": { opacity: 1 },
+                  "& .cta-row": { opacity: 1, transform: "translateY(0)" },
+                },
+              }}
+            >
+              <Box
+                className="top-line"
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 2.5,
+                  background: `linear-gradient(90deg, transparent 0%, ${domain.accent} 50%, transparent 100%)`,
+                  opacity: 0,
+                  transition: "opacity 0.28s ease",
+                  borderRadius: "20px 20px 0 0",
+                }}
+              />
+
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  mb: 3,
+                }}
+              >
+                <Box
+                  component="img"
+                  src={domain.imgIcon}
+                  alt={domain.title}
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    filter: "drop-shadow(0 3px 12px rgba(0,0,0,0.45))",
+                  }}
+                />
+                <Chip
+                  label={domain.badge}
+                  size="small"
+                  sx={{
+                    height: 20,
+                    fontFamily: FONT,
+                    fontSize: "0.6rem",
+                    fontWeight: 700,
+                    color: domain.accent,
+                    background: `${domain.accent}15`,
+                    border: `1px solid ${domain.accent}38`,
+                    letterSpacing: "0.02em",
+                  }}
+                />
+              </Box>
+
+              <Typography
+                sx={{
+                  fontFamily: FONT,
+                  fontWeight: 800,
+                  fontSize: "1.32rem",
+                  mb: 1.2,
+                  letterSpacing: "-0.35px",
+                  color: "#fff",
+                }}
+              >
+                {domain.title}
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: FONT,
+                  fontSize: "0.82rem",
+                  opacity: 0.52,
+                  lineHeight: 1.72,
+                  mb: 3,
+                }}
+              >
+                {domain.description}
+              </Typography>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.8, mb: 3.5 }}>
+                {domain.modules.map((mod) => (
+                  <Box key={mod} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: "50%",
+                        bgcolor: domain.accent,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography sx={{ fontFamily: FONT, fontSize: "0.76rem", opacity: 0.6 }}>
+                      {mod}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              <Box
+                className="cta-row"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.8,
+                  fontFamily: FONT,
+                  fontWeight: 800,
+                  fontSize: "0.8rem",
+                  color: domain.accent,
+                  opacity: 0.7,
+                  transform: "translateY(4px)",
+                  transition: "all 0.24s ease",
+                }}
+              >
+                Enter workspace
+                <Box component="span" sx={{ fontSize: "1rem", lineHeight: 1 }}>
+                  {String.fromCharCode(8594)}
+                </Box>
+              </Box>
+            </Box>
           ))}
-        </Grid>
+        </Box>
+      </Box>
+
+      {/* FOOTER */}
+      <Box
+        sx={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          py: 3,
+          px: { xs: 3, md: 8 },
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.8 }}>
+          <Box
+            component="img"
+            src={Logo}
+            alt="Intelliplan"
+            sx={{ height: 24, borderRadius: "5px" }}
+          />
+          <Typography
+            sx={{
+              fontFamily: FONT,
+              fontSize: "0.68rem",
+              opacity: 0.28,
+              letterSpacing: "0.04em",
+            }}
+          >
+            {`\u00A9 ${new Date().getFullYear()} Intelliplan. All rights reserved.`}
+          </Typography>
+        </Box>
+        <Box
+          component="img"
+          src={KCLogo}
+          alt="Kimberly-Clark"
+          sx={{ height: 18, opacity: 0.4 }}
+        />
       </Box>
     </Box>
   );
