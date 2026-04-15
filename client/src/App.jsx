@@ -16,8 +16,16 @@ import {
 import { ensureAgentToken } from "./utils/agentToken";
 import DemandPlanningDashboard from "./components/demandPlanning";
 import SupplyPlanningDashboard from "./components/supplyPlanning";
+import AlertPrioritizationSection from "./components/supplyPlanning/AlertPrioritizationSection";
+import LeftoverOptimizationSection from "./components/supplyPlanning/LeftoverOptimizationSection";
+import StoActionsSection from "./components/supplyPlanning/StoActionsSection";
+import AlertAnalytics from "./components/supplyPlanning/AlertAnalytics";
+import AlertsManagement from "./components/supplyPlanning/AlertsManagement";
 import AlertDashboard from "./components/supplyPlanning/AlertDashboard";
-import ExecutiveOverview from "./components/supplyPlanning/ExecutiveOverview";
+import StoManagement from "./components/supplyPlanning/StoManagement";
+import ExecutiveSummary from "./components/supplyPlanning/ExecutiveSummary";
+import StoCancelPush from "./components/supplyPlanning/StoCancelPush";
+import StoDashboard from "./components/supplyPlanning/StoDashboard";
 
 // NEW: public login starter that triggers oktaAuth.signInWithRedirect()
 import LoginStart from "./components/Login/LoginStart";
@@ -77,9 +85,32 @@ const App = () => {
               </AuthGuard>
             }
           >
-            <Route index element={<Navigate to="alert-dashboard" replace />} />
-            <Route path="alert-dashboard" element={<AlertDashboard />} />
-            <Route path="executive-overview" element={<ExecutiveOverview />} />
+            <Route index element={<Navigate to="alert-prioritization" replace />} />
+
+            <Route
+              path="alert-prioritization"
+              element={<AlertPrioritizationSection />}
+            >
+              <Route index element={<Navigate to="analytics" replace />} />
+              <Route path="analytics" element={<AlertAnalytics />} />
+              <Route path="alerts-management" element={<AlertsManagement />} />
+              <Route path="alerts-dashboard" element={<AlertDashboard />} />
+            </Route>
+
+            <Route
+              path="leftover-optimization"
+              element={<LeftoverOptimizationSection />}
+            >
+              <Route index element={<Navigate to="sto-management" replace />} />
+              <Route path="sto-management" element={<StoManagement />} />
+              <Route path="executive-summary" element={<ExecutiveSummary />} />
+            </Route>
+
+            <Route path="sto-actions" element={<StoActionsSection />}>
+              <Route index element={<Navigate to="sto-cancel-push" replace />} />
+              <Route path="sto-cancel-push" element={<StoCancelPush />} />
+              <Route path="sto-dashboard" element={<StoDashboard />} />
+            </Route>
           </Route>
 
           {/* FALLBACK */}
