@@ -8,8 +8,7 @@ import {
   Grid,
   Paper,
 } from "@mui/material";
-import LocalShipping from "@mui/icons-material/LocalShipping";
-import { Login as Person2, AutoAwesome } from "@mui/icons-material";
+import { Login as Person2, TrendingUp, Inventory2 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import landingBg from "../assets/landing.png";
 import { useUserStore } from "../store/userStore";
@@ -24,16 +23,18 @@ const LandingPage = () => {
 
   const features = [
     {
-      title: "Run Rate Simulator",
-      description: "Simulate your shipments with run rates easily.",
-      icon: <LocalShipping sx={{ fontSize: 48, mb: 1 }} />,
-      route: "/runrate",
+      title: "Demand Planning",
+      description:
+        "Simulate run rates and get AI-powered insights for demand forecasting.",
+      icon: <TrendingUp sx={{ fontSize: 48, mb: 1 }} />,
+      route: "/demand-planning",
     },
     {
-      title: "Ask Intelliplan AI",
-      description: "Get instant insights and answers powered by AI.",
-      icon: <AutoAwesome sx={{ fontSize: 48, mb: 1 }} />,
-      route: "/ask-ai",
+      title: "Supply Planning",
+      description:
+        "Monitor alerts and review executive-level supply chain performance.",
+      icon: <Inventory2 sx={{ fontSize: 48, mb: 1 }} />,
+      route: "/supply-planning",
     },
   ];
 
@@ -71,12 +72,20 @@ const LandingPage = () => {
           Simulate Better, Plan Smarter!
         </Typography>
         <Typography variant="subtitle1" sx={{ mb: 6, maxWidth: 500 }}>
-          Intelliplan helps you analyze and simulate supply chain performance with confidence.
+          Intelliplan helps you analyze and simulate supply chain performance with
+          confidence.
         </Typography>
       </Box>
 
       {/* Cards + Login Overlay */}
-      <Box sx={{ position: "relative", display: "flex", justifyContent: "center", mb: 12 }}>
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          justifyContent: "center",
+          mb: 12,
+        }}
+      >
         {showLoginBanner && (
           <Paper
             elevation={0}
@@ -94,7 +103,8 @@ const LandingPage = () => {
               alignItems: "center",
               gap: 2.5,
               zIndex: 3,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.35), inset 0 0 20px rgba(255,255,255,0.18)",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.35), inset 0 0 20px rgba(255,255,255,0.18)",
               transition: "all 0.3s ease",
             }}
           >
@@ -116,10 +126,16 @@ const LandingPage = () => {
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, letterSpacing: "0.3px" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 700, letterSpacing: "0.3px" }}
+              >
                 You’re not signed in
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontSize: "0.7rem" }}>
+              <Typography
+                variant="caption"
+                sx={{ opacity: 0.8, fontSize: "0.7rem" }}
+              >
                 Login to access all features
               </Typography>
             </Box>
