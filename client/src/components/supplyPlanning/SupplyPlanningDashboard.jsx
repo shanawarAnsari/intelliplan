@@ -1,23 +1,16 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import InventoryRoundedIcon from "@mui/icons-material/InventoryRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 
 import DashboardSubNavbar from "../shared/DashboardSubNavbar";
 import DashboardSidebar from "../shared/DashboardSidebar";
-import AlertsDashboard from "./alertPrioritization/AlertsDashboard";
-import AlertsManagement from "./alertPrioritization/AlertsManagement";
-import ExecuteOverview from "./leftoverOptimization/ExecuteOverview";
-import STOManagement from "./leftoverOptimization/STOManagement";
-import STOActionsDashboard from "./stoCancelPush/STOActionsDashboard";
-import STOActions from "./stoCancelPush/STOActions";
 
 const ACCENT = "#A78BFA";
 const BASE = "/supply-planning";
 
-// Flat sidebar — 3 top-level items only, each links to its group's first page
 const SIDEBAR_ITEMS = [
   {
     label: "Alert Prioritization",
@@ -36,7 +29,6 @@ const SIDEBAR_ITEMS = [
   },
 ];
 
-// Sub-tabs per group — keyed by active group
 const GROUP_TABS = {
   alerts: [
     { label: "Alerts Dashboard", path: `${BASE}/alerts-dashboard` },
@@ -96,15 +88,7 @@ const SupplyPlanningDashboard = () => {
           component="main"
           sx={{ flex: 1, overflowY: "auto", minHeight: "calc(100vh - 110px)" }}
         >
-          <Routes>
-            <Route path="/" element={<Navigate to="alerts-dashboard" replace />} />
-            <Route path="alerts-dashboard" element={<AlertsDashboard />} />
-            <Route path="alerts-management" element={<AlertsManagement />} />
-            <Route path="execute-overview" element={<ExecuteOverview />} />
-            <Route path="sto-management" element={<STOManagement />} />
-            <Route path="sto-actions-dashboard" element={<STOActionsDashboard />} />
-            <Route path="sto-actions" element={<STOActions />} />
-          </Routes>
+          <Outlet />
         </Box>
       </Box>
     </Box>

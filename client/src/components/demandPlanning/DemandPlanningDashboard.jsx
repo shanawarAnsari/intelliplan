@@ -1,12 +1,10 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import PsychologyRoundedIcon from "@mui/icons-material/PsychologyRounded";
 
 import DashboardSidebar from "../shared/DashboardSidebar";
-import SalesForecastTable from "../runrate";
-import AskIntelliplan from "../askIntelliplan";
 
 const ACCENT = "#6AE3FF";
 
@@ -33,15 +31,8 @@ const DemandPlanningDashboard = () => {
           domain="Demand Planning"
           topOffset={56}
         />
-
-        {/* Main content */}
         <Box sx={{ flex: 1, minWidth: 0, overflow: "auto" }}>
-          <Routes>
-            <Route index element={<Navigate to="runrate" replace />} />
-            <Route path="runrate" element={<SalesForecastTable />} />
-            <Route path="ask-ai" element={<AskIntelliplan />} />
-            <Route path="*" element={<Navigate to="runrate" replace />} />
-          </Routes>
+          <Outlet />
         </Box>
       </Box>
     </Box>
