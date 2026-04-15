@@ -1,12 +1,18 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import InventoryRoundedIcon from "@mui/icons-material/InventoryRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 
 import DashboardSubNavbar from "../shared/DashboardSubNavbar";
 import DashboardSidebar from "../shared/DashboardSidebar";
+import AlertsDashboard from "./alertPrioritization/AlertsDashboard";
+import AlertsManagement from "./alertPrioritization/AlertsManagement";
+import ExecuteOverview from "./leftoverOptimization/ExecuteOverview";
+import STOManagement from "./leftoverOptimization/STOManagement";
+import STOActionsDashboard from "./stoCancelPush/STOActionsDashboard";
+import STOActions from "./stoCancelPush/STOActions";
 
 const ACCENT = "#A78BFA";
 const BASE = "/supply-planning";
@@ -90,7 +96,15 @@ const SupplyPlanningDashboard = () => {
           component="main"
           sx={{ flex: 1, overflowY: "auto", minHeight: "calc(100vh - 110px)" }}
         >
-          <Outlet />
+          <Routes>
+            <Route path="/" element={<Navigate to="alerts-dashboard" replace />} />
+            <Route path="alerts-dashboard" element={<AlertsDashboard />} />
+            <Route path="alerts-management" element={<AlertsManagement />} />
+            <Route path="execute-overview" element={<ExecuteOverview />} />
+            <Route path="sto-management" element={<STOManagement />} />
+            <Route path="sto-actions-dashboard" element={<STOActionsDashboard />} />
+            <Route path="sto-actions" element={<STOActions />} />
+          </Routes>
         </Box>
       </Box>
     </Box>
