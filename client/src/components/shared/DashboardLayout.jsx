@@ -6,11 +6,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
+  alpha,
 } from "@mui/material";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
-const SIDEBAR_WIDTH = 220;
+const NAV_FONT = "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif";
+const SIDEBAR_WIDTH = 252;
 const BRAND_PRIMARY = "#1B938A";
 
 const DashboardLayout = ({ title, navItems, basePath }) => {
@@ -28,34 +29,54 @@ const DashboardLayout = ({ title, navItems, basePath }) => {
         sx={{
           width: SIDEBAR_WIDTH,
           flexShrink: 0,
-          backgroundColor: "#1a2332",
-          borderRight: "1px solid rgba(255,255,255,0.07)",
+          background:
+            "linear-gradient(180deg, rgba(6,18,32,0.98) 0%, rgba(4,12,24,0.99) 100%)",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
           display: "flex",
           flexDirection: "column",
-          pt: 2.5,
+          pt: 2,
         }}
       >
         {/* Sidebar Header */}
-        <Box sx={{ px: 2.5, mb: 1.5 }}>
-          <Typography
-            variant="caption"
+        <Box
+          sx={{ px: 2.5, mb: 1.5, display: "flex", alignItems: "center", gap: 1.2 }}
+        >
+          <Box
             sx={{
-              color: BRAND_PRIMARY,
-              fontWeight: 700,
-              fontSize: "0.6rem",
-              letterSpacing: "1.4px",
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              bgcolor: BRAND_PRIMARY,
+              boxShadow: `0 0 10px ${alpha(BRAND_PRIMARY, 0.6)}, 0 0 20px ${alpha(BRAND_PRIMARY, 0.3)}`,
+              flexShrink: 0,
+            }}
+          />
+          <Typography
+            sx={{
+              fontFamily: NAV_FONT,
+              color: "rgba(255,255,255,0.85)",
+              fontWeight: 750,
+              fontSize: "0.74rem",
+              letterSpacing: "0.08em",
               textTransform: "uppercase",
-              display: "block",
             }}
           >
             {title}
           </Typography>
         </Box>
 
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", mx: 1.5, mb: 1 }} />
+        <Box
+          sx={{
+            mx: 2,
+            mb: 1,
+            height: "1px",
+            bgcolor: "rgba(255,255,255,0.06)",
+            borderRadius: 1,
+          }}
+        />
 
         {/* Nav Items */}
-        <List dense disablePadding>
+        <List dense disablePadding sx={{ px: 0.5 }}>
           {navItems.map((item) => {
             const active = isActive(item.path);
             return (
@@ -63,35 +84,55 @@ const DashboardLayout = ({ title, navItems, basePath }) => {
                 key={item.path}
                 onClick={() => navigate(`/${basePath}/${item.path}`)}
                 sx={{
-                  mx: 1.5,
-                  mb: 0.5,
-                  borderRadius: 2,
-                  borderLeft: active
-                    ? `3px solid ${BRAND_PRIMARY}`
-                    : "3px solid transparent",
+                  mx: 1.25,
+                  my: 0.3,
+                  borderRadius: "10px",
+                  position: "relative",
+                  overflow: "hidden",
                   backgroundColor: active
-                    ? "rgba(27, 147, 138, 0.12)"
+                    ? alpha(BRAND_PRIMARY, 0.13)
                     : "transparent",
-                  color: active ? "#fff" : "rgba(255,255,255,0.55)",
+                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
                   "&:hover": {
                     backgroundColor: active
-                      ? "rgba(27, 147, 138, 0.18)"
-                      : "rgba(255, 255, 255, 0.05)",
+                      ? alpha(BRAND_PRIMARY, 0.18)
+                      : "rgba(255,255,255,0.045)",
                     color: "#fff",
                     "& .MuiListItemIcon-root": {
-                      color: active ? BRAND_PRIMARY : "rgba(255,255,255,0.75)",
+                      color: BRAND_PRIMARY,
                     },
                   },
-                  transition: "all 0.2s ease",
-                  py: 1,
-                  pl: 1.5,
+                  transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+                  py: 1.05,
+                  pl: 2,
+                  ...(active && {
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: "20%",
+                      bottom: "20%",
+                      width: 3,
+                      borderRadius: "0 4px 4px 0",
+                      bgcolor: BRAND_PRIMARY,
+                      boxShadow: `0 0 8px ${alpha(BRAND_PRIMARY, 0.5)}`,
+                    },
+                  }),
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    minWidth: 34,
+                    minWidth: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 32,
+                    height: 32,
+                    borderRadius: "8px",
+                    bgcolor: active ? alpha(BRAND_PRIMARY, 0.15) : "transparent",
                     color: active ? BRAND_PRIMARY : "rgba(255,255,255,0.4)",
-                    transition: "color 0.2s ease",
+                    transition: "all 0.2s ease",
+                    mr: 0.5,
                   }}
                 >
                   {item.icon}
@@ -99,15 +140,29 @@ const DashboardLayout = ({ title, navItems, basePath }) => {
                 <ListItemText
                   primary={item.label}
                   primaryTypographyProps={{
-                    fontSize: "0.8rem",
-                    fontWeight: active ? 600 : 400,
-                    letterSpacing: "0.1px",
+                    fontFamily: NAV_FONT,
+                    fontSize: "0.82rem",
+                    fontWeight: active ? 650 : 450,
+                    letterSpacing: "0.01em",
                   }}
                 />
               </ListItemButton>
             );
           })}
         </List>
+
+        <Box sx={{ flex: 1 }} />
+
+        {/* Bottom accent */}
+        <Box
+          sx={{
+            height: 1,
+            mx: 3,
+            mb: 2,
+            background: `linear-gradient(90deg, transparent, ${alpha(BRAND_PRIMARY, 0.3)}, transparent)`,
+            borderRadius: 1,
+          }}
+        />
       </Box>
 
       {/* Main Content */}
