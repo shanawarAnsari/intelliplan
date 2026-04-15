@@ -28,4 +28,4 @@ export function resolveOriginalUri(defaultTo = '/') {
 }
 
 
-export const oktaAuth = config.issuer ? new OktaAuth(config) : null;
+export const oktaAuth = new OktaAuth(config);
