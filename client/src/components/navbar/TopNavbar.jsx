@@ -140,57 +140,7 @@ const TopNavbar = () => {
 
           <Box aria-hidden sx={{ width: "1px", height: 20, mx: 1, bgcolor: theme.palette.divider, borderRadius: "1px", opacity: 0.9 }} />
 
-          <FormControl
-            variant="outlined"
-            size="small"
-            sx={{
-              mt: 1,
-              minWidth: 160,
-              ".MuiOutlinedInput-root": { height: 28, borderRadius: "6px", fontSize: "0.75rem" },
-              ".MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: BRAND_PRIMARY },
-            }}
-          >
-            <InputLabel id="domain-select-label" sx={{ fontSize: "0.75rem" }}>
-              Domain
-            </InputLabel>
-            <Select
-              labelId="domain-select-label"
-              value={selectedDomain.id}
-              label="Domain"
-              onChange={(e) => {
-                const selected = domains.find((d) => d.id === e.target.value);
-                setSelectedDomain(selected);
-              }}
-              IconComponent={(props) => <ExpandMoreIcon {...props} sx={{ fontSize: "1rem" }} />}
-              sx={{
-                ".MuiSelect-select": {
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  padding: "3px 10px",
-                  fontSize: "0.75rem",
-                },
-              }}
-              renderValue={() => (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: BRAND_PRIMARY }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>
-                    {selectedDomain.title}
-                  </Typography>
-                </Box>
-              )}
-            >
-              {domains.map((domain) => (
-                <MenuItem key={domain.id} value={domain.id} sx={{ fontSize: "0.82rem", padding: "6px 12px" }}>
-                  {domain.title}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+
         </Box>
 
         <Box sx={{ flex: 1 }} />
@@ -206,24 +156,7 @@ const TopNavbar = () => {
               )}
             </NavLink>
 
-            {isLoggedIn && (
-              <>
-                <NavLink to="/runrate" style={{ textDecoration: "none" }}>
-                  {({ isActive }) => (
-                    <Box sx={{ ...navLinkBase }} className={isActive ? "active" : ""}>
-                      Run Rate <span className="active-indicator" />
-                    </Box>
-                  )}
-                </NavLink>
-                <NavLink to="/ask-ai" style={{ textDecoration: "none" }}>
-                  {({ isActive }) => (
-                    <Box sx={{ ...navLinkBase }} className={isActive ? "active" : ""}>
-                      Ask Intelliplan <span className="active-indicator" />
-                    </Box>
-                  )}
-                </NavLink>
-              </>
-            )}
+
           </Box>
 
           {/* Right side: Sign in button OR avatar */}
