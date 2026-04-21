@@ -11,11 +11,8 @@ import DemandIcon from "../assets/demand.png";
 import SupplyIcon from "../assets/supply.png";
 
 import { useUserStore } from "../store/userStore";
-import { oktaAuth } from "./Login/oktaConfig";
 import LoginIcon from "@mui/icons-material/Login";
 import Paper from "@mui/material/Paper";
-
-
 
 const BRAND = "#1B938A";
 const BRAND2 = "#6AE3FF";
@@ -62,9 +59,7 @@ const LandingPage = () => {
   const showLoginBanner = !isLoggedIn && !isUserLoading;
 
   const handleLogin = () => {
-    oktaAuth.signInWithRedirect({
-      originalUri: window.location.pathname,
-    });
+    navigate("/demand-planning");
   };
 
   return (
@@ -117,7 +112,8 @@ const LandingPage = () => {
             width: 320,
             height: 320,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(27,147,138,0.13) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(27,147,138,0.13) 0%, transparent 70%)",
             filter: "blur(45px)",
             pointerEvents: "none",
           }}
@@ -130,7 +126,8 @@ const LandingPage = () => {
             width: 260,
             height: 260,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)",
             filter: "blur(45px)",
             pointerEvents: "none",
           }}
@@ -195,11 +192,20 @@ const LandingPage = () => {
             workspace — powered by AI, built for Kimberly-Clark.
           </Typography>
 
-          <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <Button
               onClick={() => navigate("/demand-planning")}
               disabled={showLoginBanner}
-              startIcon={<TrendingUpRoundedIcon sx={{ fontSize: "1rem !important" }} />}
+              startIcon={
+                <TrendingUpRoundedIcon sx={{ fontSize: "1rem !important" }} />
+              }
               sx={{
                 px: 3,
                 py: 1.1,
@@ -219,7 +225,9 @@ const LandingPage = () => {
               variant="contained"
               disabled={showLoginBanner}
               onClick={() => navigate("/supply-planning")}
-              startIcon={<InventoryRoundedIcon sx={{ fontSize: "1rem !important" }} />}
+              startIcon={
+                <InventoryRoundedIcon sx={{ fontSize: "1rem !important" }} />
+              }
               sx={{
                 px: 3,
                 py: 1.1,
@@ -256,8 +264,17 @@ const LandingPage = () => {
             opacity: 0.25,
           }}
         >
-          <Box sx={{ width: 1.5, height: 30, borderRadius: 4, background: "#fff" }} />
-          <Typography sx={{ fontFamily: FONT, fontSize: "0.56rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          <Box
+            sx={{ width: 1.5, height: 30, borderRadius: 4, background: "#fff" }}
+          />
+          <Typography
+            sx={{
+              fontFamily: FONT,
+              fontSize: "0.56rem",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+            }}
+          >
             Scroll
           </Typography>
         </Box>
@@ -320,12 +337,10 @@ const LandingPage = () => {
               fontSize: "0.72rem",
               textTransform: "none",
               color: "#000",
-              background:
-                "linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%)",
+              background: "linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%)",
               boxShadow: "0 6px 20px rgba(255,255,255,0.45)",
               "&:hover": {
-                background:
-                  "linear-gradient(135deg, #f1f1f1 0%, #dcdcdc 100%)",
+                background: "linear-gradient(135deg, #f1f1f1 0%, #dcdcdc 100%)",
               },
             }}
           >
@@ -379,7 +394,10 @@ const LandingPage = () => {
               <Divider
                 orientation="vertical"
                 flexItem
-                sx={{ borderColor: "rgba(255,255,255,0.07)", display: { xs: "none", md: "block" } }}
+                sx={{
+                  borderColor: "rgba(255,255,255,0.07)",
+                  display: { xs: "none", md: "block" },
+                }}
               />
             )}
           </React.Fragment>
@@ -413,11 +431,12 @@ const LandingPage = () => {
           >
             Choose your planning domain
           </Typography>
-          <Typography sx={{ fontFamily: FONT, opacity: 0.45, mt: 1.2, fontSize: "0.88rem" }}>
+          <Typography
+            sx={{ fontFamily: FONT, opacity: 0.45, mt: 1.2, fontSize: "0.88rem" }}
+          >
             Two specialized workspaces. One unified platform.
           </Typography>
         </Box>
-
 
         <Box
           sx={{
@@ -433,7 +452,6 @@ const LandingPage = () => {
             pointerEvents: showLoginBanner ? "none" : "auto",
           }}
         >
-
           {domains.map((domain) => (
             <Box
               key={domain.title}
@@ -533,9 +551,14 @@ const LandingPage = () => {
                 {domain.description}
               </Typography>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.8, mb: 3.5 }}>
+              <Box
+                sx={{ display: "flex", flexDirection: "column", gap: 0.8, mb: 3.5 }}
+              >
                 {domain.modules.map((mod) => (
-                  <Box key={mod} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    key={mod}
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
                     <Box
                       sx={{
                         width: 4,
@@ -545,7 +568,9 @@ const LandingPage = () => {
                         flexShrink: 0,
                       }}
                     />
-                    <Typography sx={{ fontFamily: FONT, fontSize: "0.76rem", opacity: 0.6 }}>
+                    <Typography
+                      sx={{ fontFamily: FONT, fontSize: "0.76rem", opacity: 0.6 }}
+                    >
                       {mod}
                     </Typography>
                   </Box>

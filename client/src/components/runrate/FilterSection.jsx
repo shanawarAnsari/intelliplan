@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, TextField, Button, IconButton, Tooltip, InputAdornment, Chip } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  IconButton,
+  Tooltip,
+  InputAdornment,
+  Chip,
+  ToggleButtonGroup,
+  ToggleButton,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -35,6 +45,8 @@ const FilterSection = ({
   onVisibilityChange,
   runRateOption,
   setRunRateOption,
+  isMsuMode,
+  setIsMsuMode,
   selectedLevels,
   setSelectedLevels,
   businessUnits,
@@ -134,7 +146,45 @@ const FilterSection = ({
           }}
         />
 
-
+        {/* MSU / Sales toggle */}
+        <ToggleButtonGroup
+          exclusive
+          value={isMsuMode ? "msu" : "sales"}
+          onChange={(_, val) => {
+            if (val !== null) setIsMsuMode(val === "msu");
+          }}
+          size="small"
+          sx={{
+            backgroundColor: "#1a2332",
+            border: "1px solid #3f4f63",
+            borderRadius: "8px",
+            overflow: "hidden",
+            "& .MuiToggleButtonGroup-grouped": {
+              border: 0,
+              borderRadius: 0,
+              px: 1.5,
+              py: 0.5,
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              textTransform: "none",
+              color: "#94a3b8",
+              transition: "all 0.2s ease",
+              "&.Mui-selected": {
+                color: "#fff",
+                backgroundColor: "#0087b9",
+                "&:hover": { backgroundColor: "#0099d4" },
+              },
+              "&:hover": { backgroundColor: "rgba(0,135,185,0.12)" },
+            },
+          }}
+        >
+          <ToggleButton value="sales" disableRipple={false}>
+            Sales ($)
+          </ToggleButton>
+          <ToggleButton value="msu" disableRipple={false}>
+            MSU
+          </ToggleButton>
+        </ToggleButtonGroup>
 
         {/* Right Side - Filter Controls */}
         <Box
@@ -148,7 +198,6 @@ const FilterSection = ({
             width: { xs: "100%", sm: "auto" },
           }}
         >
-
           {userInputs && Object.keys(userInputs).length > 0 && (
             <Tooltip title="Reset all input percentages" arrow>
               <IconButton
@@ -157,8 +206,8 @@ const FilterSection = ({
                 aria-label="Reset all input percentages"
                 size="medium"
                 sx={{
-                  border: '1px solid #fff',
-                  borderRadius: '10px',
+                  border: "1px solid #fff",
+                  borderRadius: "10px",
                   color: "#fff",
                   "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
                 }}

@@ -1,30 +1,10 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const routes = require('./routes');
-const authRoutes = require('../common/oktaTokenVerifier/authRoutes')
-const errorhandler = require('../common/errorHandler');
+const express = require("express");
+const cors = require("cors");
+const routes = require("./routes");
 
-const runRateSimulatorApi = express();
+const router = express.Router();
 
-runRateSimulatorApi.use(bodyParser.urlencoded({ extended: true }));
-runRateSimulatorApi.use(bodyParser.json());
-runRateSimulatorApi.use(cors({
-    origin: ['http://localhost:3000',
-        'http://localhost:8080',
-        'https://dev1.intelliplan.kcc.com',
-        'https://dev1.intelliplan.azure-kcc.com',
-        'https://qa1.intelliplan.kcc.com',
-        'https://qa1.intelliplan.azure-kcc.com',
-        'https://stage1.intelliplan.kcc.com',
-        'https://stage.intelliplan.kcc.com',
-        'https://stage1.intelliplan.azure-kcc.com',
-        'https://www.intelliplan.kcc.com',
-        'https://intelliplan.kcc.com'
-    ]
-}));
-runRateSimulatorApi.use('/api/auth', authRoutes);
-runRateSimulatorApi.use('/api/runRate', routes);
-runRateSimulatorApi.use(errorhandler);
+router.use(cors());
+router.use("/api/runRate", routes);
 
-module.exports = runRateSimulatorApi;
+module.exports = router;

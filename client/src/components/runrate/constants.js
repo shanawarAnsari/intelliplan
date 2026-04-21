@@ -40,6 +40,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 160,
     format: (value) => getCurrencyFormatting(value, 0),
+    msuFormat: (value) => getMsuFormatting(value, 0),
   },
   {
     id: "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS",
@@ -47,6 +48,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
   },
   {
     id: "AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS",
@@ -54,6 +56,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
   },
   {
     id: "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS",
@@ -61,6 +64,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
   },
   {
     id: "AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS",
@@ -68,13 +72,15 @@ export const tableColumns = [
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
   },
   {
     id: "TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH",
-    label: `Actual Shipments till date (${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })})`,
+    label: `Actual Shipments till date (${new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })})`,
     align: "right",
     minWidth: 140,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
   },
   {
     id: "SHIPMENTS_REMAINING_DAYS",
@@ -82,6 +88,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 180,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
   {
@@ -91,6 +98,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 220,
     format: (value) => getCurrencyFormatting(value, 0),
+    msuFormat: (value) => getMsuFormatting(value, 0),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
   {
@@ -130,6 +138,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 120,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
   {
@@ -138,6 +147,7 @@ export const tableColumns = [
     align: "right",
     minWidth: 120,
     format: (value) => getCurrencyFormatting(value, 2),
+    msuFormat: (value) => getMsuFormatting(value, 2),
     headerColor: "#ffb3ba", // Pinkish orange color
   },
 ];
@@ -146,7 +156,14 @@ function getCurrencyFormatting(value, maximumFractionDigits) {
   if (value === null || value === undefined || value === 0) return "$0";
   return typeof value === "number" && !isNaN(value)
     ? `$${value.toLocaleString(undefined, {
-      maximumFractionDigits: maximumFractionDigits,
-    })}`
+        maximumFractionDigits: maximumFractionDigits,
+      })}`
     : "$0";
+}
+
+function getMsuFormatting(value, maximumFractionDigits) {
+  if (value === null || value === undefined || value === 0) return "0";
+  return typeof value === "number" && !isNaN(value)
+    ? value.toLocaleString(undefined, { maximumFractionDigits })
+    : "0";
 }

@@ -59,6 +59,7 @@ const SalesForecastTable = () => {
     resetUserInputs();
   };
   const [runRateOption, setRunRateOption] = useState("13weeks");
+  const [isMsuMode, setIsMsuMode] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [userInputs, setUserInputs] = useState({});
@@ -132,13 +133,35 @@ const SalesForecastTable = () => {
       };
 
       const totalForecast = parseNumeric(
-        row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH,
+        isMsuMode
+          ? row.TOTAL_FORECAST_MSU_CURRENT_MONTH
+          : row.TOTAL_FORECAST_GROSS_SALES_CURRENT_MONTH,
       );
-      const weekday13 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS);
-      const weekend13 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS);
-      const weekday8 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS);
-      const weekend8 = parseNumeric(row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS);
-      const actualShips = parseNumeric(row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH);
+      const weekday13 = parseNumeric(
+        isMsuMode
+          ? row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS_MSU
+          : row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKDAYS,
+      );
+      const weekend13 = parseNumeric(
+        isMsuMode
+          ? row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS_MSU
+          : row.AVG_ACTUAL_SHIPMENTS_13WEEKS_WEEKENDS,
+      );
+      const weekday8 = parseNumeric(
+        isMsuMode
+          ? row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS_MSU
+          : row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKDAYS,
+      );
+      const weekend8 = parseNumeric(
+        isMsuMode
+          ? row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS_MSU
+          : row.AVG_ACTUAL_SHIPMENTS_8WEEKS_WEEKENDS,
+      );
+      const actualShips = parseNumeric(
+        isMsuMode
+          ? row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH_MSU
+          : row.TOTAL_ACTUAL_SHIPMENTS_CURRENT_MONTH,
+      );
 
       const { remainingWeekdays, remainingWeekends } = (() => {
         const today = new Date();
@@ -188,6 +211,7 @@ const SalesForecastTable = () => {
     categoryFilter,
     subCategoryFilter,
     runRateOption,
+    isMsuMode,
   ]);
 
   // Aggregate data based on selected levels
@@ -260,6 +284,9 @@ const SalesForecastTable = () => {
           ].includes(c.id),
       );
     }
+    if (isMsuMode) {
+      cols = cols.map((c) => (c.msuFormat ? { ...c, format: c.msuFormat } : c));
+    }
     return cols;
   };
 
@@ -294,11 +321,11 @@ const SalesForecastTable = () => {
             ? `"${str.replace(/"/g, '""')}"`
             : str;
         })
-        .join(",")
+        .join(","),
     );
     // Build TOTAL row
     const EXCLUDED_TOTAL_COLUMNS = [
-      "Run rate forecast vs M-O - S&OP forecast for MO"
+      "Run rate forecast vs M-O - S&OP forecast for MO",
     ];
 
     const totalRow = cols
@@ -312,9 +339,7 @@ const SalesForecastTable = () => {
         if (c.isUserInput) return ""; // skip user-input cols
 
         const total = processedData.reduce((sum, row, rowIndex) => {
-          let val = c.isUserInput
-            ? userInputs[`${rowIndex}-${c.id}`]
-            : row[c.id];
+          let val = c.isUserInput ? userInputs[`${rowIndex}-${c.id}`] : row[c.id];
 
           if (c.format && val != null) {
             val = c.format(val);
@@ -352,12 +377,14 @@ const SalesForecastTable = () => {
 
   if (loading) {
     return (
-      <Box sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center"
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Loader />
         <Typography variant="h6" color="text.secondary" sx={{ mt: -12 }}>
           Loading Run Rate Data...
@@ -419,6 +446,8 @@ const SalesForecastTable = () => {
             onVisibilityChange={setVisibleColumns}
             runRateOption={runRateOption}
             setRunRateOption={setRunRateOption}
+            isMsuMode={isMsuMode}
+            setIsMsuMode={setIsMsuMode}
             selectedLevels={selectedLevels}
             setSelectedLevels={handleSetSelectedLevels}
             businessUnits={allBusinessUnits}
