@@ -21,7 +21,7 @@ const DashboardSubNavbar = ({ tabs, domain, accentColor = "#1B938A" }) => {
         px: { xs: 2.5, md: 4 },
         display: "flex",
         alignItems: "center",
-        minHeight: 46,
+        minHeight: 38,
         gap: 0,
         overflowX: "auto",
         "&::-webkit-scrollbar": { display: "none" },
@@ -34,7 +34,7 @@ const DashboardSubNavbar = ({ tabs, domain, accentColor = "#1B938A" }) => {
           alignItems: "stretch",
           gap: 0.5,
           flexShrink: 0,
-          height: 46,
+          height: 38,
         }}
       >
         {tabs.map((tab) => {
@@ -59,15 +59,15 @@ const DashboardSubNavbar = ({ tabs, domain, accentColor = "#1B938A" }) => {
                   whiteSpace: "nowrap",
                   cursor: "pointer",
                   position: "relative",
-                  color: isActive ? "#fff" : "rgba(255,255,255,0.4)",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
                   borderRadius: "8px 8px 0 0",
                   transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
                   "&::after": {
                     content: '""',
                     position: "absolute",
                     bottom: 0,
-                    left: "12%",
-                    right: "12%",
+                    left: "10%",
+                    right: "6%",
                     height: "2px",
                     borderRadius: "2px 2px 0 0",
                     bgcolor: isActive ? accentColor : "transparent",

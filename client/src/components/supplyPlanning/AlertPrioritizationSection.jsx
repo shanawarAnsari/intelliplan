@@ -10,11 +10,6 @@ const ACCENT = "#A78BFA";
 
 const tabs = [
   {
-    label: "Analytics",
-    icon: <AnalyticsIcon sx={{ fontSize: 14 }} />,
-    path: "/supply-planning/alert-prioritization/analytics",
-  },
-  {
     label: "Alerts Management",
     icon: <AlertManagementIcon sx={{ fontSize: 14 }} />,
     path: "/supply-planning/alert-prioritization/alerts-management",
@@ -24,6 +19,12 @@ const tabs = [
     icon: <AlertsDashboardIcon sx={{ fontSize: 14 }} />,
     path: "/supply-planning/alert-prioritization/alerts-dashboard",
   },
+  {
+    label: "Analytics",
+    icon: <AnalyticsIcon sx={{ fontSize: 14 }} />,
+    path: "/supply-planning/alert-prioritization/analytics",
+  },
+
 ];
 
 const AlertPrioritizationSection = () => (

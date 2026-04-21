@@ -265,26 +265,70 @@ const SalesForecastTable = () => {
 
   const handleExport = () => {
     if (!processedData?.length) return alert("No data to export");
+
     const cols = getVisibleColumns();
     const headers = cols.map((c) => c.label).join(",");
+
+    // Helper to normalize numeric values
+    const toNumber = (val) => {
+      const num = Number(String(val).replace(/[$,%]/g, ""));
+      return isNaN(num) ? 0 : num;
+    };
+
+    // Build data rows
     const rows = processedData.map((row, rowIndex) =>
       cols
         .map((c) => {
           let val;
+
           if (c.isUserInput) {
             val = userInputs[`${rowIndex}-${c.id}`] || "";
           } else {
             val = row[c.id];
-            if (c.format && val != null) val = c.format(val).replace(/[$,%]/g, "");
+            if (c.format && val != null) {
+              val = c.format(val).replace(/[$,%]/g, "");
+            }
           }
-          const str = String(val || "");
+          const str = String(val ?? "");
           return str.includes(",") || str.includes('"')
             ? `"${str.replace(/"/g, '""')}"`
             : str;
         })
-        .join(","),
+        .join(",")
     );
-    const csv = [headers, ...rows].join("\n");
+    // Build TOTAL row
+    const EXCLUDED_TOTAL_COLUMNS = [
+      "Run rate forecast vs M-O - S&OP forecast for MO"
+    ];
+
+    const totalRow = cols
+      .map((c, colIndex) => {
+        if (colIndex === 0) return "TOTAL"; // first column label
+
+        if (EXCLUDED_TOTAL_COLUMNS.includes(c.label)) {
+          return "";
+        }
+
+        if (c.isUserInput) return ""; // skip user-input cols
+
+        const total = processedData.reduce((sum, row, rowIndex) => {
+          let val = c.isUserInput
+            ? userInputs[`${rowIndex}-${c.id}`]
+            : row[c.id];
+
+          if (c.format && val != null) {
+            val = c.format(val);
+          }
+
+          return sum + toNumber(val);
+        }, 0);
+
+        return total ? total.toString() : "";
+      })
+      .join(",");
+
+    const csv = [headers, ...rows, totalRow].join("\n");
+
     const blob = new Blob([csv], { type: "text/csv" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);

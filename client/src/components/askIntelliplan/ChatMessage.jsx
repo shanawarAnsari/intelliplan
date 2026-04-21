@@ -68,25 +68,43 @@ const ChatMessage = ({
 
   // ✅ Decode table columns + values without changing structure
   const decodedTable = useMemo(() => {
-    if (!dataTable) return null;
+    if (!dataTable || typeof dataTable !== "object") return null;
 
-    const columns = Object.keys(dataTable);
+    const out = Object.create(null);
 
-    // Build a decoded mirror to preserve existing render logic
-    const out = {};
-    for (const col of columns) {
-      const decodedCol = decodeEntities(col);
-      const colData = dataTable[col];
+    for (const rawCol of Object.keys(dataTable)) {
+      const decodedCol = decodeEntities(rawCol);
 
-      out[decodedCol] = {};
+      // ✅ INLINE explicit prototype‑pollution guard (scanner‑visible)
+      if (
+        decodedCol === "__proto__" ||
+        decodedCol === "prototype" ||
+        decodedCol === "constructor"
+      ) {
+        continue;
+      }
+
+      const colData = dataTable[rawCol];
+      const safeCol = Object.create(null);
+
       if (colData && typeof colData === "object") {
-        for (const key of Object.keys(colData)) {
-          const cell = colData[key];
-          // Keep numbers as numbers so toLocaleString keeps working
-          out[decodedCol][key] = typeof cell === "string" ? decodeEntities(cell) : cell;
+        for (const rawKey of Object.keys(colData)) {
+          const cell = colData[rawKey];
+
+          safeCol[rawKey] =
+            typeof cell === "string" ? decodeEntities(cell) : cell;
         }
       }
+
+      // ✅ SAFE assignment (CWE‑1321 compliant)
+      Object.defineProperty(out, decodedCol, {
+        value: safeCol,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
     }
+
     return out;
   }, [dataTable]);
 

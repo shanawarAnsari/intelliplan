@@ -35,10 +35,11 @@ const sendMessage = async (userMessage, userInfo, sessionId) => {
   try {
     const payload = buildPayload(userMessage, userInfo);
 
-    const response = await postApi(`agent/ask`, payload, {
+    const result = await postApi(`agent/ask`, payload, {
       "X-Session-Id": sessionId,
       Authorization: `Bearer ${access_token}`,
     });
+    let response = result?.data;
 
     // Token limit handling
     if (response?.tokenLimitExceeded) {

@@ -1,5 +1,5 @@
 import { Grid, Paper, Box, Typography, Alert } from "@mui/material";
-import { BlockRounded } from "@mui/icons-material";
+import { BlockRounded, LockClockOutlined, LockPerson } from "@mui/icons-material";
 import React from "react";
 
 const FeatureCallbackError = () => {
@@ -16,7 +16,7 @@ const FeatureCallbackError = () => {
                 <Paper
                     elevation={3}
                     sx={{
-                        padding: 4,
+                        padding: 2,
                         color: "#585252",
                         border: "1px solid #e0e0e0",
                         borderRadius: 2,
@@ -26,25 +26,11 @@ const FeatureCallbackError = () => {
                         sx={{
                             textAlign: "center",
                             fontSize: "3rem",
-                            padding: 2,
+                            padding: 0,
                             color: "#d32f2f",
                         }}
                     >
-                        <BlockRounded fontSize="inherit" />
-                    </Box>
-                    <Box sx={{ padding: 2 }}>
-                        <Alert
-                            severity="error"
-                            sx={{ backgroundColor: "#ffebee", color: "#c62828", justifyContent: "center", alignItems: 'center', marginTop: 1 }}
-                        >
-                            <Typography
-                                variant="h5"
-                                component="div"
-                                sx={{ fontWeight: "bold" }}
-                            >
-                                App Feature Restricted
-                            </Typography>
-                        </Alert>
+                        <LockPerson fontSize="inherit" />
                     </Box>
                     <Box sx={{ textAlign: "center", padding: 2 }}>
 

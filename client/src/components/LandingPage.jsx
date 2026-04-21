@@ -10,6 +10,13 @@ import KCLogo from "../assets/KC_logo_for_dark.png";
 import DemandIcon from "../assets/demand.png";
 import SupplyIcon from "../assets/supply.png";
 
+import { useUserStore } from "../store/userStore";
+import { oktaAuth } from "./Login/oktaConfig";
+import LoginIcon from "@mui/icons-material/Login";
+import Paper from "@mui/material/Paper";
+
+
+
 const BRAND = "#1B938A";
 const BRAND2 = "#6AE3FF";
 
@@ -17,11 +24,11 @@ const FONT =
   "'Inter', 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
 
 const stats = [
-  { value: "10x", label: "Faster Simulations" },
+  { value: "Ultra Fast", label: "Simulations" },
   { value: "Real-time", label: "AI Insights" },
-  { value: "85%", label: "Alert Resolution Rate" },
-  { value: "40%", label: "Leftover Stock Reduction" },
-  { value: "3x", label: "Faster STO Decisions" },
+  { value: "Alert", label: "Optimization" },
+  { value: "Intelligent", label: "Planning" },
+  { value: "Faster", label: " STO Decisions" },
 ];
 
 const domains = [
@@ -49,6 +56,16 @@ const domains = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
+
+  const { isLoggedIn, isUserLoading } = useUserStore();
+
+  const showLoginBanner = !isLoggedIn && !isUserLoading;
+
+  const handleLogin = () => {
+    oktaAuth.signInWithRedirect({
+      originalUri: window.location.pathname,
+    });
+  };
 
   return (
     <Box
@@ -81,7 +98,7 @@ const LandingPage = () => {
             backgroundImage: `url(${landingBg})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            opacity: 0.1,
+            opacity: 0.5,
           }}
         />
         <Box
@@ -181,6 +198,7 @@ const LandingPage = () => {
           <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
             <Button
               onClick={() => navigate("/demand-planning")}
+              disabled={showLoginBanner}
               startIcon={<TrendingUpRoundedIcon sx={{ fontSize: "1rem !important" }} />}
               sx={{
                 px: 3,
@@ -192,13 +210,14 @@ const LandingPage = () => {
                 textTransform: "none",
                 background: `linear-gradient(135deg, ${BRAND} 0%, #14756e 100%)`,
                 color: "#fff",
-                boxShadow: "0 6px 24px rgba(27,147,138,0.4)",
                 "&:hover": { filter: "brightness(1.1)" },
               }}
             >
               Demand Planning
             </Button>
             <Button
+              variant="contained"
+              disabled={showLoginBanner}
               onClick={() => navigate("/supply-planning")}
               startIcon={<InventoryRoundedIcon sx={{ fontSize: "1rem !important" }} />}
               sx={{
@@ -211,11 +230,11 @@ const LandingPage = () => {
                 textTransform: "none",
                 color: "#fff",
                 border: "1px solid rgba(167,139,250,0.4)",
-                background: "rgba(167,139,250,0.08)",
+                background: "rgba(167,139,250,0.7)",
                 backdropFilter: "blur(10px)",
                 "&:hover": {
-                  background: "rgba(167,139,250,0.16)",
-                  borderColor: "rgba(167,139,250,0.65)",
+                  background: "rgba(167,139,250,0.8)",
+                  borderColor: "rgba(167,139,250,0.3)",
                 },
               }}
             >
@@ -243,7 +262,77 @@ const LandingPage = () => {
           </Typography>
         </Box>
       </Box>
+      {showLoginBanner && (
+        <Paper
+          elevation={0}
+          sx={{
+            position: "absolute",
+            bottom: 190,
+            left: "50%",
+            transform: "translateX(-50%)",
+            px: 3.5,
+            py: 2,
+            borderRadius: 4,
+            background: "rgba(255,255,255,0.14)",
+            backdropFilter: "blur(14px)",
+            border: "1.5px solid rgba(255,255,255,0.28)",
+            display: "flex",
+            alignItems: "center",
+            gap: 2.5,
+            zIndex: 5,
+            boxShadow:
+              "0 12px 40px rgba(0,0,0,0.45), inset 0 0 22px rgba(255,255,255,0.16)",
+          }}
+        >
+          {/* Icon */}
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.25)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <LoginIcon sx={{ fontSize: 22, color: "#fff" }} />
+          </Box>
 
+          <Box>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.78rem" }}>
+              You’re not signed in
+            </Typography>
+            <Typography sx={{ fontSize: "0.65rem", opacity: 0.75 }}>
+              Login to access Demand & Supply workspaces
+            </Typography>
+          </Box>
+
+          <Button
+            onClick={handleLogin}
+            sx={{
+              ml: 2,
+              px: 2.4,
+              py: 0.6,
+              borderRadius: 3,
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: "0.72rem",
+              textTransform: "none",
+              color: "#000",
+              background:
+                "linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%)",
+              boxShadow: "0 6px 20px rgba(255,255,255,0.45)",
+              "&:hover": {
+                background:
+                  "linear-gradient(135deg, #f1f1f1 0%, #dcdcdc 100%)",
+              },
+            }}
+          >
+            Login using OKTA SSO
+          </Button>
+        </Paper>
+      )}
       {/* STATS BAR */}
       <Box
         sx={{
@@ -266,7 +355,7 @@ const LandingPage = () => {
                 sx={{
                   fontFamily: FONT,
                   fontWeight: 900,
-                  fontSize: { xs: "1.5rem", md: "1.85rem" },
+                  fontSize: { xs: "1.25rem", md: "1.5rem" },
                   color: BRAND2,
                   lineHeight: 1,
                   letterSpacing: "-0.5px",
@@ -277,8 +366,8 @@ const LandingPage = () => {
               <Typography
                 sx={{
                   fontFamily: FONT,
-                  fontSize: "0.67rem",
-                  opacity: 0.45,
+                  fontSize: "0.87rem",
+                  opacity: 0.65,
                   mt: 0.4,
                   letterSpacing: "0.06em",
                 }}
@@ -329,6 +418,7 @@ const LandingPage = () => {
           </Typography>
         </Box>
 
+
         <Box
           sx={{
             display: "flex",
@@ -337,8 +427,13 @@ const LandingPage = () => {
             flexWrap: "wrap",
             maxWidth: 920,
             mx: "auto",
+            transition: "filter 0.25s ease, opacity 0.25s ease",
+            filter: showLoginBanner ? "blur(2px)" : "none",
+            opacity: showLoginBanner ? 0.8 : 1,
+            pointerEvents: showLoginBanner ? "none" : "auto",
           }}
         >
+
           {domains.map((domain) => (
             <Box
               key={domain.title}
@@ -429,9 +524,9 @@ const LandingPage = () => {
               <Typography
                 sx={{
                   fontFamily: FONT,
-                  fontSize: "0.82rem",
+                  fontSize: "0.89rem",
                   opacity: 0.52,
-                  lineHeight: 1.72,
+                  lineHeight: 1.5,
                   mb: 3,
                 }}
               >

@@ -24,8 +24,14 @@ const NAV_FONT =
   "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'";
 
 const TopNavbar = () => {
-  const { setIsLoggedIn, setIsUserLoading, setUser, setAuthToken, setIsUserAdmin } =
-    useUserStore();
+  const {
+    setIsLoggedIn,
+    setIsUserLoading,
+    setUser,
+    setAuthToken,
+    setIsUserAdmin
+  } = useUserStore();
+
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -123,7 +129,7 @@ const TopNavbar = () => {
       <Box
         sx={{
           height: HEIGHT,
-          px: { xs: 4, sm: 8 },
+          px: { xs: 3, sm: 4 },
           display: "flex",
           alignItems: "center",
           width: "100%",

@@ -48,7 +48,7 @@ const CompactRailDock = ({ onOpen, onNew, onSearch }) => {
       <Box
         sx={{
           position: "fixed",
-          left: 0,
+          left: 250,
           top: 60,
           bottom: 150,
           transform: "none",

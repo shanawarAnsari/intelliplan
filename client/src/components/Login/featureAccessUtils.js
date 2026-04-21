@@ -19,3 +19,25 @@ export const checkAskIntelliplanAccess = (user) => {
     );
     return !!hasAskIntelliplanAccess;
 };
+
+export const checkDemandPlanningAccess = (user) => {
+    if (!user) return false;
+
+    const requiredGroups = ['KC_INTELLIPLAN_USERS_DEMAND_PLANNING'];
+
+    const hasDemandPlanningAccess = user.mygroup?.some((group) =>
+        requiredGroups.includes(group)
+    );
+    return !!hasDemandPlanningAccess;
+};
+
+export const checkSupplyPlanningAccess = (user) => {
+    if (!user) return false;
+
+    const requiredGroups = ['KC_INTELLIPLAN_USERS_SUPPLY_PLANNING'];
+
+    const hasSupplyPlanningAccess = user.mygroup?.some((group) =>
+        requiredGroups.includes(group)
+    );
+    return !!hasSupplyPlanningAccess;
+};

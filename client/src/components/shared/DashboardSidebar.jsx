@@ -20,10 +20,10 @@ const NavItem = ({ icon: Icon, label, path, isActive, collapsed, accentColor }) 
           py: 1.05,
           mx: collapsed ? 0.75 : 1.25,
           my: 0.3,
-          borderRadius: "10px",
+          //borderRadius: "10px",
           cursor: "pointer",
           justifyContent: collapsed ? "center" : "flex-start",
-          color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
+          color: isActive ? "#fff" : "rgba(255, 255, 255, 0.70)",
           bgcolor: isActive ? alpha(accentColor, 0.13) : "transparent",
           transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
           position: "relative",
@@ -35,18 +35,18 @@ const NavItem = ({ icon: Icon, label, path, isActive, collapsed, accentColor }) 
           },
           ...(isActive &&
             !collapsed && {
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                left: 0,
-                top: "20%",
-                bottom: "20%",
-                width: 3,
-                borderRadius: "0 4px 4px 0",
-                bgcolor: accentColor,
-                boxShadow: `0 0 8px ${alpha(accentColor, 0.5)}`,
-              },
-            }),
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              left: 0,
+              top: "20%",
+              bottom: "20%",
+              width: 3,
+              borderRadius: "0 4px 4px 0",
+              bgcolor: accentColor,
+              boxShadow: `0 0 8px ${alpha(accentColor, 0.5)}`,
+            },
+          }),
         }}
       >
         <Box
@@ -195,8 +195,7 @@ const DashboardSidebar = ({
           alignItems: "center",
           justifyContent: collapsed ? "center" : "space-between",
           px: collapsed ? 0 : 2.5,
-          py: 2,
-          minHeight: 56,
+          minHeight: 46,
         }}
       >
         {!collapsed && (
@@ -232,15 +231,15 @@ const DashboardSidebar = ({
             onClick={() => setCollapsed((p) => !p)}
             size="small"
             sx={{
-              width: 28,
+              width: 32,
               height: 28,
-              color: "rgba(255,255,255,0.3)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              color: "rgba(255, 255, 255, 0.45)",
+              border: "1px solid rgba(255,255,255,0.45)",
               borderRadius: "8px",
               "&:hover": {
                 color: "#fff",
-                bgcolor: "rgba(255,255,255,0.06)",
-                borderColor: "rgba(255,255,255,0.12)",
+                bgcolor: "rgba(255,255,255,0.65)",
+                borderColor: "rgba(255,255,255,0.65)",
               },
               transition: "all 0.2s ease",
             }}
